@@ -95,7 +95,21 @@ hostname   # compare against devbox metadata.name in list_devboxes output
 If the current environment is the devbox, use its `id` as `connection.devboxId`
 and run the service locally in this session.
 
-### Step 3 — create the sandbox via MCP
+### Step 3 — check for existing sandbox definitions
+
+Before creating a sandbox from scratch, check whether the repo already ships
+sandbox definitions. Look in `.signadot/` (the standard location):
+
+```bash
+ls .signadot/          # top-level: cluster config, CI/PR templates
+ls .signadot/dev/      # per-service local dev sandboxes, if present
+```
+
+If a matching definition exists, use it (substituting `@{devbox-id}` with the
+devbox ID from `list_devboxes`) rather than building the spec from scratch. This
+keeps sandbox names and port mappings consistent with what the team expects.
+
+### Step 4 — create the sandbox via MCP
 
 Call `get_workflow_docs` with `topic: "creating_sandbox"` for the full protocol,
 then call `create_sandbox` directly. Key points:
@@ -104,24 +118,30 @@ then call `create_sandbox` directly. Key points:
 - The `from` workload must come from `resolve_workload` output — never guess names.
 - The `port` in mappings must come from `resolve_workload_port` — never guess.
 
-### Step 4 — wait for ready
+### Step 5 — wait for ready
 
 After creating, poll `get_sandbox` until `status.ready = true` AND the tunnel
 shows `connected: true`. A sandbox that is ready but whose tunnel is not connected
 will not route traffic to your local process.
 
-### Step 5 — pull env and config
+### Step 6 — pull env and config
 
 ```bash
 eval $(signadot sandbox get-env <sandbox-name>)
 signadot sandbox get-files <sandbox-name>
 ```
 
-`get-env` requires `~/.kube/config` to be present. If it fails, the service may
-still work for stateless changes — but note that cluster-injected env vars
-(DB credentials, feature flags, downstream addresses) will be missing.
+`get-env` requires `~/.kube/config` to be present. If it fails, do not skip env
+vars — reconstruct them manually:
+1. Use `get_workload_object` MCP to read the workload's container env and pull
+   value names and any `valueFrom` references (Secrets, ConfigMaps).
+2. Resolve in-cluster hostnames from `/etc/hosts` (devbox injects them as
+   `<svc>.<namespace>` entries in the `242.242.x.x` range).
+3. Export each var explicitly before starting the service. Missing env vars
+   (DB addresses, credentials, feature flags) will cause silent failures that
+   look like code bugs.
 
-### Step 6 — find and run the service
+### Step 7 — find and run the service
 
 Before running, locate the correct entrypoint. Read the repo structure:
 - `Makefile`, `package.json` scripts, `Dockerfile`, `README` — these reveal how
@@ -133,7 +153,45 @@ Compile/build before backgrounding so errors surface immediately rather than
 silently dying in the background. The exact command depends on the language —
 read the Makefile or README rather than guessing.
 
+**Backgrounding in a devbox:** plain `&` can receive SIGHUP and silently die
+(exit code 144). Use `setsid` with a wrapper script instead:
+
+```bash
+cat > /tmp/start_svc.sh << 'EOF'
+#!/bin/bash
+export VAR=value
+exec ./my-service --flag
+EOF
+chmod +x /tmp/start_svc.sh
+setsid /tmp/start_svc.sh >> /tmp/svc.log 2>&1 &
+```
+
+After starting, verify the process is alive and the port is listening before
+proceeding to validation.
+
 ## Validation: hitting the service
+
+### The cardinal rule: never test against `localhost:<port>` directly
+
+Hitting the local service port directly (`curl http://localhost:8080/...`,
+`browser → http://localhost:8080`) **bypasses Signadot routing entirely**. The
+request goes straight to the local process and never touches the cluster — so
+you are only proving your code runs, not that the sandbox routes correctly, and
+any downstream calls that go through the cluster will do so **without** the
+routing key. In services that use async protocols (Kafka, queues, gRPC streams),
+this means the routing key is absent from those messages and downstream sandboxed
+consumers will never process them — instead the baseline cluster service handles
+the message, and your sandbox code is never exercised end-to-end.
+
+**Always send traffic through the cluster routing path via `signadot local
+proxy`.** The proxy injects the routing key on every request automatically:
+
+```bash
+signadot local proxy --sandbox <name> \
+  --map http://<svc>.<namespace>.svc:<port>@localhost:<local-port> &
+# then test via the proxy port:
+curl http://localhost:<local-port>/path
+```
 
 ### Routing key header conventions
 
@@ -141,9 +199,9 @@ The routing key must be sent with the request so Signadot can route it to your
 local process. How it's injected depends on the protocol:
 
 - **`signadot local proxy` with `http://` or `grpc://` scheme** — injects the
-  routing key automatically. No manual header needed.
-- **Direct curl** — pass it in the `baggage` header (standard for OpenTelemetry-
-  instrumented services):
+  routing key automatically. No manual header needed. **Prefer this over direct
+  curl for all validation.**
+- **Direct curl (when proxy isn't suitable)** — pass it in the `baggage` header:
   ```bash
   curl -s http://localhost:<port>/api \
     -H "baggage: sd-routing-key=<routing-key>"
@@ -159,6 +217,23 @@ local process. How it's injected depends on the protocol:
 The routing key comes from the sandbox's `routingKey` field in the MCP response
 or `signadot sandbox get` output.
 
+### Routing key propagation through async protocols
+
+The routing key only reaches downstream services if every intermediate hop
+forwards it. For synchronous HTTP/gRPC this is usually automatic via baggage
+propagation. **For async protocols (Kafka, SQS, RabbitMQ, etc.) it is not.**
+
+Before testing, read the producer code and confirm the routing key is written
+into the message headers/metadata. If it is not, messages dispatched without
+the key will be consumed by the baseline cluster service — the sandboxed
+consumer will never fire — and tests will appear to work but actually validate
+the wrong code path.
+
+Signs that the key is missing from async messages:
+- The sandboxed downstream service log shows no activity after a request
+- The response looks correct but comes too fast (baseline handled it)
+- A feature you know you changed behaves as the old baseline
+
 ### Frontend / UI validation
 
 When a change involves a frontend service, validate interactivity and visual
@@ -170,46 +245,47 @@ end against real backend dependencies.
 check the repo for `playwright-tests/`, `cypress/`, `postman/`, `smart-tests/`,
 or similar directories. Reuse what's there.
 
-**2. Resolve the frontend endpoint** using the Signadot MCP:
-```
-ToolSearch("signadot workload endpoint") → resolve_endpoints (forSandbox: <sandbox-name>)
-```
-This returns the in-cluster service URL. If the environment has cluster
-connectivity (e.g., you are running inside a devbox), you can hit it directly.
-Otherwise proxy it locally first:
+**2. Always use `signadot local proxy` as the browser's target URL**, not the
+local service's direct port. The proxy injects the routing key on every request
+the browser makes. Navigating to `http://localhost:<service-port>` directly
+means the routing key is absent from all requests — dispatched events go to the
+baseline cluster services, not the sandboxed ones.
+
 ```bash
-signadot local proxy --sandbox <sandbox-name> \
-  --map http://frontend.<namespace>.svc:8080@localhost:8080 &
+signadot local proxy --sandbox <name> \
+  --map http://<frontend-svc>.<namespace>.svc:<port>@localhost:<proxy-port> &
+# then navigate the browser to:
+#   http://localhost:<proxy-port>
 ```
 
-**3. Inject the routing key.** The routing key must be sent as a request header
-so Signadot routes traffic to the sandbox fork rather than baseline:
-
-```
-baggage: sd-routing-key=<routing-key>
-```
-
-For browser-based tools, set this as an extra HTTP header on the browser context
-so it is sent on every request automatically (see step 4).
-
-**4. Use a browser tool or script to exercise the UI.** Use whatever is
+**3. Use a browser tool or script to exercise the UI.** Use whatever is
 available in the session — a browser MCP server, a headless browser script
 (Playwright, Cypress, Puppeteer, etc.), or an existing test suite in the repo.
-The key requirement regardless of tool: the `baggage: sd-routing-key=<key>`
-header must be sent on every request, typically by setting it on the browser
-context once rather than per-request.
+The key requirement regardless of tool: the routing key is injected via the
+proxy URL — if you navigate directly to the local service port instead, no
+routing key is sent.
 
-**5. If a headless browser isn't available** (e.g., download blocked by network
-policy), fall back to the app's HTTP API directly with curl. Identify the API
-endpoint the UI calls (check network tab in browser or read the frontend server
-code), and hit it with the routing key header. This gives the same signal for
-most feature validations.
+**4. If a headless browser isn't available** (e.g., download blocked by network
+policy), fall back to the app's HTTP API directly with curl via the proxy. This
+gives the same signal for most feature validations.
 
 ### Proving isolation
 
 Always send one request *with* the routing key and one *without*. The results
 must differ — the one without the key must return baseline behavior. If both
 return the same result, the routing is not working and the test result is invalid.
+
+To test without the routing key, send a request directly to the cluster service
+by its in-cluster DNS name (e.g. `http://frontend.hotrod-istio.svc:8080/path`)
+without any baggage header. This requires cluster DNS to be reachable, which
+`signadot local connect` provides. Ask the user to run it if not already done:
+
+```
+! sudo signadot local connect --cluster <cluster>
+```
+
+Once connected, `curl http://<svc>.<namespace>.svc:<port>/path` (no routing key
+header) hits the baseline cluster pod directly.
 
 ## Operational notes
 
@@ -244,10 +320,12 @@ return the same result, the routing is not working and the test result is invali
 | Check if this env is a devbox | `hostname` then compare against `list_devboxes` output |
 | Make the cluster reachable locally | `! sudo signadot local connect --cluster <cluster>` (**user runs**) |
 | Check the tunnel is up | `signadot local status` |
-| Pull env vars for local service | `eval $(signadot sandbox get-env <name>)` — requires kubeconfig |
+| Pull env vars for local service | `eval $(signadot sandbox get-env <name>)` — requires kubeconfig; fallback: `get_workload_object` + `/etc/hosts` |
 | Pull config files for local service | `signadot sandbox get-files <name>` |
 | Proxy a cluster service to localhost | `signadot local proxy --sandbox <name> --map http://svc:port@localhost:port` |
 | Send request with routing key (curl) | `curl -H "baggage: sd-routing-key=<key>" http://localhost:<port>/path` |
 | Send request with routing key (grpc) | `grpcurl -H "baggage: sd-routing-key=<key>" -plaintext localhost:<port> Svc/Method` |
+| Test browser UI with routing key | Use proxy URL (`localhost:<proxy-port>`), not direct service port |
+| Background a service safely | `setsid /tmp/start.sh >> /tmp/svc.log 2>&1 &` (plain `&` can SIGHUP) |
 | Tear down a sandbox | `signadot sandbox delete <sandbox-name>` |
 | Disconnect | `! signadot local disconnect` (**user runs**) |
