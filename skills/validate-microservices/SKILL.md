@@ -194,6 +194,13 @@ Before running, locate the correct entrypoint and start command. Read the repo:
   reveal how the service is normally started
 - Never guess the start command — always derive it from the repo
 
+For services with a frontend or compiled UI, check for a `scripts/` directory or
+dedicated Makefile target before reaching for `npm run build` / `yarn build`.
+Build scripts often do post-processing (asset path rewriting, file copying) that
+the bare package manager command skips. Running the wrong build command produces
+a binary that silently serves 404s for its own assets with no obvious error at
+startup.
+
 **Kill any existing process on the same port** before starting a new instance —
 port conflicts produce an immediate fatal error that looks like a code bug:
 
@@ -217,8 +224,10 @@ chmod +x /tmp/start_svc.sh
 setsid /tmp/start_svc.sh >> /tmp/svc.log 2>&1 &
 ```
 
-After starting, verify the process is alive and the port is listening before
-proceeding to validation.
+After starting, verify the process is alive and the port is listening. Also curl
+the primary data-fetching endpoint (not just `/healthz`) before opening the
+browser — a 500 there will manifest as a blank or stuck "Loading" state in
+Playwright, and diagnosing it via curl is far faster than via browser tooling.
 
 ## Validation: hitting the service
 
@@ -271,6 +280,11 @@ Signs that the key is missing from async messages:
 Always validate using the browser golden path — don't stop at API checks. The
 browser exercises the full stack end-to-end and will surface breakage (blank
 fields, wrong values, JS errors) that a curl check misses.
+
+**A passing curl check is not a stopping point.** Do not report success or pause
+after confirming a JSON field or API response looks correct via curl. Proceed
+directly to the browser golden path — that is the first real signal of whether
+the change works end-to-end.
 
 **Use the Playwright MCP tools** (search: `ToolSearch("playwright")`) if they are
 available in the session — do not try to run `npx playwright test` or install
