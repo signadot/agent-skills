@@ -54,179 +54,174 @@ without a loaded schema will fail with `InputValidationError`.
 
 | Signal | Where it comes from | Useful for |
 |---|---|---|
-| **Local process receives real cluster traffic** | **Local-mapped sandbox** (service runs on laptop, routing key directs traffic to it) | **Default first choice — validate changes against real deps with no image build** |
-| Cluster DNS/IP resolvable from your laptop | `signadot local connect` | Reaching cluster services by their in-cluster name from a local process or curl |
-| Your modified service's stdout/stderr streaming live to your terminal | Local sandbox | Watching a request land in your code, seeing panics/logs immediately, attaching a debugger |
+| **Local process receives real cluster traffic** | **Local-mapped sandbox** (service runs locally, routing key directs traffic to it) | **Default first choice — validate changes against real deps with no image build** |
+| Cluster DNS/IP resolvable from your machine | `signadot local connect` | Reaching cluster services by their in-cluster name from a local process or curl |
+| Your modified service's stdout/stderr streaming live | Local sandbox | Watching a request land in your code, seeing panics/logs immediately, attaching a debugger |
 | Cluster service endpoints mapped to `localhost:<port>` | `signadot local proxy --map http://svc:port@localhost:port` | Hitting an in-cluster service with curl without changing client code |
 | Readiness, forks, and routing state of an in-cluster fork | MCP or `signadot sandbox get <name>` | Knowing whether your sandbox is actually up and routing before you test |
 | Preview endpoints that deterministically hit your fork | MCP or `signadot sandbox get <name>` (endpoints block) | Driving your forked service with curl from anywhere, no routing header needed |
 | Routing-key isolation (header → fork, no header → baseline) | Any sandbox | Proving the change is scoped to your sandbox and not affecting shared traffic |
 
-Reach for an image build only when the service genuinely can't run on your
-laptop. Otherwise the local-mapped sandbox is faster and higher-signal.
+Reach for an image build only when the service genuinely can't run locally.
+Otherwise the local-mapped sandbox is faster and higher-signal.
 
-## How to get each signal
+## Sandbox creation workflow
 
-### Local-mapped sandbox: fastest path to validation
+### Step 1 — resolve cluster and workload
 
-**This is the default approach.** Before building images or provisioning
-in-cluster forks, run your modified service locally and map it into the cluster
-via a local sandbox. No image builds, live logs, debugger access.
+Use MCP tools. Always check `requiresConfirmation` on every response:
+- If true on clusters: show list, ask user to pick one.
+- If true on workloads: show candidates, ask user to confirm. Never auto-select.
+- If true on devboxes: show list, ask user to confirm.
 
-**How it works:**
-1. The sandbox spec declares a `local` workload entry pointing at a port on your
-   laptop.
-2. `signadot local connect` establishes the tunnel so cluster traffic can reach
-   your machine.
-3. Your service runs as a plain local process (`go run .`, `node server.js`, etc.).
-4. Requests carrying the sandbox routing key are routed to your local process;
-   everything else hits the baseline in-cluster service.
-
-**Sandbox spec format:**
-
-```yaml
-# local-sandbox.yaml
-name: my-local-dev
-spec:
-  cluster: <cluster-name>
-  description: "Local dev for my-service"
-  local:
-  - name: local-my-service
-    from:
-      kind: Deployment
-      namespace: <namespace>
-      name: <service-name>
-    mappings:
-    - port: 8080           # in-cluster port
-      toLocal: localhost:3000  # your local port
+```
+ToolSearch("signadot cluster")  → list_clusters
+ToolSearch("signadot workload") → resolve_workload  (single-term query only)
+ToolSearch("signadot workload") → resolve_workload_port
+ToolSearch("signadot sandbox")  → list_devboxes
 ```
 
-Look for an existing spec under `.signadot/` or `*.sandbox.yaml` first and reuse
-it. If none exists, use the MCP sandbox tools (search: "signadot sandbox") to
-create one, or write the YAML above.
+### Step 2 — check if the Claude Code environment is the devbox
 
-**Typical workflow:**
+`list_devboxes` often returns a devbox whose `metadata.name` matches the current
+hostname. **If you are running inside a Claude Code sandbox** (check `hostname`),
+look for a matching devbox — if found, you can run the service right here without
+needing `signadot local connect` or any user interaction for the tunnel.
 
 ```bash
-# 1. User connects (needs sudo — ask them to run this)
-! sudo signadot local connect --cluster <cluster>
-
-# 2. Apply the sandbox
-signadot sandbox apply -f local-sandbox.yaml
-
-# 3. Pull in the environment variables the in-cluster workload uses
-eval $(signadot sandbox get-env my-local-dev)
-
-# 4. Pull any config files the workload mounts
-signadot sandbox get-files my-local-dev
-# Files land under ~/.signadot/sandboxes/<name>/local/files/
-
-# 5. Run your service locally on the mapped port
-go run ./cmd/server --port 3000
-
-# 6. Test — route requests via the routing key or preview URL
-
-# 7. Clean up
-signadot sandbox delete my-local-dev
-! signadot local disconnect
+hostname   # compare against devbox metadata.name in list_devboxes output
 ```
 
-`get-env` and `get-files` are easy to miss but important — without them the
-local process is missing DB credentials, feature flags, and config that the
-in-cluster workload gets automatically.
+If the current environment is the devbox, use its `id` as `connection.devboxId`
+and run the service locally in this session.
 
-### Cluster reachability (`signadot local connect`)
+### Step 3 — create the sandbox via MCP
 
-Establishes a VPN-like tunnel so cluster DNS resolves locally and `signadot
-local proxy` / local sandboxes can route traffic. Without this, none of the
-local workflows below can reach cluster services.
+Call `get_workflow_docs` with `topic: "creating_sandbox"` for the full protocol,
+then call `create_sandbox` directly. Key points:
 
-**You cannot run this yourself** — it modifies the local network stack and
-requires sudo. Ask:
+- `connection.devboxId` is required whenever `local` workloads are present.
+- The `from` workload must come from `resolve_workload` output — never guess names.
+- The `port` in mappings must come from `resolve_workload_port` — never guess.
 
-> Please run this command in your terminal (it needs sudo):
-> `! sudo signadot local connect --cluster <cluster-name>`
+### Step 4 — wait for ready
 
-Use MCP (search: "signadot cluster") to resolve the cluster name if unknown.
-Wait for the user to confirm the tunnel is up before proceeding —
-`signadot local status` will also report it.
+After creating, poll `get_sandbox` until `status.ready = true` AND the tunnel
+shows `connected: true`. A sandbox that is ready but whose tunnel is not connected
+will not route traffic to your local process.
 
-### Direct curl access via local proxy
+### Step 5 — pull env and config
 
-Makes a cluster service reachable on a local port without running anything
-locally. Use when the question is "what does this endpoint return right now?"
+```bash
+eval $(signadot sandbox get-env <sandbox-name>)
+signadot sandbox get-files <sandbox-name>
+```
 
+`get-env` requires `~/.kube/config` to be present. If it fails, the service may
+still work for stateless changes — but note that cluster-injected env vars
+(DB credentials, feature flags, downstream addresses) will be missing.
+
+### Step 6 — find and run the service
+
+Before running, locate the correct entrypoint. Read the repo structure:
+- `Makefile`, `package.json` scripts, `Dockerfile`, `README` — these reveal how
+  the service is normally started
+- `cmd/`, `main.go`, `src/index.*`, `app.py`, `server.*` — language-specific
+  entrypoint patterns
+
+Compile/build before backgrounding so errors surface immediately rather than
+silently dying in the background. The exact command depends on the language —
+read the Makefile or README rather than guessing.
+
+## Validation: hitting the service
+
+### Routing key header conventions
+
+The routing key must be sent with the request so Signadot can route it to your
+local process. How it's injected depends on the protocol:
+
+- **`signadot local proxy` with `http://` or `grpc://` scheme** — injects the
+  routing key automatically. No manual header needed.
+- **Direct curl** — pass it in the `baggage` header (standard for OpenTelemetry-
+  instrumented services):
+  ```bash
+  curl -s http://localhost:<port>/api \
+    -H "baggage: sd-routing-key=<routing-key>"
+  ```
+- **gRPC (grpcurl)** — same baggage header:
+  ```bash
+  grpcurl -plaintext \
+    -H "baggage: sd-routing-key=<routing-key>" \
+    -d '{"field":"value"}' \
+    localhost:<port> package.Service/Method
+  ```
+
+The routing key comes from the sandbox's `routingKey` field in the MCP response
+or `signadot sandbox get` output.
+
+### Headless browser validation
+
+For end-to-end validation through a UI, use a headless browser with the routing
+key set as a request header:
+
+**1. Look for existing test infrastructure first.** Before writing new tests,
+check the repo for `playwright-tests/`, `cypress/`, `postman/`, `smart-tests/`,
+or similar directories. Reuse what's there.
+
+**2. Proxy the frontend service** so it's reachable locally:
 ```bash
 signadot local proxy --sandbox <sandbox-name> \
-  --map http://<service>.<namespace>.svc:<port>@localhost:<local-port>
-
-curl -s http://localhost:<local-port>/api/endpoint | jq .
+  --map http://frontend.<namespace>.svc:8080@localhost:8080 &
 ```
 
-**Map format:** `<scheme>://<cluster-host>:<port>@<local-host>:<local-port>`
-- Left of `@` — URL resolved inside the cluster
-- Right of `@` — local bind address
-- Schemes: `http` or `grpc` (injects routing key header), `tcp` (raw, no injection)
+**3. Playwright script pattern** (inject routing key as a header on all requests):
+```python
+from playwright.sync_api import sync_playwright
 
-You can also scope the proxy to a routegroup or bare cluster:
+ROUTING_KEY = "<routing-key>"
 
-```bash
-signadot local proxy --routegroup <name> --map http://svc:port@localhost:port
-signadot local proxy --cluster <name>   --map tcp://postgres.db.svc:5432@localhost:5432
+with sync_playwright() as p:
+    browser = p.chromium.launch()
+    context = browser.new_context(
+        extra_http_headers={"baggage": f"sd-routing-key={ROUTING_KEY}"}
+    )
+    page = context.new_page()
+    page.goto("http://localhost:8080")
+    # interact and assert...
+    browser.close()
 ```
 
-### Sandbox status and endpoints
+**4. If a headless browser isn't available** (e.g., download blocked by network
+policy), fall back to the app's HTTP API directly with curl. Identify the API
+endpoint the UI calls (check network tab in browser or read the frontend server
+code), and hit it with the routing key header. This gives the same signal for
+most feature validations.
 
-Use MCP (search: "signadot sandbox") to get readiness and endpoint URLs without
-leaving Claude Code. Fall back to CLI if MCP is unavailable:
+### Proving isolation
 
-```bash
-signadot sandbox get <sandbox-name>
-```
-
-Always check readiness before curling — a sandbox that isn't Ready yet will give
-misleading errors.
-
-### In-cluster sandbox (when a container is required)
-
-Only when the service genuinely can't run on your laptop (hard-to-reproduce
-runtime, platform-specific sidecar, etc.) build an image and create an in-cluster
-fork:
-
-```bash
-signadot sandbox apply --set name=<sandbox-name> -f sandbox.yaml --wait
-signadot sandbox get <sandbox-name>
-```
-
-If `.signadot/` or a `*.sandbox.yaml` already exists in the repo, reuse it. If
-you modify multiple services at once, include them in the same sandbox so they
-share the routing key. Update with another `signadot sandbox apply` using the
-same name — don't delete and recreate.
+Always send one request *with* the routing key and one *without*. The results
+must differ — the one without the key must return baseline behavior. If both
+return the same result, the routing is not working and the test result is invalid.
 
 ## Operational notes
 
 - **Sudo-gated commands must be delegated to the user.** `signadot local
   connect` and `signadot local disconnect` modify the local network stack and
   fall in this bucket. Print the command with a leading `!` and wait.
-- **Routing keys isolate your fork from baseline traffic.** Requests carrying
-  the sandbox's routing key (usually via a header set by `signadot local
-  proxy` or an explicit header) hit your fork; everything else hits baseline.
-  Prove this before claiming a test result — otherwise you may be reading
-  baseline behavior.
 - **A sandbox only needs to contain the services you changed.** Everything else
-  is shared from the baseline environment, and that is the point. If you
-  changed more than one service, put them in the same sandbox so they share
-  one routing key instead of creating a sandbox per service.
-- **When a test fails, check sandbox state and streamed logs before `kubectl`.**
-  Use MCP or `signadot sandbox get` for fork readiness (`Status: Ready`).
-- **Update, don't recreate.** Re-run `signadot sandbox apply` with the same
-  `--set name=<name>` to update an existing sandbox. Deleting and recreating
-  churns the routing key and any tests you've pinned to it.
-- **Clean up once the user confirms the change is good:**
+  is shared from the baseline cluster. If you changed multiple services, put
+  them in the same sandbox so they share one routing key.
+- **Update, don't recreate.** Re-run sandbox apply or use MCP update with the
+  same name. Deleting and recreating churns the routing key and any tests pinned
+  to it.
+- **When a test fails, check sandbox state first.** Use MCP `get_sandbox` or
+  `signadot sandbox get` to verify `ready: true` and tunnel `connected: true`
+  before concluding the code is wrong.
+- **Clean up:**
   ```bash
   signadot sandbox delete <sandbox-name>
+  ! signadot local disconnect   # if user ran connect
   ```
-  Ask the user to run `! signadot local disconnect` if they were connected.
 
 ## Quick reference
 
@@ -234,14 +229,17 @@ same name — don't delete and recreate.
 |---|---|
 | List registered clusters | MCP (search: "signadot cluster") |
 | List / inspect sandboxes | MCP (search: "signadot sandbox") |
-| Create or update a sandbox | MCP (search: "signadot sandbox") or `signadot sandbox apply -f <spec> --set name=<n> --wait` |
-| Resolve workloads and endpoints | MCP (search: "signadot workload endpoint") |
-| Manage routegroups | MCP (search: "signadot routegroup") |
+| Create a sandbox | MCP (search: "signadot sandbox") — call `get_workflow_docs` first |
+| Update a sandbox | MCP (search: "signadot sandbox") — call `get_workflow_docs` first |
+| Resolve workloads | MCP (search: "signadot workload") — single-term query |
+| Resolve endpoints | MCP (search: "signadot workload endpoint") |
+| Check if this env is a devbox | `hostname` then compare against `list_devboxes` output |
 | Make the cluster reachable locally | `! sudo signadot local connect --cluster <cluster>` (**user runs**) |
 | Check the tunnel is up | `signadot local status` |
-| Pull env vars for local service | `eval $(signadot sandbox get-env <name>)` |
+| Pull env vars for local service | `eval $(signadot sandbox get-env <name>)` — requires kubeconfig |
 | Pull config files for local service | `signadot sandbox get-files <name>` |
-| Expose a cluster service on localhost | `signadot local proxy --sandbox <name> --map http://svc:port@localhost:port` |
-| Hit an endpoint | `curl -s http://localhost:<port>/path \| jq .` |
+| Proxy a cluster service to localhost | `signadot local proxy --sandbox <name> --map http://svc:port@localhost:port` |
+| Send request with routing key (curl) | `curl -H "baggage: sd-routing-key=<key>" http://localhost:<port>/path` |
+| Send request with routing key (grpc) | `grpcurl -H "baggage: sd-routing-key=<key>" -plaintext localhost:<port> Svc/Method` |
 | Tear down a sandbox | `signadot sandbox delete <sandbox-name>` |
 | Disconnect | `! signadot local disconnect` (**user runs**) |
