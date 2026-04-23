@@ -159,39 +159,47 @@ local process. How it's injected depends on the protocol:
 The routing key comes from the sandbox's `routingKey` field in the MCP response
 or `signadot sandbox get` output.
 
-### Headless browser validation
+### Frontend / UI validation
 
-For end-to-end validation through a UI, use a headless browser with the routing
-key set as a request header:
+When a change involves a frontend service, validate interactivity and visual
+behavior directly — not just the underlying API. The goal is to confirm that UI
+elements render correctly, buttons are clickable, and user flows complete end to
+end against real backend dependencies.
 
 **1. Look for existing test infrastructure first.** Before writing new tests,
 check the repo for `playwright-tests/`, `cypress/`, `postman/`, `smart-tests/`,
 or similar directories. Reuse what's there.
 
-**2. Proxy the frontend service** so it's reachable locally:
+**2. Resolve the frontend endpoint** using the Signadot MCP:
+```
+ToolSearch("signadot workload endpoint") → resolve_endpoints (forSandbox: <sandbox-name>)
+```
+This returns the in-cluster service URL. If the environment has cluster
+connectivity (e.g., you are running inside a devbox), you can hit it directly.
+Otherwise proxy it locally first:
 ```bash
 signadot local proxy --sandbox <sandbox-name> \
   --map http://frontend.<namespace>.svc:8080@localhost:8080 &
 ```
 
-**3. Playwright script pattern** (inject routing key as a header on all requests):
-```python
-from playwright.sync_api import sync_playwright
+**3. Inject the routing key.** The routing key must be sent as a request header
+so Signadot routes traffic to the sandbox fork rather than baseline:
 
-ROUTING_KEY = "<routing-key>"
-
-with sync_playwright() as p:
-    browser = p.chromium.launch()
-    context = browser.new_context(
-        extra_http_headers={"baggage": f"sd-routing-key={ROUTING_KEY}"}
-    )
-    page = context.new_page()
-    page.goto("http://localhost:8080")
-    # interact and assert...
-    browser.close()
+```
+baggage: sd-routing-key=<routing-key>
 ```
 
-**4. If a headless browser isn't available** (e.g., download blocked by network
+For browser-based tools, set this as an extra HTTP header on the browser context
+so it is sent on every request automatically (see step 4).
+
+**4. Use a browser tool or script to exercise the UI.** Use whatever is
+available in the session — a browser MCP server, a headless browser script
+(Playwright, Cypress, Puppeteer, etc.), or an existing test suite in the repo.
+The key requirement regardless of tool: the `baggage: sd-routing-key=<key>`
+header must be sent on every request, typically by setting it on the browser
+context once rather than per-request.
+
+**5. If a headless browser isn't available** (e.g., download blocked by network
 policy), fall back to the app's HTTP API directly with curl. Identify the API
 endpoint the UI calls (check network tab in browser or read the frontend server
 code), and hit it with the routing key header. This gives the same signal for
