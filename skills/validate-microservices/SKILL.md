@@ -126,32 +126,68 @@ will not route traffic to your local process.
 
 ### Step 6 — pull env and config
 
+**First, check the repo README and CLAUDE.md** for documented run commands. Teams
+often document the exact env vars and their format (e.g. `MYSQL_ADDR`, `REDIS_ADDR`,
+`KAFKA_BROKER_ADDR`). These are ground truth for what the service expects.
+
+Then attempt the automated pull:
+
 ```bash
 eval $(signadot sandbox get-env <sandbox-name>)
 signadot sandbox get-files <sandbox-name>
 ```
 
-`get-env` requires `~/.kube/config` to be present. If it fails, do not skip env
-vars — reconstruct them manually:
-1. Use `get_workload_object` MCP to read the workload's container env and pull
-   value names and any `valueFrom` references (Secrets, ConfigMaps).
-2. Resolve in-cluster hostnames from `/etc/hosts` (devbox injects them as
-   `<svc>.<namespace>` entries in the `242.242.x.x` range).
-3. Export each var explicitly before starting the service. Missing env vars
-   (DB addresses, credentials, feature flags) will cause silent failures that
-   look like code bugs.
+`get-env` requires `~/.kube/config` to be present. **If it fails or is unavailable,
+reconstruct env vars via MCP** — do not skip them:
+
+#### MCP-based env reconstruction
+
+**1. Fetch the workload spec via MCP:**
+
+```
+ToolSearch("signadot workload") → get_workload_object
+```
+
+Call `get_workload_object` with the workload name and namespace. The response
+contains the full container spec including `env` and `envFrom` entries.
+
+**2. Classify each env entry and resolve its value:**
+
+| Entry type | How to resolve |
+|---|---|
+| `value: "literal"` | Use the literal value directly |
+| `valueFrom.configMapKeyRef` | Call `get_workload_object` with `kind: ConfigMap`, same namespace, the named key |
+| `valueFrom.secretKeyRef` | Call `get_workload_object` with `kind: Secret`, same namespace — values are base64; decode with `echo <val> \| base64 -d` |
+| `envFrom.configMapRef` | Call `get_workload_object` with `kind: ConfigMap` — all keys become env vars |
+| `envFrom.secretRef` | Call `get_workload_object` with `kind: Secret` — all keys become env vars |
+
+**3. Resolve in-cluster hostnames** from `/etc/hosts` (the devbox injects entries
+in the `242.242.x.x` range as `<svc>.<namespace>` and `<svc>.<namespace>.svc`).
+Use these addresses for any `*_ADDR`, `*_HOST`, or `*_URL` vars that reference
+cluster services.
+
+**4. Export each var explicitly** before starting the service:
+
+```bash
+export VAR1=value1
+export VAR2=value2
+# ...
+<start command — see Step 7>
+```
+
+Missing env vars (DB addresses, credentials, feature flags) cause silent failures
+that look like code bugs — always resolve them fully before concluding the service
+is broken.
 
 ### Step 7 — find and run the service
 
-Before running, locate the correct entrypoint. Read the repo structure:
-- `Makefile`, `package.json` scripts, `Dockerfile`, `README` — these reveal how
-  the service is normally started
-- `cmd/`, `main.go`, `src/index.*`, `app.py`, `server.*` — language-specific
-  entrypoint patterns
+Before running, locate the correct entrypoint and start command. Read the repo:
+- `Makefile`, `package.json` scripts, `Dockerfile`, `README`, `CLAUDE.md` — these
+  reveal how the service is normally started
+- Never guess the start command — always derive it from the repo
 
 Compile/build before backgrounding so errors surface immediately rather than
-silently dying in the background. The exact command depends on the language —
-read the Makefile or README rather than guessing.
+silently dying in the background.
 
 **Backgrounding in a devbox:** plain `&` can receive SIGHUP and silently die
 (exit code 144). Use `setsid` with a wrapper script instead:
@@ -299,7 +335,7 @@ A passing API check with a blank or broken UI is not done.
 | Check if this env is a devbox | `hostname` then compare against `list_devboxes` output |
 | Make the cluster reachable locally | `! sudo signadot local connect --cluster <cluster>` (**user runs**) |
 | Check the tunnel is up | `signadot local status` |
-| Pull env vars for local service | `eval $(signadot sandbox get-env <name>)` — requires kubeconfig; fallback: `get_workload_object` + `/etc/hosts` |
+| Pull env vars for local service | `eval $(signadot sandbox get-env <name>)` — requires kubeconfig; fallback: MCP `get_workload_object` on workload + Secrets/ConfigMaps, then resolve hostnames from `/etc/hosts` (devbox `242.242.x.x` range) |
 | Pull config files for local service | `signadot sandbox get-files <name>` |
 | Send request with routing key (curl) | `curl -H "baggage: sd-routing-key=<key>" http://<svc>.<ns>.svc:<port>/path` |
 | Send request with routing key (grpc) | `grpcurl -H "baggage: sd-routing-key=<key>" -plaintext <svc>.<ns>.svc:<port> Svc/Method` |
