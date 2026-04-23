@@ -69,10 +69,16 @@ Otherwise the local-mapped sandbox is faster and higher-signal.
 
 ### Step 0 — agree on what "validated" means
 
-Before spinning up a sandbox, confirm with the user **what kind of validation
-will run against it**. The answer drives how the sandbox is shaped (which ports
-are mapped, whether a browser or a test binary drives it) and how the routing
-key must be injected.
+**Before writing any code**, confirm with the user **what kind of validation
+will run against it**. The implementation shape often depends on the validation
+type — integration tests need a clean seam at the service boundary, Playwright
+needs a driveable UI path to the feature, load tools need a stable high-traffic
+endpoint. Deciding after the code is written forces rework when the code turns
+out to be hard to drive from the chosen tool.
+
+The answer also drives how the sandbox is shaped (which ports are mapped,
+whether a browser or a test binary drives it) and how the routing key must be
+injected.
 
 **If the user did not specify the validation type, ask.** Offer the supported
 options explicitly:
@@ -495,7 +501,13 @@ work.
 **Sandbox only what you changed. Run the validation type you agreed on in Step 0.
 Let failures tell you what else to fix.**
 
-1. Create a sandbox with only the service(s) you changed running locally.
+1. Create a sandbox with only the service(s) you changed running locally —
+   but **follow the seam, not just the file**. When a user-visible value is
+   computed in more than one place (e.g. a preview rendered by service A and a
+   committed value produced by service B), sandbox every service whose code
+   path contributes to what the user sees. Sandboxing only one side is a common
+   way to ship a silent UI/backend mismatch that passes API-level tests but
+   looks wrong in the browser.
 2. Run the validation type the user chose in Step 0 — integration tests, e2e
    tests, or Playwright automation. Use the setup from "Validation types".
 3. If a check fails:
