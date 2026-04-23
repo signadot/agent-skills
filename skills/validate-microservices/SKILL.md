@@ -258,11 +258,38 @@ grpcurl -plaintext \
 The routing key comes from the sandbox's `routingKey` field in the MCP
 `create_sandbox` / `get_sandbox` response.
 
+### Routing key propagation through synchronous HTTP/gRPC
+
+For synchronous calls, baggage propagation is **only automatic when the caller
+uses an instrumented HTTP/gRPC client** (e.g. `otelhttp`-wrapped transport,
+gRPC interceptor, Istio/Envoy sidecar with tracing enabled). A raw
+`http.DefaultClient.Do`, Node `fetch`, `requests.get`, etc. will **drop the
+routing key** and the upstream call hits the cluster baseline.
+
+This matters most in **new proxy, gateway, or forwarder handlers** where you
+are writing the outbound call by hand. If the handler is new code, assume
+baggage is not forwarded until proven otherwise. Either:
+
+- Copy the `baggage` header from the incoming request onto the outbound one
+  explicitly, or
+- Use the service's existing instrumented HTTP client if one exists.
+
+**Diagnostic signal:** the proxy path returns a 404 or stale data that looks
+exactly like the cluster baseline response, while a direct call to the local
+upstream works. That's baggage propagation failing — the proxy is reaching the
+baseline upstream (which lacks the new endpoint / field).
+
+**Anti-pattern — do not do this:** "fix" the proxy by pointing its upstream env
+var at `localhost:<port>`. That bypasses the cluster, masks the routing bug,
+and the service silently won't work for any consumer that isn't on the same
+dev box. Always fix propagation at the hop that drops it.
+
 ### Routing key propagation through async protocols
 
 The routing key only reaches downstream services if every intermediate hop
-forwards it. For synchronous HTTP/gRPC this is usually automatic via baggage
-propagation. **For async protocols (Kafka, SQS, RabbitMQ, etc.) it is not.**
+forwards it. **For async protocols (Kafka, SQS, RabbitMQ, etc.) it is never
+automatic** — the producer must explicitly copy the baggage into message
+headers/metadata, and the consumer must read it back into the request context.
 
 Before testing, read the producer code and confirm the routing key is written
 into the message headers/metadata. If it is not, messages dispatched without
