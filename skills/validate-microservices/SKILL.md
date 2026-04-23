@@ -173,49 +173,30 @@ proceeding to validation.
 
 ### The cardinal rule: never test against `localhost:<port>` directly
 
-Hitting the local service port directly (`curl http://localhost:8080/...`,
-`browser → http://localhost:8080`) **bypasses Signadot routing entirely**. The
-request goes straight to the local process and never touches the cluster — so
-you are only proving your code runs, not that the sandbox routes correctly, and
-any downstream calls that go through the cluster will do so **without** the
-routing key. In services that use async protocols (Kafka, queues, gRPC streams),
-this means the routing key is absent from those messages and downstream sandboxed
-consumers will never process them — instead the baseline cluster service handles
-the message, and your sandbox code is never exercised end-to-end.
+**Do not use localhost URLs for validation — not even via `signadot local
+proxy`.** Hitting `localhost:<port>` (whether the service port directly or a
+proxy port) bypasses the cluster routing path. Downstream calls from your local
+service go to the cluster **without** the routing key, so sandboxed consumers
+never fire and you are only proving your code runs in isolation.
 
-**Always send traffic through the cluster routing path via `signadot local
-proxy`.** The proxy injects the routing key on every request automatically:
+**Always send traffic to the cluster's in-cluster `.svc` URL with the routing
+key header.** The devbox `/etc/hosts` has `<svc>.<namespace>.svc` entries in
+the `242.242.x.x` range — use these directly:
 
 ```bash
-signadot local proxy --sandbox <name> \
-  --map http://<svc>.<namespace>.svc:<port>@localhost:<local-port> &
-# then test via the proxy port:
-curl http://localhost:<local-port>/path
+# curl: pass routing key via baggage header on the cluster .svc URL
+curl -s http://<svc>.<namespace>.svc:<port>/path \
+  -H "baggage: sd-routing-key=<routing-key>"
+
+# gRPC
+grpcurl -plaintext \
+  -H "baggage: sd-routing-key=<routing-key>" \
+  -d '{"field":"value"}' \
+  <svc>.<namespace>.svc:<port> package.Service/Method
 ```
 
-### Routing key header conventions
-
-The routing key must be sent with the request so Signadot can route it to your
-local process. How it's injected depends on the protocol:
-
-- **`signadot local proxy` with `http://` or `grpc://` scheme** — injects the
-  routing key automatically. No manual header needed. **Prefer this over direct
-  curl for all validation.**
-- **Direct curl (when proxy isn't suitable)** — pass it in the `baggage` header:
-  ```bash
-  curl -s http://localhost:<port>/api \
-    -H "baggage: sd-routing-key=<routing-key>"
-  ```
-- **gRPC (grpcurl)** — same baggage header:
-  ```bash
-  grpcurl -plaintext \
-    -H "baggage: sd-routing-key=<routing-key>" \
-    -d '{"field":"value"}' \
-    localhost:<port> package.Service/Method
-  ```
-
-The routing key comes from the sandbox's `routingKey` field in the MCP response
-or `signadot sandbox get` output.
+The routing key comes from the sandbox's `routingKey` field in the MCP
+`create_sandbox` / `get_sandbox` response.
 
 ### Routing key propagation through async protocols
 
@@ -234,58 +215,56 @@ Signs that the key is missing from async messages:
 - The response looks correct but comes too fast (baseline handled it)
 - A feature you know you changed behaves as the old baseline
 
-### Frontend / UI validation
+### Frontend / UI validation — mandatory for any UI-touching change
 
-When a change involves a frontend service, validate interactivity and visual
-behavior directly — not just the underlying API. The goal is to confirm that UI
-elements render correctly, buttons are clickable, and user flows complete end to
-end against real backend dependencies.
+**API-only checks are not enough.** Even if the backend API returns the correct
+response, the UI can still be broken (wrong field name in TypeScript, missing
+component update, broken render logic). Always validate the full user flow in a
+browser for any change that touches an API contract consumed by the frontend.
 
-**1. Look for existing test infrastructure first.** Before writing new tests,
-check the repo for `playwright-tests/`, `cypress/`, `postman/`, `smart-tests/`,
-or similar directories. Reuse what's there.
+**1. Scope: include the frontend in the sandbox.** If you changed backend code
+that the frontend consumes (JSON field names, API shape, new endpoints), the
+frontend service must be in the sandbox too — running locally with the updated
+code. The cluster's old frontend binary will decode the new API incorrectly.
 
-**2. Always use `signadot local proxy` as the browser's target URL**, not the
-local service's direct port. The proxy injects the routing key on every request
-the browser makes. Navigating to `http://localhost:<service-port>` directly
-means the routing key is absent from all requests — dispatched events go to the
-baseline cluster services, not the sandboxed ones.
+**2. Find how the team runs the frontend locally.** Check `CLAUDE.md`, `Makefile`,
+`docker-compose.yml`, or ask the user. **Do not guess the startup command or env
+vars.** Wrong service addresses or missing env vars cause silent failures that
+look like code bugs.
 
-```bash
-signadot local proxy --sandbox <name> \
-  --map http://<frontend-svc>.<namespace>.svc:<port>@localhost:<proxy-port> &
-# then navigate the browser to:
-#   http://localhost:<proxy-port>
+**3. Inject the routing key into browser requests.** Use Playwright's
+`page.setExtraHTTPHeaders()` to inject the routing key on every request, then
+navigate to the cluster's in-cluster frontend `.svc` URL:
+
+```js
+// Playwright: inject routing key on all requests
+await page.setExtraHTTPHeaders({
+  'baggage': 'sd-routing-key=<routing-key>'
+});
+await page.goto('http://<frontend-svc>.<namespace>.svc:<port>/');
 ```
 
-**3. Use a browser tool or script to exercise the UI.** Use whatever is
-available in the session — a browser MCP server, a headless browser script
-(Playwright, Cypress, Puppeteer, etc.), or an existing test suite in the repo.
-The key requirement regardless of tool: the routing key is injected via the
-proxy URL — if you navigate directly to the local service port instead, no
-routing key is sent.
+**4. Exercise the golden path.** Don't just check the page loads. Actually use
+the feature: fill in forms, click buttons, trigger the changed behavior, verify
+the result renders correctly.
 
-**4. If a headless browser isn't available** (e.g., download blocked by network
-policy), fall back to the app's HTTP API directly with curl via the proxy. This
-gives the same signal for most feature validations.
+## Iteration loop
 
-### Proving isolation
+The sandbox is where you discover what's broken — not before. Make your change,
+sandbox the service, run e2e, and let failures tell you what else needs fixing.
 
-Always send one request *with* the routing key and one *without*. The results
-must differ — the one without the key must return baseline behavior. If both
-return the same result, the routing is not working and the test result is invalid.
+**Loop until all checks pass:**
 
-To test without the routing key, send a request directly to the cluster service
-by its in-cluster DNS name (e.g. `http://frontend.hotrod-istio.svc:8080/path`)
-without any baggage header. This requires cluster DNS to be reachable, which
-`signadot local connect` provides. Ask the user to run it if not already done:
+1. Create a sandbox with the changed service(s) running locally.
+2. Hit the e2e path: browser golden path first, then API checks if needed.
+3. If a check fails:
+   - Read the failure: wrong field, missing data, blank UI element, error response.
+   - Determine the cause: service code, wrong env var, a consumer that also needs updating, routing not carrying the key.
+   - Fix it. If a consumer service (e.g. frontend) also needs updated code, add it to the sandbox and run it locally too.
+   - Restart the affected local service(s) and re-run — **keep the same sandbox** so the routing key stays stable.
+4. Only declare done when the full golden path passes end-to-end: correct API response **and** correct UI render.
 
-```
-! sudo signadot local connect --cluster <cluster>
-```
-
-Once connected, `curl http://<svc>.<namespace>.svc:<port>/path` (no routing key
-header) hits the baseline cluster pod directly.
+A passing API check with a blank or broken UI is not done.
 
 ## Operational notes
 
@@ -322,10 +301,9 @@ header) hits the baseline cluster pod directly.
 | Check the tunnel is up | `signadot local status` |
 | Pull env vars for local service | `eval $(signadot sandbox get-env <name>)` — requires kubeconfig; fallback: `get_workload_object` + `/etc/hosts` |
 | Pull config files for local service | `signadot sandbox get-files <name>` |
-| Proxy a cluster service to localhost | `signadot local proxy --sandbox <name> --map http://svc:port@localhost:port` |
-| Send request with routing key (curl) | `curl -H "baggage: sd-routing-key=<key>" http://localhost:<port>/path` |
-| Send request with routing key (grpc) | `grpcurl -H "baggage: sd-routing-key=<key>" -plaintext localhost:<port> Svc/Method` |
-| Test browser UI with routing key | Use proxy URL (`localhost:<proxy-port>`), not direct service port |
+| Send request with routing key (curl) | `curl -H "baggage: sd-routing-key=<key>" http://<svc>.<ns>.svc:<port>/path` |
+| Send request with routing key (grpc) | `grpcurl -H "baggage: sd-routing-key=<key>" -plaintext <svc>.<ns>.svc:<port> Svc/Method` |
+| Test browser UI with routing key | Playwright `page.setExtraHTTPHeaders({'baggage':'sd-routing-key=<key>'})` then navigate to cluster `.svc` URL |
 | Background a service safely | `setsid /tmp/start.sh >> /tmp/svc.log 2>&1 &` (plain `&` can SIGHUP) |
 | Tear down a sandbox | `signadot sandbox delete <sandbox-name>` |
 | Disconnect | `! signadot local disconnect` (**user runs**) |
