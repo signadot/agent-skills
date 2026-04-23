@@ -67,6 +67,34 @@ Otherwise the local-mapped sandbox is faster and higher-signal.
 
 ## Sandbox creation workflow
 
+### Step 0 — agree on what "validated" means
+
+Before spinning up a sandbox, confirm with the user **what kind of validation
+will run against it**. The answer drives how the sandbox is shaped (which ports
+are mapped, whether a browser or a test binary drives it) and how the routing
+key must be injected.
+
+**If the user did not specify the validation type, ask.** Offer the supported
+options explicitly:
+
+- **Integration tests** — a language-native test suite (e.g. `go test`,
+  `pytest`, `npm test`) that hits the service over HTTP/gRPC from inside the
+  devbox or from the user's machine.
+- **End-to-end tests** — a pre-existing e2e framework run in the repo or CI
+  (Cypress, Playwright `npx playwright test`, k6, Smart Tests, etc.).
+- **Playwright automation** — ad-hoc browser automation via the Playwright MCP
+  tools in this session (click buttons, fill forms, assert UI state).
+
+Ask a single question, accept one answer, and move on. If the user names a
+different tool (Locust, Postman collection, Cypress script, etc.), treat it as
+a fourth option and apply the same principle: figure out where the HTTP/gRPC
+client lives and how to set the `baggage: sd-routing-key=<key>` header on every
+outbound request.
+
+The full setup for each option is documented in **"Validation types"** below —
+read that section after the sandbox is up and the routing key is known, and
+follow the subsection that matches the chosen validation type.
+
 ### Step 1 — resolve cluster and workload
 
 Use MCP tools. Always check `requiresConfirmation` on every response:
@@ -258,6 +286,113 @@ grpcurl -plaintext \
 The routing key comes from the sandbox's `routingKey` field in the MCP
 `create_sandbox` / `get_sandbox` response.
 
+### Validation types
+
+The validation type you agreed on in **Step 0** determines *how* the routing
+key must be plumbed through. The cardinal rule (cluster `.svc` URL + routing
+key header) still applies to every option — these subsections just show where
+the header is set for each.
+
+#### Integration tests
+
+A language-native test binary (Go, Python, Node, etc.) hitting the service as
+a library consumer would.
+
+- **Where to run them**: inside the devbox if the cluster DNS is only reachable
+  from there; otherwise the user's machine works too (with `signadot local
+  connect` active).
+- **Target URL**: cluster `.svc` address — same as curl. Never `localhost:<port>`.
+- **Routing key**: inject the `baggage: sd-routing-key=<key>` header on every
+  request the test makes. Two common shapes:
+  - **The test constructs requests itself** — add the header when building the
+    request:
+    ```go
+    req.Header.Set("baggage", "sd-routing-key="+os.Getenv("SIGNADOT_ROUTING_KEY"))
+    ```
+  - **The test uses a client library you don't want to touch** — wrap its
+    transport once and let every request inherit the header (Go example below;
+    other languages have equivalent interceptors):
+    ```go
+    type baggageRT struct{ base http.RoundTripper; key string }
+    func (r *baggageRT) RoundTrip(req *http.Request) (*http.Response, error) {
+        req.Header.Set("baggage", "sd-routing-key="+r.key)
+        return r.base.RoundTrip(req)
+    }
+    ```
+- **Driving the suite**: export the routing key and target address as env vars,
+  then run the suite's normal command:
+  ```bash
+  export SIGNADOT_ROUTING_KEY=<key>
+  export TEST_TARGET_ADDR=<svc>.<ns>.svc:<port>
+  go test ./...        # or: pytest, npm test, etc.
+  ```
+- **If a test skips on a missing env var** (common pattern: `if os.Getenv("X")
+  == ""  { t.Skip() }`), set it before `go test` or the test silently passes
+  without running.
+
+#### End-to-end tests
+
+A pre-existing e2e framework invoked through the repo's own command (Cypress,
+Playwright CLI, k6, Signadot Smart Tests, etc.). The goal is to run the
+framework *as the team already runs it*, with the routing key injected at the
+one layer that reaches the cluster.
+
+- **First, find how the team runs it.** Check `package.json` scripts, a
+  `Makefile` target, `cypress.config.*`, `playwright.config.*`, `.github/workflows/`,
+  or the README. Use that exact command — don't invent one.
+- **Point the base URL at the cluster `.svc`** via whatever env var the config
+  already reads (`CYPRESS_BASE_URL`, `PLAYWRIGHT_BASE_URL`, `BASE_URL`, etc.).
+  Grep the config file to confirm the variable name.
+- **Attach the routing key once, at the HTTP layer**, so every request carries
+  it without modifying individual tests:
+  - **Cypress**: `Cypress.on('before:request', ...)` or a support-file
+    `beforeEach` that calls `cy.intercept('**', ...)` to inject the header.
+  - **Playwright (`npx playwright test`)**: `extraHTTPHeaders` in
+    `playwright.config.ts`, or a `page.route('**/*', ...)` hook in a fixture.
+  - **k6 / load tools**: add the header to the default `params.headers` in the
+    setup block.
+  - **Signadot Smart Tests**: `signadot st run --sandbox=<name>` — the CLI
+    already attaches the routing key for that sandbox; no manual header needed.
+- **Run the suite's existing command** with those env vars set. If the suite
+  writes its own report (JUnit XML, Allure, console summary), read that — don't
+  re-invent result parsing.
+- **If the suite is usually run in CI against a dedicated env**, mirror CI's
+  env vars locally; missing ones cause tests to skip or auth to fail.
+
+#### Playwright automation (MCP tools, this session)
+
+Ad-hoc browser automation driven from this Claude Code session via the
+Playwright MCP tools — useful for "click the button, look at the page" checks
+without authoring a test file.
+
+- **Always inject the routing key via `page.route()` before navigating**, and
+  always call `page.unrouteAll()` first — routes from previous
+  `browser_run_code` calls persist:
+  ```js
+  async (page) => {
+    await page.unrouteAll();
+    await page.route('**/*', async route => {
+      await route.continue({
+        headers: { ...route.request().headers(), 'baggage': 'sd-routing-key=<key>' }
+      });
+    });
+    await page.goto('http://<frontend-svc>.<namespace>.svc:<port>/');
+    await page.waitForLoadState('networkidle');
+  }
+  ```
+- **Navigate to the cluster `.svc` URL**, never to `localhost:<port>`. Same
+  cardinal rule as every other validation type.
+- **Drive the golden path**: `browser_snapshot` to inspect state,
+  `browser_click` / `browser_select_option` / `browser_type` to interact, then
+  `browser_snapshot` or `page.evaluate(() => document.body.innerText)` to
+  assert the result rendered.
+- **Check for runtime errors after each interaction**, not just after load —
+  see "Browser / UI validation" below for the blanked-page pattern and the
+  exact signals to check.
+- **This mode is for exploratory / one-shot validation.** If the checks need to
+  be repeatable or run in CI, escalate to "End-to-end tests" and author a real
+  test file instead.
+
 ### Routing key propagation through synchronous HTTP/gRPC
 
 For synchronous calls, baggage propagation is **only automatic when the caller
@@ -357,10 +492,12 @@ work.
 
 ## Iteration loop
 
-**Sandbox only what you changed. Run tests. Let failures tell you what else to fix.**
+**Sandbox only what you changed. Run the validation type you agreed on in Step 0.
+Let failures tell you what else to fix.**
 
 1. Create a sandbox with only the service(s) you changed running locally.
-2. Run the browser golden path (e2e / integration tests).
+2. Run the validation type the user chose in Step 0 — integration tests, e2e
+   tests, or Playwright automation. Use the setup from "Validation types".
 3. If a check fails:
    - Read the failure: wrong field, blank UI element, JS error, bad API response.
    - Determine the cause: service code bug, wrong env var, a downstream consumer
