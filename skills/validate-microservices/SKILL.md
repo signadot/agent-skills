@@ -313,6 +313,21 @@ async (page) => {
 behavior, verify the result renders correctly. Use `browser_snapshot` to inspect
 the accessibility tree and confirm fields are populated.
 
+**Check the page didn't blank after an interaction, not just after load.** An
+unhandled runtime error in a React/SPA component (e.g. `TypeError: Cannot read
+properties of undefined`) empties the root div — `browser_snapshot` returns an
+empty YAML and `document.body.innerText` is empty or tiny. This commonly happens
+when a wire-type change (number→string) slips past a `find(x => x.id === id)`
+comparison and downstream code dereferences `undefined`. Signal to check:
+`browser_console_messages({level:"error"})` after the interaction, plus
+`page.content().length` — a healthy SPA page is thousands of bytes.
+
+**Rebuild and restart both sides after a code edit.** If you changed a shared
+type touching multiple services (backend + frontend), rebuild each binary/bundle
+and restart *every* local process. Restarting only the service whose code you
+viewed last is a common source of stale behavior that looks like the fix didn't
+work.
+
 ## Iteration loop
 
 **Sandbox only what you changed. Run tests. Let failures tell you what else to fix.**
@@ -342,11 +357,23 @@ the accessibility tree and confirm fields are populated.
 - **When a test fails, check sandbox state first.** Use MCP `get_sandbox` or
   `signadot sandbox get` to verify `ready: true` and tunnel `connected: true`
   before concluding the code is wrong.
-- **Clean up:**
-  ```bash
-  signadot sandbox delete <sandbox-name>
-  ! signadot local disconnect   # if user ran connect
+- **Leave the sandbox up when you finish. Do not auto-delete.** The user may want
+  to inspect it, re-test, or keep iterating. At the end of the run, report the
+  sandbox name and routing key and surface the delete command as an *option*, not
+  an action you take:
+
   ```
+  Sandbox `<name>` (routing key `<key>`) is still up on cluster `<cluster>`.
+  Delete when you're done with:
+      signadot sandbox delete <name>
+  ```
+
+  Only delete if the user explicitly asks. If the user ran
+  `signadot local connect` earlier, also mention:
+  `! signadot local disconnect` (they run it — requires sudo).
+- **Stop local processes you started.** The sandbox stays up, but services you
+  launched on the devbox are yours to clean up (`fuser -k <port>/tcp` or kill by
+  PID) so ports are free for the next iteration.
 
 ## Quick reference
 
@@ -367,5 +394,5 @@ the accessibility tree and confirm fields are populated.
 | Send request with routing key (grpc) | `grpcurl -H "baggage: sd-routing-key=<key>" -plaintext <svc>.<ns>.svc:<port> Svc/Method` |
 | Test browser UI with routing key | Playwright `page.setExtraHTTPHeaders({'baggage':'sd-routing-key=<key>'})` then navigate to cluster `.svc` URL |
 | Background a service safely | `setsid /tmp/start.sh >> /tmp/svc.log 2>&1 &` (plain `&` can SIGHUP) |
-| Tear down a sandbox | `signadot sandbox delete <sandbox-name>` |
+| Tear down a sandbox | `signadot sandbox delete <sandbox-name>` — **surface to the user, do not run unless asked** (leave it up by default) |
 | Disconnect | `! signadot local disconnect` (**user runs**) |
