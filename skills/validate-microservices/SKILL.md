@@ -179,12 +179,27 @@ Missing env vars (DB addresses, credentials, feature flags) cause silent failure
 that look like code bugs — always resolve them fully before concluding the service
 is broken.
 
+**Don't rely on documentation alone for service-to-service addresses.** A service
+may call other in-cluster services whose addresses have defaults that only work
+inside the cluster (e.g. `other-svc:8081`). Before starting, grep the source for
+all address config lookups (e.g. `GetXxxAddr`, `*_ADDR`) and set each one to the
+full `.svc` address resolvable from `/etc/hosts`. A missing address will produce
+a 500 error on the first real request, not at startup — so starting successfully
+is not enough to confirm env vars are correct.
+
 ### Step 7 — find and run the service
 
 Before running, locate the correct entrypoint and start command. Read the repo:
 - `Makefile`, `package.json` scripts, `Dockerfile`, `README`, `CLAUDE.md` — these
   reveal how the service is normally started
 - Never guess the start command — always derive it from the repo
+
+**Kill any existing process on the same port** before starting a new instance —
+port conflicts produce an immediate fatal error that looks like a code bug:
+
+```bash
+fuser -k <port>/tcp 2>/dev/null || true
+```
 
 Compile/build before backgrounding so errors surface immediately rather than
 silently dying in the background.
@@ -251,56 +266,53 @@ Signs that the key is missing from async messages:
 - The response looks correct but comes too fast (baseline handled it)
 - A feature you know you changed behaves as the old baseline
 
-### Frontend / UI validation — mandatory for any UI-touching change
+### Browser / UI validation
 
-**API-only checks are not enough.** Even if the backend API returns the correct
-response, the UI can still be broken (wrong field name in TypeScript, missing
-component update, broken render logic). Always validate the full user flow in a
-browser for any change that touches an API contract consumed by the frontend.
+Always validate using the browser golden path — don't stop at API checks. The
+browser exercises the full stack end-to-end and will surface breakage (blank
+fields, wrong values, JS errors) that a curl check misses.
 
-**1. Scope: include the frontend in the sandbox.** If you changed backend code
-that the frontend consumes (JSON field names, API shape, new endpoints), the
-frontend service must be in the sandbox too — running locally with the updated
-code. The cluster's old frontend binary will decode the new API incorrectly.
+**Use the Playwright MCP tools** (search: `ToolSearch("playwright")`) if they are
+available in the session — do not try to run `npx playwright test` or install
+browsers. The MCP tools provide `browser_navigate`, `browser_run_code`,
+`browser_snapshot`, `browser_click`, `browser_select_option`, etc.
 
-**2. Find how the team runs the frontend locally.** Check `CLAUDE.md`, `Makefile`,
-`docker-compose.yml`, or ask the user. **Do not guess the startup command or env
-vars.** Wrong service addresses or missing env vars cause silent failures that
-look like code bugs.
-
-**3. Inject the routing key into browser requests.** Use Playwright's
-`page.setExtraHTTPHeaders()` to inject the routing key on every request, then
-navigate to the cluster's in-cluster frontend `.svc` URL:
+**Inject the routing key on all requests** using `browser_run_code` with
+Playwright's `page.route()` API before navigating. Always call `page.unrouteAll()`
+first — routes from previous `browser_run_code` calls persist across invocations:
 
 ```js
-// Playwright: inject routing key on all requests
-await page.setExtraHTTPHeaders({
-  'baggage': 'sd-routing-key=<routing-key>'
-});
-await page.goto('http://<frontend-svc>.<namespace>.svc:<port>/');
+async (page) => {
+  await page.unrouteAll();
+  await page.route('**/*', async route => {
+    await route.continue({
+      headers: { ...route.request().headers(), 'baggage': 'sd-routing-key=<key>' }
+    });
+  });
+  await page.goto('http://<frontend-svc>.<namespace>.svc:<port>/');
+  await page.waitForLoadState('networkidle');
+  // interact, assert, return results
+}
 ```
 
-**4. Exercise the golden path.** Don't just check the page loads. Actually use
-the feature: fill in forms, click buttons, trigger the changed behavior, verify
-the result renders correctly.
+**Exercise the golden path.** Fill in forms, click buttons, trigger the changed
+behavior, verify the result renders correctly. Use `browser_snapshot` to inspect
+the accessibility tree and confirm fields are populated.
 
 ## Iteration loop
 
-The sandbox is where you discover what's broken — not before. Make your change,
-sandbox the service, run e2e, and let failures tell you what else needs fixing.
+**Sandbox only what you changed. Run tests. Let failures tell you what else to fix.**
 
-**Loop until all checks pass:**
-
-1. Create a sandbox with the changed service(s) running locally.
-2. Hit the e2e path: browser golden path first, then API checks if needed.
+1. Create a sandbox with only the service(s) you changed running locally.
+2. Run the browser golden path (e2e / integration tests).
 3. If a check fails:
-   - Read the failure: wrong field, missing data, blank UI element, error response.
-   - Determine the cause: service code, wrong env var, a consumer that also needs updating, routing not carrying the key.
-   - Fix it. If a consumer service (e.g. frontend) also needs updated code, add it to the sandbox and run it locally too.
-   - Restart the affected local service(s) and re-run — **keep the same sandbox** so the routing key stays stable.
-4. Only declare done when the full golden path passes end-to-end: correct API response **and** correct UI render.
-
-A passing API check with a blank or broken UI is not done.
+   - Read the failure: wrong field, blank UI element, JS error, bad API response.
+   - Determine the cause: service code bug, wrong env var, a downstream consumer
+     that also needs updating, routing key not propagating.
+   - Fix it — update the code, add the broken consumer to the sandbox if needed,
+     restart the affected service(s).
+   - Re-run — **keep the same sandbox** so the routing key stays stable.
+4. Only declare done when the full golden path passes.
 
 ## Operational notes
 
