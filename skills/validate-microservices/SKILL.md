@@ -151,6 +151,13 @@ then call `create_sandbox` directly. Key points:
 - `connection.devboxId` is required whenever `local` workloads are present.
 - The `from` workload must come from `resolve_workload` output — never guess names.
 - The `port` in mappings must come from `resolve_workload_port` — never guess.
+  This is the **workload's container port**, not the Kubernetes Service port.
+  Getting this wrong fails silently: the sandbox still reports `ready: true` with
+  `connected: true` tunnels, `/etc/hosts` contains no virtual endpoint for that
+  mapping, and every baggage-keyed request lands on the baseline pod instead of
+  the local process. If routing appears broken despite a ready sandbox, check
+  `/etc/hosts` for a `<sandbox-name>-<mapping-name>-*.<namespace>.svc` entry —
+  if it is missing, the mapping port is wrong.
 
 ### Step 5 — wait for ready
 
@@ -291,6 +298,14 @@ grpcurl -plaintext \
 
 The routing key comes from the sandbox's `routingKey` field in the MCP
 `create_sandbox` / `get_sandbox` response.
+
+**Use the Service port, not the container port.** Kubernetes Services commonly
+expose a different port (e.g. `:80`) than the container's `EXPOSE` (e.g. `:8080`).
+Hitting the wrong one returns an Envoy 503 "upstream connect error" that looks
+like the pod is unhealthy when in fact the URL is wrong. Resolve the port with
+`resolve_workload_port` or `resolve_endpoints` — do not read it off the
+Dockerfile or a Deployment container spec. A blanket symptom: curl works from
+inside the pod but fails from the devbox with 503 — port, not code.
 
 ### Validation types
 
@@ -533,6 +548,7 @@ Let failures tell you what else to fix.**
 - **When a test fails, check sandbox state first.** Use MCP `get_sandbox` or
   `signadot sandbox get` to verify `ready: true` and tunnel `connected: true`
   before concluding the code is wrong.
+- **Never add `defaultRouteGroup.endpoints` to a sandbox without the user explicitly asking.** It creates a publicly accessible preview URL (`*.preview.signadot.com`) — treat it the same as any other externally visible action that requires confirmation.
 - **Leave the sandbox up when you finish. Do not auto-delete.** The user may want
   to inspect it, re-test, or keep iterating. At the end of the run, report the
   sandbox name and routing key and surface the delete command as an *option*, not
@@ -550,6 +566,15 @@ Let failures tell you what else to fix.**
 - **Stop local processes you started.** The sandbox stays up, but services you
   launched on the devbox are yours to clean up (`fuser -k <port>/tcp` or kill by
   PID) so ports are free for the next iteration.
+- **Go gRPC clients can hang ~30s per channel on SRV DNS.** The default Go gRPC
+  resolver does an `_grpclb._tcp.<target>` SRV lookup and waits the full DNS
+  timeout (~30s) on clusters that don't publish those records. A service that
+  dials N downstream gRPC endpoints at request time can spend N × 30s on a
+  single request — looks like a deadlock. Two mitigations: (1) prefix gRPC
+  targets with `passthrough:///` (e.g. `passthrough:///cartservice.ns.svc:7070`)
+  to skip DNS resolution entirely; (2) dial once at startup and reuse the
+  connection. `passthrough:///` only helps on fresh dials, so it does nothing
+  for connections already opened at boot.
 
 ## Quick reference
 
