@@ -253,7 +253,7 @@ Compile/build before backgrounding so errors surface immediately rather than
 silently dying in the background.
 
 **Backgrounding in a devbox:** plain `&` can receive SIGHUP and silently die
-(exit code 144). Use `setsid` with a wrapper script instead:
+(exit code 144). Use `setsid` with a wrapper script:
 
 ```bash
 cat > /tmp/start_svc.sh << 'EOF'
@@ -264,6 +264,14 @@ EOF
 chmod +x /tmp/start_svc.sh
 setsid /tmp/start_svc.sh >> /tmp/svc.log 2>&1 &
 ```
+
+If `setsid` immediately after a `pkill` doesn't actually start the new
+process (you see no log file, no PID), the parent context is fragile —
+fall back to `nohup bash /tmp/start_svc.sh > /tmp/svc.log 2>&1 &` in a
+fresh Bash invocation. After any restart, **verify the new PID is alive
+and the port is listening** before assuming the service is up; previously
+killed processes can linger as zombies (`<defunct>`) and confuse
+`pgrep` output.
 
 After starting, verify the process is alive and the port is listening. Also curl
 the primary data-fetching endpoint (not just `/healthz`) before opening the
@@ -533,6 +541,32 @@ Let failures tell you what else to fix.**
      restart the affected service(s).
    - Re-run — **keep the same sandbox** so the routing key stays stable.
 4. Only declare done when the full golden path passes.
+
+### A failed validation is not a stopping point — it's the next iteration
+
+When validation fails, **do not stop and write up "validation failed" as if
+the task is done**. The whole point of iterating against the cluster is to
+turn each failure into a concrete next fix. The default behavior is:
+
+1. Read the failure precisely (status code, error message, stack trace, missing
+   UI element). Don't paraphrase — quote it.
+2. Identify the smallest cause that explains it. Be honest about whether the
+   bug is in code you just changed, in a baseline consumer that wasn't
+   rebuilt, in the sandbox shape, or in env/routing setup.
+3. Apply the fix and re-run the same validation against the same sandbox.
+   Same routing key, same target URL, same browser session if applicable.
+4. Repeat until the golden path passes. Only then stop and report.
+
+**Stop and ask the user only when the fix requires a judgment call** they
+haven't made — e.g. the requested change is intentionally breaking and they
+need to decide between fixing forward (extending the sandbox + rebuilding
+consumers), making the change backward-compatible, or accepting the break.
+Don't ask for permission to do mechanical fixes (typos, missing env vars,
+restarting a process). Just do them.
+
+**Do not declare success after a partial fix.** If you fixed the obvious
+break but haven't re-run the full golden path end-to-end, you don't yet know
+whether your fix introduced a new failure downstream. Re-run before reporting.
 
 ## Operational notes
 
