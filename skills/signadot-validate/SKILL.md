@@ -1,5 +1,5 @@
 ---
-name: validate-microservices
+name: signadot-validate
 description: >
   Use this skill when code changes need to be exercised against real microservice
   dependencies running in a Kubernetes cluster — databases, queues, upstream and
