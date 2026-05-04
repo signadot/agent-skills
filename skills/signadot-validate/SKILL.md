@@ -90,6 +90,28 @@ options explicitly:
   (Cypress, Playwright `npx playwright test`, k6, Smart Tests, etc.).
 - **Playwright automation** — ad-hoc browser automation via the Playwright MCP
   tools in this session (click buttons, fill forms, assert UI state).
+- **Signadot plan** — a typed DAG of action invocations (typed HTTP
+  captures via `request-http`, browser drives via `playwright`, load
+  tests via `k6`, boolean assertions via `check`, expression composition
+  via `eval`, and others — the catalog grows).
+  Plans turn validation into structured, replayable artifacts: each step
+  has explicit pass/fail, outputs are typed and inspectable per-step,
+  refs let later steps drill into earlier outputs, and routing is a
+  first-class concern of the platform — actions integrate with
+  `routingContext` directly, so the routing key reaches every outbound
+  call without any header-injection plumbing on top.
+
+  Pick this when:
+  - The team already has a tagged plan that asserts the validation flow
+    you need.
+  - You're about to author a check you'd want to *keep* — codifying a
+    regression you just fixed, capturing an SLO gate, building a smoke
+    test. Tag the new plan and it becomes a CI gate by name.
+  - The validation maps onto a curated action from the catalog (`k6`,
+    `playwright`, etc.).
+
+  Hand off to the `signadot-plan` skill for resolving plans, authoring
+  new ones, passing params, and reading per-step output.
 
 Ask a single question, accept one answer, and move on. If the user names a
 different tool (Locust, Postman collection, Cypress script, etc.), treat it as
@@ -567,6 +589,16 @@ restarting a process). Just do them.
 **Do not declare success after a partial fix.** If you fixed the obvious
 break but haven't re-run the full golden path end-to-end, you don't yet know
 whether your fix introduced a new failure downstream. Re-run before reporting.
+
+**Before declaring done, consider codifying what you just verified.** When
+the bug you just fixed wouldn't have been caught by the existing test
+suite, that's a candidate for a Signadot plan: author one now that
+asserts the fixed behavior, tag it, and the next regression in the same
+shape gets caught by CI before anyone has to iterate on it again. The
+sandbox is still up — running the new plan once against it confirms it
+catches the bug (or passes for the fixed code), and tagging it makes it
+the team's by name. Hand off to the `signadot-plan` skill for the
+authoring details.
 
 ## Operational notes
 

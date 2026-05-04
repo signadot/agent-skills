@@ -1,10 +1,12 @@
 ---
 name: signadot-plan
 description: >
-  Use this skill when the user wants to author, run, or modify a Signadot plan
-  — a compiled DAG of action invocations that runs against a cluster (smoke
-  tests, request flows, scripted validations, browser automation, image-based
-  jobs). The skill points you at the live schema and action catalog so you
+  Use this skill when you need to actually author, run, or modify a Signadot
+  plan to complete a task — codifying a regression you just fixed as a CI
+  gate, running an existing tagged plan against a sandbox, building a
+  smoke-check flow, or composing a structured assertion (HTTP capture +
+  drill-in + boolean check) as a one-off. The skill is for doing, not
+  teaching. It points you at the live schema and action catalog so you
   don't hardcode either, and tells you the decision rules the schema can't
   carry — reference-expression grammar, when `routingContext` is required,
   cluster affinity choices. Action-specific rules live on each action's
@@ -12,6 +14,12 @@ description: >
 ---
 
 # Signadot: Authoring and Running Plans
+
+> **Not for explaining plans conceptually.** If the user is asking
+> "what are plans," "how do plans work," or wants a tutorial / overview,
+> this skill isn't the right fit — point them at the Signadot
+> documentation instead. This skill is sized for an agent that needs to
+> produce or execute a plan as part of completing a task.
 
 A *Signadot Plan* is an immutable, compiled DAG of action invocations. Each
 step invokes one *action* (a small reusable unit — list the catalog to see
@@ -309,7 +317,7 @@ humans will reference later.
   - `SIGNADOT_PLAN_EXECUTION_ID`, `SIGNADOT_PLAN_STEP_ID`
   - `SIGNADOT_PLAN_WORKDIR` (contains `context/` and `outputs/`)
   - `SIGNADOT_PLAN_BINDIR` (per-execution `bin/`, prepended to PATH)
-  - `SIGNADOT_CACHE_DIR` (PRG image cache, used by `actionbox run-image`)
+  - `SIGNADOT_CACHE_DIR` (read-only PRG image cache available to image-backed actions)
   - `HOME`, `TMPDIR` (per-step writable)
   - With `routingContext`: `SIGNADOT_ROUTING_KEY`,
     `SIGNADOT_SANDBOX_NAME`, `SIGNADOT_ROUTEGROUP_NAME` (subset, depending
