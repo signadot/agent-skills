@@ -1,16 +1,19 @@
 ---
 name: signadot-plan
 description: >
-  Use this skill when you need to actually author, run, or modify a Signadot
-  plan to complete a task — codifying a regression you just fixed as a CI
-  gate, running an existing tagged plan against a sandbox, building a
-  smoke-check flow, or composing a structured assertion (HTTP capture +
-  drill-in + boolean check) as a one-off. The skill is for doing, not
-  teaching. It points you at the live schema and action catalog so you
-  don't hardcode either, and tells you the decision rules the schema can't
-  carry — reference-expression grammar, when `routingContext` is required,
-  cluster affinity choices. Action-specific rules live on each action's
-  body; this skill tells you to read it.
+  Use this skill to author a Signadot plan spec, submit it via `signadot plan
+  create`, and run/inspect the resulting plan — including iterating by
+  submitting successive specs. The skill is for doing this work, not for
+  explaining plans conceptually or covering surfaces outside spec authoring
+  and execution. Concrete tasks it fits: codifying a regression you just
+  fixed as a CI gate, running an existing tagged plan against a sandbox,
+  building a smoke-check flow, or composing a structured assertion (HTTP
+  capture + drill-in + boolean check) as a one-off. It points you at the
+  live schema and action catalog so you don't hardcode either, and tells
+  you the decision rules the schema can't carry — reference-expression
+  grammar, when `routingContext` is required, cluster affinity choices.
+  Action-specific rules live on each action's body; this skill tells you
+  to read it.
 ---
 
 # Signadot: Authoring and Running Plans
