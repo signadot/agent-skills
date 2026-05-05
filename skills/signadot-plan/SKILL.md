@@ -41,7 +41,7 @@ Before drafting any plan, pull the two things that change per environment.
 ### 1. Plan schema (org-agnostic, static)
 
 ```bash
-signadot plan schema
+signadot plan schema | jq
 ```
 
 Returns the JSON Schema for `PlanSpec` with field-level descriptions. Treat
@@ -51,30 +51,35 @@ what the schema says — the schema wins.
 
 ### 2. Action catalog (org-scoped, dynamic)
 
+Scan the org's actions by name + description; pick from those with
+`enabled: true`:
+
 ```bash
-signadot plan action list -o yaml
+signadot plan action list -o json | jq '.[] | {name, description: .status.description, enabled: .status.enabled}'
 ```
 
-Returns the actions visible to the current org. Each entry carries the
-action's `id` (use as `action.actionID` in the spec — never the name),
-its `spec.body` (full markdown), and parsed metadata under `status`
-(description, declared inputs/outputs, schema policy, etc.) — read the
-YAML, the field names are self-explaining.
+Entries with `enabled: false` are gated for this org — `plan create`
+will reject any spec that references them. Use them as the answer to
+"is this capability available *at all*, even if not right now?" — they
+tell you which gated action to name when escalating to the admin.
 
-Two fields the skill itself depends on:
+Once you've picked one, fetch its full body to learn the per-action
+rules (declared inputs/outputs, schema policy, anti-patterns):
 
-- **`status.enabled`** — whether the action is usable in this org *right
-  now*. Disabled actions appear in the catalog but `plan create` will
-  reject any spec that references them. Filter on this when picking.
-- **`spec.body`** — the action's full markdown body. **Read this when you
-  pick an action.** It contains the action-specific rules: what each
-  input/output means, when to use the action and when not to, how the
-  script reads its inputs, anti-patterns to avoid. Usage rules that
-  apply to one action only live here, not in this skill.
+```bash
+signadot plan action get <name> -o json | jq -r .spec.body
+```
+
+The body is the action author's contract with you — read it before
+wiring the action into a step. Each step's `action.actionID` in the
+spec uses the action's `id`, **not** its name; grab the ID from
+`signadot plan action get <name> -o json | jq -r .id` (or from the
+catalog entry directly).
 
 If the user asks for a capability that no enabled action provides, **say
-so explicitly** and offer two options: pick the closest alternative, or
-ask the org admin to enable a gated one.
+so explicitly** and offer two options: pick the closest enabled
+alternative, or — if a gated entry from the catalog actually fits —
+name it explicitly and ask the org admin to enable it.
 
 ## Mental model
 
@@ -97,16 +102,21 @@ ask the org admin to enable a gated one.
   comes from the caller at execution time. `steps.X.outputs.Y` comes from
   an upstream step. The plan's own outputs (`spec.output`) wire one or
   the other to the plan's external interface.
-- **Schema controls how a value reaches an action's working directory.**
-  A param or extra_input *with* a schema lands as
-  `./context/<name>.json` (raw JSON bytes preserved). *Without* a schema
-  it lands as `./context/<name>` (raw text — JSON string values get
-  unquoted, but objects/arrays become opaque strings the consumer sees
-  as text). The same rule governs drill-in refs on the output side: a
-  drill source must declare a schema because the runtime needs to walk
-  a parsed value, not a string. When in doubt, declare a schema —
-  symptoms of getting this wrong include opaque expression-language
-  errors like *"type string has no field X"* downstream.
+- **Schema controls how a value enters and leaves an action's working
+  directory.** *On the input side* — a param or extra_input *with* a
+  schema lands as `./context/<name>.json` (raw JSON bytes preserved);
+  *without* a schema it lands as `./context/<name>` (raw text — JSON
+  string values get unquoted, but objects/arrays become opaque strings
+  the consumer sees as text). *On the output side* — symmetric: an
+  action script writes schema'd outputs to `./outputs/<name>.json` and
+  schemaless ones to `./outputs/<name>`. This matters when extending an
+  action via `extraOutputs` — pick the file path the script writes to
+  based on whether the extra_output declared a schema. The same rule
+  governs drill-in refs: a drill source must declare a schema because
+  the runtime needs to walk a parsed value, not a string. When in
+  doubt, declare a schema — symptoms of getting this wrong include
+  opaque expression-language errors like *"type string has no field X"*
+  downstream.
 
 ## Authoring the plan spec
 
@@ -133,7 +143,7 @@ a step needs under `action`.
 Submit with:
 
 ```bash
-signadot plan create -f /tmp/plan.yaml -o yaml
+signadot plan create -f /tmp/plan.yaml -o json | jq
 ```
 
 Validation runs at create time and fails on the first issue. Read the
@@ -191,6 +201,11 @@ steps, shell scripts that need `$SIGNADOT_ROUTING_KEY` or
 Forgetting `routingContext` on a request step that hits a sandboxed
 service is a silent footgun: the request goes to the cluster baseline,
 the sandbox sees no traffic, and the test passes against the wrong code.
+
+Conversely, **omit `routingContext` entirely when the plan exercises
+baseline cluster traffic with no sandbox or route group involved.** The
+decision is symmetric: set it when you target an isolated routing
+context; leave it unset when you don't.
 
 ### Cluster affinity
 
@@ -253,7 +268,7 @@ sense for that action. Read it.
 - **Disabled action referenced in the spec.** `plan create` rejects any
   step whose action is currently disabled in this org. Filter to
   `status.enabled == true` when picking IDs:
-  `signadot plan action list -o yaml | yq '.[] | select(.status.enabled == true) | .name'`.
+  `signadot plan action list -o json | jq '.[] | select(.status.enabled == true) | .name'`.
 
 ## Running and iterating
 
@@ -329,20 +344,35 @@ humans will reference later.
   compiled plan body. For caller-provided secrets, declare a plan param
   and use `--param-secret name=secret-ref` at execution time so the
   value resolves through the secrets store.
+- **`spec.prompt` is for compile-flow plans only.** The field shows up
+  populated on plans authored via `plan compile` (where it's the
+  natural-language source). When authoring a spec directly, leave it
+  absent — the create path doesn't read it.
+- **Runner-level failures vs script failures.** If a step fails before
+  any script logic runs (image pull errors, runc errors, namespace
+  permission denials, missing runner-side dependencies), the plan
+  itself is correct — the failure is at the runtime layer, not in
+  what you authored. Don't re-author the plan; surface the issue to
+  the org admin or substitute an action whose runtime is satisfied in
+  this runner. If the error message points at a script error code,
+  stderr line, or output the script wrote, that's the script-failure
+  case — read the step's `error` and `stderr` and iterate normally.
 
 ## Quick reference
 
+Reads use `-o json | jq`; writes (`plan create`) use a YAML file.
+
 | Want to… | How |
 |---|---|
-| List available actions | `signadot plan action list -o yaml` |
-| Filter to enabled actions | `signadot plan action list -o yaml \| yq '.[] \| select(.status.enabled == true) \| .name'` |
-| Read one action's body | `signadot plan action get <name> -o yaml` |
-| Fetch the plan schema | `signadot plan schema` |
-| Create a plan from a spec | `signadot plan create -f plan.yaml -o yaml` |
+| Scan actions (name + description + enabled) | `signadot plan action list -o json \| jq '.[] \| {name, description: .status.description, enabled: .status.enabled}'` |
+| Read one action's body | `signadot plan action get <name> -o json \| jq -r .spec.body` |
+| Get an action's ID for `actionID` | `signadot plan action get <name> -o json \| jq -r .id` |
+| Fetch the plan schema | `signadot plan schema \| jq` |
+| Create a plan from a spec | `signadot plan create -f plan.yaml -o json \| jq` |
 | Run a plan | `signadot plan run <plan-id> --param k=v` |
 | Run via tag | `signadot plan run --tag <name> --param k=v` |
 | Stream events as it runs | add `--attach` to `plan run` |
 | Read a step's logs | `signadot plan x logs <exec-id> <step-id>` |
 | Read a plan output | `signadot plan x get-output <exec-id> <name>` |
 | Tag a plan | `signadot plan tag put <name> --plan <plan-id>` |
-| Get plan details | `signadot plan get <plan-id>` |
+| Get plan details | `signadot plan get <plan-id> -o json \| jq` |
