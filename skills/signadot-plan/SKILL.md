@@ -49,6 +49,18 @@ this as the source of truth for field names, types, what's required, and
 what each field means. Re-fetch if anything in this skill conflicts with
 what the schema says — the schema wins.
 
+Before drafting, inspect the shape of the fields you're about to write
+rather than guessing from prose. Common targets:
+
+```bash
+# params, output, and the per-step shape — the three you'll author
+# directly:
+signadot plan schema | jq '.properties.params, .properties.output, .properties.steps.items'
+
+# routingContext and cluster — nullable but structurally tricky:
+signadot plan schema | jq '.properties.steps.items.properties.routingContext, .properties.cluster'
+```
+
 ### 2. Action catalog (org-scoped, dynamic)
 
 Scan the org's actions by name + description; pick from those with
@@ -248,6 +260,12 @@ sense for that action. Read it.
 
 - **Refs and values for the same arg name.** Pick one. If both appear,
   validation rejects the step.
+- **Arg name not declared on the action.** Every key under `args.refs`
+  or `args.values` must match either a declared param of the action or
+  an `extraInputs` entry on the step. Wiring a ref to an undeclared
+  name is a common first-draft mistake when composing values through
+  `eval` or similar — declare the missing name in `extraInputs` first,
+  then reference it.
 - **Ref source not in scope.** A ref to `steps.foo.outputs.bar` requires
   step `foo` to declare an output `bar` (or for the step to declare
   `bar` as an `extraOutput`). The validator catches this; phrase your
