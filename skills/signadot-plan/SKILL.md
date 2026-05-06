@@ -268,12 +268,11 @@ address-bar navigation, redirect URLs that strip headers). Headers
 are the primary mechanism.
 
 **The value comes from `$SIGNADOT_ROUTING_KEY`** (set by
-`routingContext` on the step). For tool-specific syntax —
-`extraHTTPHeaders` for playwright, `params.headers` for k6, the
-`headers` input for request-http, etc. — see the action body. Some
-actions (e.g. `request-http`) auto-inject the routing-key headers
-when `SIGNADOT_ROUTING_KEY` is set; their bodies say so, and the
-step doesn't need to set them manually.
+`routingContext` on the step). The action body says how the value is
+expected to reach the wire — some actions auto-inject the routing-key
+headers when `SIGNADOT_ROUTING_KEY` is set; others rely on the
+step's code to inject them using the action's per-tool syntax. Read
+the action body before authoring the step.
 
 ### Cluster affinity
 
