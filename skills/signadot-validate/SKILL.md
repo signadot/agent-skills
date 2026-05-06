@@ -110,8 +110,10 @@ options explicitly:
   - The validation maps onto a curated action from the catalog (`k6`,
     `playwright`, etc.).
 
-  Hand off to the `signadot-plan` skill for resolving plans, authoring
-  new ones, passing params, and reading per-step output.
+  See **"Signadot plan"** under **"Validation types"** below for the
+  picker, run command, and result-reading flow. To author a *new* plan
+  instead of running an existing tagged one, hand off to the
+  `signadot-plan` skill.
 
 Ask a single question, accept one answer, and move on. If the user names a
 different tool (Locust, Postman collection, Cypress script, etc.), treat it as
@@ -444,6 +446,65 @@ without authoring a test file.
   be repeatable or run in CI, escalate to "End-to-end tests" and author a real
   test file instead.
 
+#### Signadot plan
+
+A pre-existing tagged plan that asserts the validation flow you need.
+The plan is a typed DAG of action invocations (HTTP captures, browser
+drives, expression checks, etc.) authored to verify a specific behavior
+— pick one whose `selectionHint` matches what you're validating, run it
+against your sandbox, read the per-step result.
+
+- **Pick a candidate plan.** Scan the tag catalog by selection hint:
+  ```bash
+  signadot plan tag list -o json | jq '.[] | {name, selectionHint: .plan.spec.selectionHint}'
+  ```
+  Each `selectionHint` describes what the plan does and when it's
+  useful. Tags whose plan has no hint show `null` — usable but less
+  self-evident; ask the user or read the plan body
+  (`signadot plan get <plan-id> -o json | jq`) to figure out its
+  purpose.
+
+- **Run against your sandbox.** Plans typically take a `sandbox` (or
+  `routegroup`) param wired into each step's `routingContext`. Inspect
+  the plan's params if you're not sure what it accepts:
+  ```bash
+  signadot plan tag get <tag> -o json | jq '.plan.spec.params'
+  ```
+  Then run, streaming events as it executes:
+  ```bash
+  signadot plan run --tag <tag> --param sandbox=<my-sb> --attach
+  ```
+  Exit codes: `0` completed, `1` failed, `2` cancelled. `--attach`
+  emits structured events (logs, outputs, result) to stdout while the
+  execution runs. For sensitive params, use
+  `--param-secret <name>=<secret-name>` so the value resolves through
+  the secrets store.
+
+- **Routing key plumbing is handled by the plan**, not by you. Plan
+  steps that carry `routingContext` plumb the routing key into every
+  outbound call automatically. There's no `baggage` header to inject
+  at the test-framework layer — that's the distinguishing trait of
+  the Signadot-plan validation type vs Integration / E2E / Playwright,
+  where the routing key has to be wired manually.
+
+- **Read the per-step result.** After `plan run` returns:
+  ```bash
+  signadot plan x logs <exec-id>                  # all step logs
+  signadot plan x logs <exec-id> <step-id>        # one step
+  signadot plan x get-output <exec-id> <name>     # plan-level output
+  ```
+  Failed steps carry an `error` and `stderr`. If the plan is correct
+  and the failure is in your code, fix and re-run with the same
+  `--tag`. If the plan itself looks wrong (rare for tagged plans the
+  team relies on), surface to the plan author rather than working
+  around it.
+
+- **No matching plan?** If no tagged plan fits and authoring one would
+  be a worthwhile investment (regression coverage, smoke check, SLO
+  gate), see the iteration-loop "Before declaring done, consider
+  codifying" beat below — and hand off to the `signadot-plan` skill
+  for the authoring runbook.
+
 ### Routing key propagation through synchronous HTTP/gRPC
 
 For synchronous calls, baggage propagation is **only automatic when the caller
@@ -593,11 +654,12 @@ whether your fix introduced a new failure downstream. Re-run before reporting.
 **Before declaring done, consider codifying what you just verified.** When
 the bug you just fixed wouldn't have been caught by the existing test
 suite, that's a candidate for a Signadot plan: author one now that
-asserts the fixed behavior, tag it, and the next regression in the same
-shape gets caught by CI before anyone has to iterate on it again. The
-sandbox is still up — running the new plan once against it confirms it
-catches the bug (or passes for the fixed code), and tagging it makes it
-the team's by name. Hand off to the `signadot-plan` skill for the
+asserts the fixed behavior, tag it (with a `selectionHint` describing
+what it verifies and when it should fire), and the next regression in the same shape gets
+caught by CI before anyone has to iterate on it again. The sandbox is
+still up — running the new plan once against it confirms it catches
+the bug (or passes for the fixed code), and tagging it makes it the
+team's by name. Hand off to the `signadot-plan` skill for the
 authoring details.
 
 ## Operational notes
@@ -660,6 +722,11 @@ authoring details.
 | Send request with routing key (curl) | `curl -H "baggage: sd-routing-key=<key>" http://<svc>.<ns>.svc:<port>/path` |
 | Send request with routing key (grpc) | `grpcurl -H "baggage: sd-routing-key=<key>" -plaintext <svc>.<ns>.svc:<port> Svc/Method` |
 | Test browser UI with routing key | Playwright `page.setExtraHTTPHeaders({'baggage':'sd-routing-key=<key>'})` then navigate to cluster `.svc` URL |
+| Pick a tagged plan | `signadot plan tag list -o json \| jq '.[] \| {name, selectionHint: .plan.spec.selectionHint}'` |
+| Inspect a tagged plan's params | `signadot plan tag get <tag> -o json \| jq '.plan.spec.params'` |
+| Run a tagged plan with attach | `signadot plan run --tag <name> --param sandbox=<my-sb> --attach` |
+| Read a plan step's logs | `signadot plan x logs <exec-id> <step-id>` |
+| Read a plan-level output | `signadot plan x get-output <exec-id> <name>` |
 | Background a service safely | `setsid /tmp/start.sh >> /tmp/svc.log 2>&1 &` (plain `&` can SIGHUP) |
 | Tear down a sandbox | `signadot sandbox delete <sandbox-name>` — **surface to the user, do not run unless asked** (leave it up by default) |
 | Disconnect | `! signadot local disconnect` (**user runs**) |

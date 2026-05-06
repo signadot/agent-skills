@@ -1,19 +1,24 @@
 ---
 name: signadot-plan
 description: >
-  Use this skill to author a Signadot plan spec, submit it via `signadot plan
-  create`, and run/inspect the resulting plan — including iterating by
-  submitting successive specs. The skill is for doing this work, not for
-  explaining plans conceptually or covering surfaces outside spec authoring
-  and execution. Concrete tasks it fits: codifying a regression you just
-  fixed as a CI gate, running an existing tagged plan against a sandbox,
-  building a smoke-check flow, or composing a structured assertion (HTTP
-  capture + drill-in + boolean check) as a one-off. It points you at the
-  live schema and action catalog so you don't hardcode either, and tells
-  you the decision rules the schema can't carry — reference-expression
-  grammar, when `routingContext` is required, cluster affinity choices.
-  Action-specific rules live on each action's body; this skill tells you
-  to read it.
+  Use this skill to author a Signadot plan spec by hand, submit it via
+  `signadot plan create`, run the just-authored plan by ID to verify the
+  per-step output matches what you intended, and iterate by re-authoring
+  as the result reveals what to fix. The skill covers the full author
+  loop end-to-end — discovery (schema, action catalog), composition
+  (params, steps, refs, routingContext, output wiring), running and
+  inspecting your plan via `signadot plan run` and `signadot plan x
+  logs` / `get-output`, and deciding when to tag. It is not for
+  explaining plans conceptually or covering surfaces outside spec
+  authoring and execution. It does *not* cover running existing tagged
+  plans against a sandbox to validate code changes — see the
+  `signadot-validate` skill. Concrete authoring tasks it fits: codifying
+  a regression you just fixed as a CI gate, building a smoke-check
+  flow, or composing a structured assertion (HTTP capture + drill-in +
+  boolean check) as a one-off. It points you at the live schema and
+  action catalog (discoverability over hardcoding), tells you the
+  decision rules the schema can't carry (refs, `routingContext`,
+  cluster affinity), and defers per-action rules to the action's body.
 ---
 
 # Signadot: Authoring and Running Plans
@@ -338,6 +343,17 @@ humans will reference later.
   what you're about to overwrite. `plan tag put` silently re-points;
   if the existing target looks production-ish, confirm with the user
   before clobbering.
+- **If you're authoring a plan that's likely to be tagged, set
+  `spec.selectionHint` when you create the plan.** A one-line
+  description of *what* the plan does and *when* it's useful — e.g.
+  *"Verifies the checkout flow returns 200 on a valid cart; pick
+  when you've changed checkout-svc or payment-svc."* The hint
+  surfaces on tag-list responses, so an agent scanning the catalog
+  of tagged plans can pick by purpose without reading every plan
+  body. The hint is part of the plan's spec, not the tag — it has
+  to be set when the plan is authored. Tags whose plan has no hint
+  force consumers to inspect the plan body or ask the user to
+  figure out the tag's purpose.
 
 ## Operational notes
 
