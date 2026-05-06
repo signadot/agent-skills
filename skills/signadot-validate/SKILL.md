@@ -461,7 +461,7 @@ against your sandbox, read the per-step result.
   Each `selectionHint` describes what the plan does and when it's
   useful. Tags whose plan has no hint show `null` — usable but less
   self-evident; ask the user or read the plan body
-  (`signadot plan get <plan-id> -o json | jq`) to figure out its
+  (`signadot plan get <plan-id> -o json`) to figure out its
   purpose.
 
 - **Run against your sandbox.** Plans typically take a `sandbox` (or
@@ -470,15 +470,18 @@ against your sandbox, read the per-step result.
   ```bash
   signadot plan tag get <tag> -o json | jq '.plan.spec.params'
   ```
-  Then run, streaming events as it executes:
+  Then run and read the result as a single JSON document:
   ```bash
-  signadot plan run --tag <tag> --param sandbox=<my-sb> --attach
+  signadot plan run --tag <tag> --param sandbox=<my-sb> -o json
   ```
-  Exit codes: `0` completed, `1` failed, `2` cancelled. `--attach`
-  emits structured events (logs, outputs, result) to stdout while the
-  execution runs. For sensitive params, use
-  `--param-secret <name>=<secret-name>` so the value resolves through
-  the secrets store.
+  The command blocks until completion and emits one JSON object
+  containing the plan's spec, its status (overall phase, per-step
+  phases and errors, plan-level outputs), and identifying metadata.
+  For anything beyond phase/error inspection use the standalone
+  `plan x` subcommands below to fetch logs and outputs reliably.
+  Exit codes: `0` completed, `1` failed, `2` cancelled. For sensitive
+  params, use `--param-secret <name>=<secret-name>` so the value
+  resolves through the secrets store.
 
 - **Routing key plumbing is handled by the plan**, not by you. Plan
   steps that carry `routingContext` plumb the routing key into every
@@ -487,17 +490,17 @@ against your sandbox, read the per-step result.
   the Signadot-plan validation type vs Integration / E2E / Playwright,
   where the routing key has to be wired manually.
 
-- **Read the per-step result.** After `plan run` returns:
+- **Read the per-step result.** The run JSON tells you which step
+  failed and its error message. To read full logs or fetch output
+  values, use the standalone commands keyed by exec ID:
   ```bash
-  signadot plan x logs <exec-id>                  # all step logs
   signadot plan x logs <exec-id> <step-id>        # one step
   signadot plan x get-output <exec-id> <name>     # plan-level output
   ```
-  Failed steps carry an `error` and `stderr`. If the plan is correct
-  and the failure is in your code, fix and re-run with the same
-  `--tag`. If the plan itself looks wrong (rare for tagged plans the
-  team relies on), surface to the plan author rather than working
-  around it.
+  If the plan is correct and the failure is in your code, fix and
+  re-run with the same `--tag`. If the plan itself looks wrong (rare
+  for tagged plans the team relies on), surface to the plan author
+  rather than working around it.
 
 - **No matching plan?** If no tagged plan fits and authoring one would
   be a worthwhile investment (regression coverage, smoke check, SLO
@@ -724,7 +727,7 @@ authoring details.
 | Test browser UI with routing key | Playwright `page.setExtraHTTPHeaders({'baggage':'sd-routing-key=<key>'})` then navigate to cluster `.svc` URL |
 | Pick a tagged plan | `signadot plan tag list -o json \| jq '.[] \| {name, selectionHint: .plan.spec.selectionHint}'` |
 | Inspect a tagged plan's params | `signadot plan tag get <tag> -o json \| jq '.plan.spec.params'` |
-| Run a tagged plan with attach | `signadot plan run --tag <name> --param sandbox=<my-sb> --attach` |
+| Run a tagged plan and read the result | `signadot plan run --tag <name> --param sandbox=<my-sb> -o json` |
 | Read a plan step's logs | `signadot plan x logs <exec-id> <step-id>` |
 | Read a plan-level output | `signadot plan x get-output <exec-id> <name>` |
 | Background a service safely | `setsid /tmp/start.sh >> /tmp/svc.log 2>&1 &` (plain `&` can SIGHUP) |

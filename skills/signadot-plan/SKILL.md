@@ -46,7 +46,7 @@ Before drafting any plan, pull the two things that change per environment.
 ### 1. Plan schema (org-agnostic, static)
 
 ```bash
-signadot plan schema | jq
+signadot plan schema
 ```
 
 Returns the JSON Schema for `PlanSpec` with field-level descriptions. Treat
@@ -160,7 +160,7 @@ a step needs under `action`.
 Submit with:
 
 ```bash
-signadot plan create -f /tmp/plan.yaml -o json | jq
+signadot plan create -f /tmp/plan.yaml -o json
 ```
 
 Validation runs at create time and fails on the first issue. Read the
@@ -295,36 +295,45 @@ sense for that action. Read it.
 
 ## Running and iterating
 
-After `plan create` returns a plan ID, run it with `signadot plan run`:
+After `plan create` returns a plan ID, run it and read the result as a
+single JSON document:
 
 ```bash
-signadot plan run <plan-id> --param sandbox=my-sb --param expected_status=200
+signadot plan run <plan-id> --param sandbox=my-sb --param expected_status=200 -o json
 # or, if a tag points at the plan:
-signadot plan run --tag <tag-name> --param ...
+signadot plan run --tag <tag-name> --param ... -o json
 ```
 
-Useful flags:
+`-o json` blocks until the execution completes and emits one JSON
+object containing the plan's spec (as authored), its status (overall
+phase, per-step phases and errors, plan-level outputs), and the
+execution's identifying metadata. Logs and output values may be
+inlined when small but are not guaranteed to be — for anything beyond
+phase / error / "did this step pass" inspection, fetch them
+explicitly with the standalone subcommands below. Probe the actual
+document shape (with `jq` filters as needed) rather than hardcoding
+field paths.
 
-- `--attach` streams structured events (logs, outputs, result) to stdout
-  while the execution runs.
-- `--param-secret <name>=<secret-name>` for secret values you don't want
-  in the command line.
+Useful flag: `--param-secret <name>=<secret-name>` for secret values
+you don't want in the command line.
 
 Exit codes: `0` completed, `1` failed, `2` cancelled.
 
-To inspect a finished execution:
+To pull logs or outputs reliably (regardless of inline truncation),
+or to fetch raw artifact bytes, use the standalone commands keyed by
+exec ID:
 
 ```bash
-signadot plan x logs <exec-id>                     # aggregated stdout
-signadot plan x logs <exec-id> <step-id>           # one step
+signadot plan x logs <exec-id> <step-id>           # one step's logs
 signadot plan x get-output <exec-id> <name>        # plan-level output
 signadot plan x get-output <exec-id> --all --dir ./outputs/
 ```
 
-If a step failed, read its `error` and `stderr` first — the runner
-captures both. If the execution needs a re-run with different params,
-just run again — plan executions are at-least-once, action code should
-be written idempotently.
+If a step failed, read its error from the run JSON, then `plan x
+logs <exec-id> <step-id>` to read its full output. If the execution
+needs a re-run with different params, just run again — plan
+executions are at-least-once, action code should be written
+idempotently.
 
 ### Should I tag this plan?
 
@@ -394,19 +403,19 @@ humans will reference later.
 
 ## Quick reference
 
-Reads use `-o json | jq`; writes (`plan create`) use a YAML file.
+Reads use `-o json` (already pretty-printed; pipe through `jq` only
+when filtering); writes (`plan create`) use a YAML file.
 
 | Want to… | How |
 |---|---|
 | Scan actions (name + description + enabled) | `signadot plan action list -o json \| jq '.[] \| {name, description: .status.description, enabled: .status.enabled}'` |
 | Read one action's body | `signadot plan action get <name> -o json \| jq -r .spec.body` |
 | Get an action's ID for `actionID` | `signadot plan action get <name> -o json \| jq -r .id` |
-| Fetch the plan schema | `signadot plan schema \| jq` |
-| Create a plan from a spec | `signadot plan create -f plan.yaml -o json \| jq` |
-| Run a plan | `signadot plan run <plan-id> --param k=v` |
-| Run via tag | `signadot plan run --tag <name> --param k=v` |
-| Stream events as it runs | add `--attach` to `plan run` |
-| Read a step's logs | `signadot plan x logs <exec-id> <step-id>` |
-| Read a plan output | `signadot plan x get-output <exec-id> <name>` |
+| Fetch the plan schema | `signadot plan schema` |
+| Create a plan from a spec | `signadot plan create -f plan.yaml -o json` |
+| Run a plan and read the result | `signadot plan run <plan-id> --param k=v -o json` |
+| Run via tag and read the result | `signadot plan run --tag <name> --param k=v -o json` |
+| Re-inspect a finished step's logs | `signadot plan x logs <exec-id> <step-id>` |
+| Fetch a plan-level output (or its artifact bytes) | `signadot plan x get-output <exec-id> <name>` |
 | Tag a plan | `signadot plan tag put <name> --plan <plan-id>` |
-| Get plan details | `signadot plan get <plan-id> -o json \| jq` |
+| Get plan details | `signadot plan get <plan-id> -o json` |
