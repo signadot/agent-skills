@@ -226,6 +226,14 @@ context; leave it unset when you don't.
 
 ### Cluster affinity
 
+`spec.cluster` is independent of `routingContext` — cluster decides
+*where the runner runs*, `routingContext` decides *how a step directs
+traffic*. When the plan is sandbox- or route-group-scoped you typically
+set both, often referencing the same param (e.g.
+`cluster.fromSandbox: sandbox` plus `routingContext.ref.sandboxRef:
+params.sandbox` on every traffic-issuing step). They answer different
+questions; setting one does not satisfy the other.
+
 `spec.cluster` declares how the plan resolves its target cluster. At most
 one field set:
 
@@ -349,7 +357,7 @@ humans will reference later.
   iterations. The plan ID returned by `plan create` is sufficient, and
   stale tags clutter the org's namespace.
 - **When re-tagging,** run `signadot plan tag get <name>` first to see
-  what you're about to overwrite. `plan tag put` silently re-points;
+  what you're about to overwrite. `plan tag apply` silently re-points;
   if the existing target looks production-ish, confirm with the user
   before clobbering.
 - **If you're authoring a plan that's likely to be tagged, set
@@ -370,7 +378,7 @@ humans will reference later.
   existing plans — the action contract is snapshotted at create time.
   Author a fresh spec and `plan create` again to pick up new revisions.
 - **Tags vs IDs.** A plan tag is a thin pointer (`name → planID`).
-  `signadot plan tag put <name> --plan <id>` creates or re-points one;
+  `signadot plan tag apply <name> --plan <id>` creates or re-points one;
   consumers that hardcode the tag name then pick up new versions
   transparently. *When* to use one: see the "Should I tag this plan?"
   subsection above.
@@ -417,5 +425,5 @@ when filtering); writes (`plan create`) use a YAML file.
 | Run via tag and read the result | `signadot plan run --tag <name> --param k=v -o json` |
 | Re-inspect a finished step's logs | `signadot plan x logs <exec-id> <step-id>` |
 | Fetch a plan-level output (or its artifact bytes) | `signadot plan x get-output <exec-id> <name>` |
-| Tag a plan | `signadot plan tag put <name> --plan <plan-id>` |
+| Tag a plan | `signadot plan tag apply <name> --plan <plan-id>` |
 | Get plan details | `signadot plan get <plan-id> -o json` |
