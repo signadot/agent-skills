@@ -224,6 +224,57 @@ baseline cluster traffic with no sandbox or route group involved.** The
 decision is symmetric: set it when you target an isolated routing
 context; leave it unset when you don't.
 
+### Injecting the routing key on outbound requests
+
+`routingContext` only sets `SIGNADOT_ROUTING_KEY` in the step's env —
+the value still has to land on each outbound HTTP request as a header
+(or query param) the cluster recognizes, or the request silently
+routes to baseline. Both halves are required.
+
+**Identify the target cluster first.** The conveyance methods and
+their names are cluster-scoped — the discovery command below is
+useless until you know which cluster the plan will run against. If
+the user hasn't told you, ask. Don't proceed against a default or a
+guess; cluster mismatches surface only as silent routing-to-baseline
+at runtime.
+
+**Discovery.** Each cluster declares which conveyance methods it
+accepts under `clusterConfig.routing`:
+
+```bash
+signadot cluster list -o json | \
+  jq '.[] | {name, routing: .clusterConfig.routing}'
+```
+
+**Headers always accepted** (key name `sd-routing-key`):
+
+```
+baggage:    sd-routing-key=<key>
+tracestate: sd-routing-key=<key>
+```
+
+**Custom headers.** If `customHeaders` lists names, inject every one
+with the routing key as the value (e.g. `customHeaders: ["x-org-rk"]`
+→ `x-org-rk: <key>`). Inject *all* of them rather than picking one —
+the cluster matches on any, but downstream context propagation
+depends on which header your app's instrumentation library actually
+forwards (which is app-specific). Hedging across all of them mirrors
+the platform's own preview-URL injection behavior.
+
+**Query-param fallback.** If `queryParamRouting.enabled: true`, the
+cluster also accepts `?<paramName>=<key>` in the URL. Use this only
+when the test surface genuinely can't set headers (browser
+address-bar navigation, redirect URLs that strip headers). Headers
+are the primary mechanism.
+
+**The value comes from `$SIGNADOT_ROUTING_KEY`** (set by
+`routingContext` on the step). For tool-specific syntax —
+`extraHTTPHeaders` for playwright, `params.headers` for k6, the
+`headers` input for request-http, etc. — see the action body. Some
+actions (e.g. `request-http`) auto-inject the routing-key headers
+when `SIGNADOT_ROUTING_KEY` is set; their bodies say so, and the
+step doesn't need to set them manually.
+
 ### Cluster affinity
 
 `spec.cluster` is independent of `routingContext` — cluster decides
@@ -334,8 +385,15 @@ exec ID:
 ```bash
 signadot plan x logs <exec-id> <step-id>           # one step's logs
 signadot plan x get-output <exec-id> <name>        # plan-level output
+signadot plan x get-output <exec-id> <step>/<name> # step-level output
 signadot plan x get-output <exec-id> --all --dir ./outputs/
 ```
+
+Plan-level outputs use the bare `<name>` form; step-level outputs
+require the `<step>/<name>` form. The CLI returns a generic *"output
+not found"* 404 when a name is queried as plan-level but only exists
+at step-level — if you hit that, retry with the `<step>/<name>`
+form.
 
 If a step failed, read its error from the run JSON, then `plan x
 logs <exec-id> <step-id>` to read its full output. If the execution
@@ -425,5 +483,6 @@ when filtering); writes (`plan create`) use a YAML file.
 | Run via tag and read the result | `signadot plan run --tag <name> --param k=v -o json` |
 | Re-inspect a finished step's logs | `signadot plan x logs <exec-id> <step-id>` |
 | Fetch a plan-level output (or its artifact bytes) | `signadot plan x get-output <exec-id> <name>` |
+| Fetch a step-level output | `signadot plan x get-output <exec-id> <step>/<name>` |
 | Tag a plan | `signadot plan tag apply <name> --plan <plan-id>` |
 | Get plan details | `signadot plan get <plan-id> -o json` |

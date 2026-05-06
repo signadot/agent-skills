@@ -118,8 +118,9 @@ options explicitly:
 Ask a single question, accept one answer, and move on. If the user names a
 different tool (Locust, Postman collection, Cypress script, etc.), treat it as
 a fourth option and apply the same principle: figure out where the HTTP/gRPC
-client lives and how to set the `baggage: sd-routing-key=<key>` header on every
-outbound request.
+client lives and how to set the cluster's routing-key headers on every
+outbound request (see *Validation: hitting the service → cardinal rule*
+below for the discovery flow).
 
 The full setup for each option is documented in **"Validation types"** below —
 read that section after the sandbox is up and the routing key is known, and
@@ -312,24 +313,42 @@ proxy port) bypasses the cluster routing path. Downstream calls from your local
 service go to the cluster **without** the routing key, so sandboxed consumers
 never fire and you are only proving your code runs in isolation.
 
-**Always send traffic to the cluster's in-cluster `.svc` URL with the routing
-key header.** The devbox `/etc/hosts` has `<svc>.<namespace>.svc` entries in
-the `242.242.x.x` range — use these directly:
+**Always send traffic to the cluster's in-cluster `.svc` URL with the
+cluster's routing-key headers.** The devbox `/etc/hosts` has
+`<svc>.<namespace>.svc` entries in the `242.242.x.x` range — use
+these directly:
 
 ```bash
-# curl: pass routing key via baggage header on the cluster .svc URL
+# curl: pass routing-key headers on the cluster .svc URL
 curl -s http://<svc>.<namespace>.svc:<port>/path \
-  -H "baggage: sd-routing-key=<routing-key>"
+  -H "baggage: sd-routing-key=<routing-key>" \
+  -H "tracestate: sd-routing-key=<routing-key>"
 
 # gRPC
 grpcurl -plaintext \
   -H "baggage: sd-routing-key=<routing-key>" \
+  -H "tracestate: sd-routing-key=<routing-key>" \
   -d '{"field":"value"}' \
   <svc>.<namespace>.svc:<port> package.Service/Method
 ```
 
-The routing key comes from the sandbox's `routingKey` field in the MCP
-`create_sandbox` / `get_sandbox` response.
+`baggage` and `tracestate` (key name `sd-routing-key`) are always
+accepted. If `clusterConfig.routing.customHeaders` lists additional
+header names, inject every one of them with the routing key as the
+value — discover via:
+
+```bash
+signadot cluster list -o json | jq '.[] | {name, routing: .clusterConfig.routing}'
+```
+
+Inject all configured custom headers, not just one — the cluster
+matches on any, but downstream app-side propagation depends on which
+header your app's instrumentation library forwards. The per-tool
+examples in *Validation types* below show `baggage` for brevity;
+mirror the same shape for the other configured headers.
+
+The routing key value comes from the sandbox's `routingKey` field in
+the MCP `create_sandbox` / `get_sandbox` response.
 
 **Use the Service port, not the container port.** Kubernetes Services commonly
 expose a different port (e.g. `:80`) than the container's `EXPOSE` (e.g. `:8080`).
