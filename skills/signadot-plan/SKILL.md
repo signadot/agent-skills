@@ -1,19 +1,24 @@
 ---
 name: signadot-plan
 description: >
-  Use this skill to author a Signadot plan spec, submit it via `signadot plan
-  create`, and run/inspect the resulting plan — including iterating by
-  submitting successive specs. The skill is for doing this work, not for
-  explaining plans conceptually or covering surfaces outside spec authoring
-  and execution. Concrete tasks it fits: codifying a regression you just
-  fixed as a CI gate, running an existing tagged plan against a sandbox,
-  building a smoke-check flow, or composing a structured assertion (HTTP
-  capture + drill-in + boolean check) as a one-off. It points you at the
-  live schema and action catalog so you don't hardcode either, and tells
-  you the decision rules the schema can't carry — reference-expression
-  grammar, when `routingContext` is required, cluster affinity choices.
-  Action-specific rules live on each action's body; this skill tells you
-  to read it.
+  Use this skill to author a Signadot plan spec by hand, submit it via
+  `signadot plan create`, run the just-authored plan by ID to verify the
+  per-step output matches what you intended, and iterate by re-authoring
+  as the result reveals what to fix. The skill covers the full author
+  loop end-to-end — discovery (schema, action catalog), composition
+  (params, steps, refs, routingContext, output wiring), running and
+  inspecting your plan via `signadot plan run` and `signadot plan x
+  logs` / `get-output`, and deciding when to tag. It is not for
+  explaining plans conceptually or covering surfaces outside spec
+  authoring and execution. It does *not* cover running existing tagged
+  plans against a sandbox to validate code changes — see the
+  `signadot-validate` skill. Concrete authoring tasks it fits: codifying
+  a regression you just fixed as a CI gate, building a smoke-check
+  flow, or composing a structured assertion (HTTP capture + drill-in +
+  boolean check) as a one-off. It points you at the live schema and
+  action catalog (discoverability over hardcoding), tells you the
+  decision rules the schema can't carry (refs, `routingContext`,
+  cluster affinity), and defers per-action rules to the action's body.
 ---
 
 # Signadot: Authoring and Running Plans
@@ -41,7 +46,7 @@ Before drafting any plan, pull the two things that change per environment.
 ### 1. Plan schema (org-agnostic, static)
 
 ```bash
-signadot plan schema | jq
+signadot plan schema
 ```
 
 Returns the JSON Schema for `PlanSpec` with field-level descriptions. Treat
@@ -155,7 +160,7 @@ a step needs under `action`.
 Submit with:
 
 ```bash
-signadot plan create -f /tmp/plan.yaml -o json | jq
+signadot plan create -f /tmp/plan.yaml -o json
 ```
 
 Validation runs at create time and fails on the first issue. Read the
@@ -220,6 +225,14 @@ decision is symmetric: set it when you target an isolated routing
 context; leave it unset when you don't.
 
 ### Cluster affinity
+
+`spec.cluster` is independent of `routingContext` — cluster decides
+*where the runner runs*, `routingContext` decides *how a step directs
+traffic*. When the plan is sandbox- or route-group-scoped you typically
+set both, often referencing the same param (e.g.
+`cluster.fromSandbox: sandbox` plus `routingContext.ref.sandboxRef:
+params.sandbox` on every traffic-issuing step). They answer different
+questions; setting one does not satisfy the other.
 
 `spec.cluster` declares how the plan resolves its target cluster. At most
 one field set:
@@ -290,36 +303,45 @@ sense for that action. Read it.
 
 ## Running and iterating
 
-After `plan create` returns a plan ID, run it with `signadot plan run`:
+After `plan create` returns a plan ID, run it and read the result as a
+single JSON document:
 
 ```bash
-signadot plan run <plan-id> --param sandbox=my-sb --param expected_status=200
+signadot plan run <plan-id> --param sandbox=my-sb --param expected_status=200 -o json
 # or, if a tag points at the plan:
-signadot plan run --tag <tag-name> --param ...
+signadot plan run --tag <tag-name> --param ... -o json
 ```
 
-Useful flags:
+`-o json` blocks until the execution completes and emits one JSON
+object containing the plan's spec (as authored), its status (overall
+phase, per-step phases and errors, plan-level outputs), and the
+execution's identifying metadata. Logs and output values may be
+inlined when small but are not guaranteed to be — for anything beyond
+phase / error / "did this step pass" inspection, fetch them
+explicitly with the standalone subcommands below. Probe the actual
+document shape (with `jq` filters as needed) rather than hardcoding
+field paths.
 
-- `--attach` streams structured events (logs, outputs, result) to stdout
-  while the execution runs.
-- `--param-secret <name>=<secret-name>` for secret values you don't want
-  in the command line.
+Useful flag: `--param-secret <name>=<secret-name>` for secret values
+you don't want in the command line.
 
 Exit codes: `0` completed, `1` failed, `2` cancelled.
 
-To inspect a finished execution:
+To pull logs or outputs reliably (regardless of inline truncation),
+or to fetch raw artifact bytes, use the standalone commands keyed by
+exec ID:
 
 ```bash
-signadot plan x logs <exec-id>                     # aggregated stdout
-signadot plan x logs <exec-id> <step-id>           # one step
+signadot plan x logs <exec-id> <step-id>           # one step's logs
 signadot plan x get-output <exec-id> <name>        # plan-level output
 signadot plan x get-output <exec-id> --all --dir ./outputs/
 ```
 
-If a step failed, read its `error` and `stderr` first — the runner
-captures both. If the execution needs a re-run with different params,
-just run again — plan executions are at-least-once, action code should
-be written idempotently.
+If a step failed, read its error from the run JSON, then `plan x
+logs <exec-id> <step-id>` to read its full output. If the execution
+needs a re-run with different params, just run again — plan
+executions are at-least-once, action code should be written
+idempotently.
 
 ### Should I tag this plan?
 
@@ -335,9 +357,20 @@ humans will reference later.
   iterations. The plan ID returned by `plan create` is sufficient, and
   stale tags clutter the org's namespace.
 - **When re-tagging,** run `signadot plan tag get <name>` first to see
-  what you're about to overwrite. `plan tag put` silently re-points;
+  what you're about to overwrite. `plan tag apply` silently re-points;
   if the existing target looks production-ish, confirm with the user
   before clobbering.
+- **If you're authoring a plan that's likely to be tagged, set
+  `spec.selectionHint` when you create the plan.** A one-line
+  description of *what* the plan does and *when* it's useful — e.g.
+  *"Verifies the checkout flow returns 200 on a valid cart; pick
+  when you've changed checkout-svc or payment-svc."* The hint
+  surfaces on tag-list responses, so an agent scanning the catalog
+  of tagged plans can pick by purpose without reading every plan
+  body. The hint is part of the plan's spec, not the tag — it has
+  to be set when the plan is authored. Tags whose plan has no hint
+  force consumers to inspect the plan body or ask the user to
+  figure out the tag's purpose.
 
 ## Operational notes
 
@@ -345,7 +378,7 @@ humans will reference later.
   existing plans — the action contract is snapshotted at create time.
   Author a fresh spec and `plan create` again to pick up new revisions.
 - **Tags vs IDs.** A plan tag is a thin pointer (`name → planID`).
-  `signadot plan tag put <name> --plan <id>` creates or re-points one;
+  `signadot plan tag apply <name> --plan <id>` creates or re-points one;
   consumers that hardcode the tag name then pick up new versions
   transparently. *When* to use one: see the "Should I tag this plan?"
   subsection above.
@@ -378,19 +411,19 @@ humans will reference later.
 
 ## Quick reference
 
-Reads use `-o json | jq`; writes (`plan create`) use a YAML file.
+Reads use `-o json` (already pretty-printed; pipe through `jq` only
+when filtering); writes (`plan create`) use a YAML file.
 
 | Want to… | How |
 |---|---|
 | Scan actions (name + description + enabled) | `signadot plan action list -o json \| jq '.[] \| {name, description: .status.description, enabled: .status.enabled}'` |
 | Read one action's body | `signadot plan action get <name> -o json \| jq -r .spec.body` |
 | Get an action's ID for `actionID` | `signadot plan action get <name> -o json \| jq -r .id` |
-| Fetch the plan schema | `signadot plan schema \| jq` |
-| Create a plan from a spec | `signadot plan create -f plan.yaml -o json \| jq` |
-| Run a plan | `signadot plan run <plan-id> --param k=v` |
-| Run via tag | `signadot plan run --tag <name> --param k=v` |
-| Stream events as it runs | add `--attach` to `plan run` |
-| Read a step's logs | `signadot plan x logs <exec-id> <step-id>` |
-| Read a plan output | `signadot plan x get-output <exec-id> <name>` |
-| Tag a plan | `signadot plan tag put <name> --plan <plan-id>` |
-| Get plan details | `signadot plan get <plan-id> -o json \| jq` |
+| Fetch the plan schema | `signadot plan schema` |
+| Create a plan from a spec | `signadot plan create -f plan.yaml -o json` |
+| Run a plan and read the result | `signadot plan run <plan-id> --param k=v -o json` |
+| Run via tag and read the result | `signadot plan run --tag <name> --param k=v -o json` |
+| Re-inspect a finished step's logs | `signadot plan x logs <exec-id> <step-id>` |
+| Fetch a plan-level output (or its artifact bytes) | `signadot plan x get-output <exec-id> <name>` |
+| Tag a plan | `signadot plan tag apply <name> --plan <plan-id>` |
+| Get plan details | `signadot plan get <plan-id> -o json` |
