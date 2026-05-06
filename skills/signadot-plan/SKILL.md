@@ -1,24 +1,10 @@
 ---
 name: signadot-plan
 description: >
-  Use this skill to author a Signadot plan spec by hand, submit it via
-  `signadot plan create`, run the just-authored plan by ID to verify the
-  per-step output matches what you intended, and iterate by re-authoring
-  as the result reveals what to fix. The skill covers the full author
-  loop end-to-end — discovery (schema, action catalog), composition
-  (params, steps, refs, routingContext, output wiring), running and
-  inspecting your plan via `signadot plan run` and `signadot plan x
-  logs` / `get-output`, and deciding when to tag. It is not for
-  explaining plans conceptually or covering surfaces outside spec
-  authoring and execution. It does *not* cover running existing tagged
-  plans against a sandbox to validate code changes — see the
-  `signadot-validate` skill. Concrete authoring tasks it fits: codifying
-  a regression you just fixed as a CI gate, building a smoke-check
-  flow, or composing a structured assertion (HTTP capture + drill-in +
-  boolean check) as a one-off. It points you at the live schema and
-  action catalog (discoverability over hardcoding), tells you the
-  decision rules the schema can't carry (refs, `routingContext`,
-  cluster affinity), and defers per-action rules to the action's body.
+  Use this skill to author and iterate on Signadot plan specs: discover
+  schema/actions, compose params and steps, create/run plans, inspect outputs
+  and logs, and tag validated plans. It is not for conceptual explanations or
+  running existing tagged plans to validate code changes.
 ---
 
 # Signadot: Authoring and Running Plans

@@ -1,13 +1,9 @@
 ---
 name: signadot-validate
 description: >
-  Use this skill when code changes need to be exercised against real microservice
-  dependencies running in a Kubernetes cluster — databases, queues, upstream and
-  downstream services — without pushing images for every iteration. The skill does
-  not prescribe a workflow; it documents the concrete signals Signadot gives you
-  (cluster reachability, streamed service logs, sandbox status and endpoints,
-  routing-key isolation) and the command that produces each one, so you can pull
-  exactly the feedback you need while iterating.
+  Use this skill to validate code changes against real Kubernetes microservice
+  dependencies with Signadot signals such as local sandboxes, cluster
+  reachability, logs, endpoints, and routing-key isolation.
 ---
 
 # Signadot: Signals for Microservice Validation
