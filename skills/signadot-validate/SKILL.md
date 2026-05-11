@@ -13,6 +13,23 @@ What this skill gives you is a map of the feedback Signadot can surface while yo
 do that against a real cluster — so you can choose the cheapest signal for the
 question you're asking instead of defaulting to image builds or `kubectl`.
 
+## Workflow phases
+
+The skill runs in four phases. Jump to the one matching your current state:
+
+- **Phase A — Before coding**: agree on *what validated means*. See **Step 0**
+  under *Sandbox creation workflow*. This decides how the sandbox and routing
+  key get plumbed in later phases.
+- **Phase B — Set up the sandbox**: resolve cluster and workload, reuse or
+  create the sandbox, pull env, start the service locally. Steps 1–7 of
+  *Sandbox creation workflow*.
+- **Phase C — Run validation**: send real traffic with the routing key on the
+  cluster `.svc` URL. See *Validation: hitting the service* and the subsection
+  matching the type chosen in Phase A.
+- **Phase D — Iterate**: read failures (see *When validation fails — fast
+  diagnostics*), fix, re-run against the same sandbox. If the bug is worth
+  codifying, hand off to `signadot-plan`.
+
 ## Signadot MCP Server
 
 A Signadot MCP server may be available directly in this Claude Code session.
@@ -45,6 +62,25 @@ without a loaded schema will fail with `InputValidationError`.
   the command with a leading `!` and wait for confirmation before proceeding.
 - **Run directly** (no delegation needed) for `signadot local proxy` and
   `signadot local status` — these are local processes with no sudo requirement.
+
+### If no MCP server is available
+
+Fall back to the CLI for control-plane queries. The skill already references
+these elsewhere:
+
+- **Clusters** — `signadot cluster list -o json`
+- **Sandboxes** — `signadot sandbox get <name> -o json` to inspect,
+  `signadot sandbox apply -f <spec.yaml>` to create or update,
+  `signadot sandbox delete <name>` to remove
+- **Workload objects, ConfigMaps, Secrets** — `kubectl get <kind> <name> -n
+  <ns> -o yaml` (needs `~/.kube/config`)
+- **Workload-port resolution** — read the workload spec via `kubectl get` and
+  pick the container port from there; cross-check against the Kubernetes
+  Service for the externally hit port
+
+Without MCP, the `get_workflow_docs` protocol isn't available — treat the
+team's `.signadot/` example specs as the authoritative shape, and prefer
+updating an existing sandbox over authoring one from scratch.
 
 ## What Signadot exposes as signal
 
@@ -138,22 +174,40 @@ ToolSearch("signadot sandbox")  → list_devboxes
 
 ### Step 2 — check if the Claude Code environment is the devbox
 
-`list_devboxes` often returns a devbox whose `metadata.name` matches the current
-hostname. **If you are running inside a Claude Code sandbox** (check `hostname`),
-look for a matching devbox — if found, you can run the service right here without
-needing `signadot local connect` or any user interaction for the tunnel.
+If you're running inside a Claude Code devbox you can run the service in this
+session — no `signadot local connect` needed. Detect in this order:
 
-```bash
-hostname   # compare against devbox metadata.name in list_devboxes output
-```
+1. **`/etc/hosts` has `242.242.x.x` entries.** The devbox injects these for
+   in-cluster service resolution. Their presence is a strong positive signal
+   that the current environment is a devbox:
+   ```bash
+   grep -c '^242\.242\.' /etc/hosts   # non-zero → you're in a devbox
+   ```
+2. **Hostname matches a `list_devboxes` `metadata.name`.** This confirms
+   *which* devbox. Print both values so a mismatch is visible:
+   ```bash
+   hostname   # compare against devbox metadata.name in list_devboxes output
+   ```
 
-If the current environment is the devbox, use its `id` as `connection.devboxId`
-and run the service locally in this session.
+If (1) is positive but (2) doesn't match a known devbox name, surface the
+hostname and the candidates to the user — don't auto-pick. If both check out,
+use that devbox's `id` as `connection.devboxId` and run the service in this
+session.
 
-### Step 3 — check for existing sandbox definitions
+### Step 3 — reuse before creating
 
-Before creating a sandbox from scratch, check whether the repo already ships
-sandbox definitions. Look in `.signadot/` (the standard location):
+Sandboxes are designed to be long-lived; this skill's default policy is to
+leave them up between sessions. Before authoring a new one:
+
+**3a. Look for a live sandbox you can reuse.** A previous session likely left
+one in place. List sandboxes scoped to the same user and workload (`MCP
+list_sandboxes` or `signadot sandbox list -o json`) and reuse any that is
+`ready: true` with a connected tunnel. Reusing keeps the routing key stable —
+anything pinned to it (test env vars, CI configs, manual curls) keeps working
+without rewiring.
+
+**3b. Check for repo-shipped sandbox definitions in `.signadot/`** (the
+standard location):
 
 ```bash
 ls .signadot/          # top-level: cluster config, CI/PR templates
@@ -161,8 +215,12 @@ ls .signadot/dev/      # per-service local dev sandboxes, if present
 ```
 
 If a matching definition exists, use it (substituting `@{devbox-id}` with the
-devbox ID from `list_devboxes`) rather than building the spec from scratch. This
-keeps sandbox names and port mappings consistent with what the team expects.
+devbox ID from `list_devboxes`) rather than building the spec from scratch.
+This keeps sandbox names and port mappings consistent with what the team
+expects.
+
+Fall through to Step 4 (creating from scratch) only if neither 3a nor 3b
+yields a usable sandbox.
 
 ### Step 4 — create the sandbox via MCP
 
@@ -179,6 +237,10 @@ then call `create_sandbox` directly. Key points:
   the local process. If routing appears broken despite a ready sandbox, check
   `/etc/hosts` for a `<sandbox-name>-<mapping-name>-*.<namespace>.svc` entry —
   if it is missing, the mapping port is wrong.
+- **Never add `defaultRouteGroup.endpoints` to the spec unless the user
+  explicitly asks.** It creates a publicly accessible preview URL
+  (`*.preview.signadot.com`) — treat it the same as any externally visible
+  side effect requiring confirmation.
 
 ### Step 5 — wait for ready
 
@@ -222,6 +284,7 @@ contains the full container spec including `env` and `envFrom` entries.
 | `valueFrom.secretKeyRef` | Call `get_workload_object` with `kind: Secret`, same namespace — values are base64; decode with `echo <val> \| base64 -d` |
 | `envFrom.configMapRef` | Call `get_workload_object` with `kind: ConfigMap` — all keys become env vars |
 | `envFrom.secretRef` | Call `get_workload_object` with `kind: Secret` — all keys become env vars |
+| `valueFrom.fieldRef` / `resourceFieldRef` | Pod-injected (e.g. `POD_NAME`, `POD_IP`, `status.hostIP`) — not resolvable from the workload spec. Set a plausible local value (`POD_NAME=local`, `POD_IP=127.0.0.1`). If the service genuinely needs pod identity (rare outside metrics labeling), run inside the devbox where these are real |
 
 **3. Resolve in-cluster hostnames** from `/etc/hosts` (the devbox injects entries
 in the `242.242.x.x` range as `<svc>.<namespace>` and `<svc>.<namespace>.svc`).
@@ -463,65 +526,34 @@ without authoring a test file.
 
 #### Signadot plan
 
-A pre-existing tagged plan that asserts the validation flow you need.
-The plan is a typed DAG of action invocations (HTTP captures, browser
-drives, expression checks, etc.) authored to verify a specific behavior
-— pick one whose `selectionHint` matches what you're validating, run it
-against your sandbox, read the per-step result.
+Run a pre-existing tagged plan whose `selectionHint` matches what you're
+validating — a typed DAG of action invocations that asserts the behavior, with
+routing-key plumbing handled by the plan itself (no `baggage` header to inject
+at the test-framework layer; that's the distinguishing trait vs Integration /
+E2E / Playwright).
 
-- **Pick a candidate plan.** Scan the tag catalog by selection hint:
+- **Pick a candidate** — scan tags by selection hint:
   ```bash
   signadot plan tag list -o json | jq '.[] | {name, selectionHint: .plan.spec.selectionHint}'
   ```
-  Each `selectionHint` describes what the plan does and when it's
-  useful. Tags whose plan has no hint show `null` — usable but less
-  self-evident; ask the user or read the plan body
-  (`signadot plan get <plan-id> -o json`) to figure out its
-  purpose.
-
-- **Run against your sandbox.** Plans typically take a `sandbox` (or
-  `routegroup`) param wired into each step's `routingContext`. Inspect
-  the plan's params if you're not sure what it accepts:
-  ```bash
-  signadot plan tag get <tag> -o json | jq '.plan.spec.params'
-  ```
-  Then run and read the result as a single JSON document:
+- **Run against your sandbox** — most plans take a `sandbox` (or `routegroup`)
+  param wired into each step's `routingContext`:
   ```bash
   signadot plan run --tag <tag> --param sandbox=<my-sb> -o json
   ```
-  The command blocks until completion and emits one JSON object
-  containing the plan's spec, its status (overall phase, per-step
-  phases and errors, plan-level outputs), and identifying metadata.
-  For anything beyond phase/error inspection use the standalone
-  `plan x` subcommands below to fetch logs and outputs reliably.
-  Exit codes: `0` completed, `1` failed, `2` cancelled. For sensitive
-  params, use `--param-secret <name>=<secret-name>` so the value
-  resolves through the secrets store.
-
-- **Routing key plumbing is handled by the plan**, not by you. Plan
-  steps that carry `routingContext` plumb the routing key into every
-  outbound call automatically. There's no `baggage` header to inject
-  at the test-framework layer — that's the distinguishing trait of
-  the Signadot-plan validation type vs Integration / E2E / Playwright,
-  where the routing key has to be wired manually.
-
-- **Read the per-step result.** The run JSON tells you which step
-  failed and its error message. To read full logs or fetch output
-  values, use the standalone commands keyed by exec ID:
+  Blocks until completion, emits one JSON document. Exit codes: `0` completed,
+  `1` failed, `2` cancelled.
+- **Read the result** — the run JSON names which step failed and its error.
+  Fetch step logs or plan outputs with:
   ```bash
   signadot plan x logs <exec-id> <step-id>        # one step
   signadot plan x get-output <exec-id> <name>     # plan-level output
   ```
-  If the plan is correct and the failure is in your code, fix and
-  re-run with the same `--tag`. If the plan itself looks wrong (rare
-  for tagged plans the team relies on), surface to the plan author
-  rather than working around it.
 
-- **No matching plan?** If no tagged plan fits and authoring one would
-  be a worthwhile investment (regression coverage, smoke check, SLO
-  gate), see the iteration-loop "Before declaring done, consider
-  codifying" beat below — and hand off to the `signadot-plan` skill
-  for the authoring runbook.
+For inspecting plan params (`signadot plan tag get <tag>`), working with
+`--param-secret`, or authoring a new plan, hand off to the **`signadot-plan`**
+skill — it owns that surface. If no tagged plan fits and the bug is worth
+codifying, see *Iteration loop → "consider codifying"* below.
 
 ### Routing key propagation through synchronous HTTP/gRPC
 
@@ -620,6 +652,25 @@ and restart *every* local process. Restarting only the service whose code you
 viewed last is a common source of stale behavior that looks like the fix didn't
 work.
 
+## When validation fails — fast diagnostics
+
+The symptom usually fingerprints the cause. Check this table before diving into
+code:
+
+| Symptom | Likely cause | Where to check |
+|---|---|---|
+| Envoy 503 "upstream connect error" from devbox, pod is healthy, curl from inside the pod works | Hit the container port, not the Service port | `resolve_workload_port` / `resolve_endpoints`, not the Dockerfile |
+| Response looks like baseline (old behavior, missing your change) and comes back fast | Routing key dropped — request landed on baseline | Targeting `localhost`? Proxy hop strip `baggage`? All `clusterConfig.routing.customHeaders` set? |
+| Sandbox `ready: true`, tunnel `connected: true`, but baggage-keyed requests still hit baseline | Wrong `port` in sandbox mapping (container port, not Service port) | `/etc/hosts` should have `<sandbox>-<mapping>-*.<ns>.svc` — missing entry means the mapping port is wrong |
+| Local process starts cleanly, then 500s on the first real request | A `*_ADDR` / `*_HOST` env var defaulted to an unresolvable address | Grep source for `GetXxxAddr` / `*_ADDR`; resolve each via `/etc/hosts` `242.242.x.x` range |
+| `browser_snapshot` returns empty YAML or `document.body.innerText` is empty after an interaction | SPA threw an unhandled runtime error (often a wire-type change like number→string) | `browser_console_messages({level:"error"})`; healthy `page.content().length` is thousands of bytes |
+| Local background process exits 144 shortly after starting | SIGHUP killed a bare-`&` process | Restart with `setsid` wrapper or `nohup` in a fresh bash invocation |
+| gRPC dial takes ~30s before returning | Go gRPC resolver doing SRV lookup that doesn't resolve | Prefix target with `passthrough:///` or dial once at startup and reuse |
+| Sandboxed downstream service log shows no activity after a request that should hit it | Routing key didn't propagate through the hop in front of it | Sync: uninstrumented HTTP/gRPC client; async (Kafka/SQS/etc.): producer didn't copy baggage into message headers/metadata |
+
+If the symptom isn't here, **read the failure precisely** (status code, error
+message, stack trace) before reaching for a fix.
+
 ## Iteration loop
 
 **Sandbox only what you changed. Run the validation type you agreed on in Step 0.
@@ -679,6 +730,59 @@ still up — running the new plan once against it confirms it catches
 the bug (or passes for the fixed code), and tagging it makes it the
 team's by name. Hand off to the `signadot-plan` skill for the
 authoring details.
+
+**Don't codify reflexively.** Skip the plan when the bug is one-off (typo,
+missing env var, infra flake), when the validation is exploratory and the team
+hasn't asked for permanent coverage, or when the failure mode is hard to
+reproduce deterministically — a flaky plan in CI is worse than no plan.
+
+## Worked example
+
+A concrete end-to-end. The user says: *"I changed `frontend` so the cart page
+shows item subtotals. Validate it."*
+
+1. **Phase A — agree on validation type.** Ask: integration tests, e2e suite,
+   Playwright (MCP), or a tagged Signadot plan? User picks Playwright MCP —
+   they want to *see* the page.
+
+2. **Phase B — set up the sandbox.**
+   - `ToolSearch("signadot cluster")` → `list_clusters` → one cluster, no
+     confirmation needed.
+   - `ToolSearch("signadot workload")` → `resolve_workload("frontend")` →
+     namespace `hipster-shop`, container port 8080.
+   - `grep -c '^242\.242\.' /etc/hosts` returns non-zero, and `hostname`
+     matches a `list_devboxes` entry → I'm inside the devbox. Skip
+     `signadot local connect`.
+   - List sandboxes scoped to this user/workload (Step 3a) — none live. Check
+     `.signadot/dev/frontend.yaml` — exists. Apply it with the devbox ID
+     substituted, then poll `get_sandbox` until `status.ready = true` and
+     tunnel `connected: true`.
+   - `eval $(signadot sandbox get-env frontend-dev)` exports env. Repo
+     `Makefile` has `make run-local`; use it (kill anything on 8080 first via
+     `fuser -k 8080/tcp`).
+   - `curl http://frontend.hipster-shop.svc:80/cart -H "baggage: sd-routing-key=$KEY"`
+     returns the cart HTML, status 200. Service is live and routing.
+
+3. **Phase C — run validation.**
+   - Read the routing key from `get_sandbox`.
+   - `browser_run_code`: `page.unrouteAll()`, then `page.route('**/*', ...)`
+     injecting `baggage`, then `page.goto('http://frontend.hipster-shop.svc:80/cart')`.
+   - `browser_snapshot` shows the cart page. Subtotals are visible — but one
+     row reads `$NaN`.
+
+4. **Phase D — iterate.**
+   - Diagnostics table: empty/NaN UI after an interaction → SPA exception.
+     `browser_console_messages({level:"error"})` shows a `TypeError`
+     dereferencing `item.qty` as a number when the wire type is now a string.
+   - Fix the coercion. Rebuild, restart the local process. Re-run the same
+     `browser_run_code` against the same sandbox (routing key unchanged).
+     Subtotals render correctly.
+   - The existing test suite wouldn't have caught the wire-type drift → codify
+     as a Signadot plan via the `signadot-plan` skill so the next regression
+     gets caught in CI.
+
+5. **Close out.** Report the sandbox name and routing key. Surface
+   `signadot sandbox delete frontend-dev` as an option; do not run it.
 
 ## Operational notes
 
