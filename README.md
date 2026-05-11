@@ -13,17 +13,13 @@ changes against real Kubernetes microservice dependencies.
   microservice dependencies using Signadot signals: local sandboxes,
   cluster reachability, logs, endpoints, and routing-key isolation.
 
-## Usage
+## Install
 
 The skills follow the [Agent Skills specification](https://agentskills.io/specification),
-a vendor-neutral `SKILL.md` format auto-loaded by [Claude Code](https://claude.com/claude-code)
-and other compatible agents.
-
-### Install with the `skills` CLI (recommended)
-
-The [`skills`](https://github.com/vercel-labs/skills) CLI installs these
-skills into any [supported agent](https://github.com/vercel-labs/skills#supported-agents)
-(Claude Code, Codex, Cursor, OpenCode, and 50+ more) — no manual copying:
+a vendor-neutral `SKILL.md` format. Install into any
+[supported agent](https://github.com/vercel-labs/skills#supported-agents)
+(Claude Code, Codex, Cursor, OpenCode, and 50+ more) with the
+[`skills`](https://github.com/vercel-labs/skills) CLI:
 
     # Install all skills to detected agents in the current project
     npx skills add signadot/agent-skills
@@ -36,16 +32,6 @@ skills into any [supported agent](https://github.com/vercel-labs/skills#supporte
 
 The skill is picked up on next agent start and triggers when the
 conversation matches its scope.
-
-### Manual install
-
-For Claude Code, copy the skill into your skills folder:
-
-    cp -r skills/signadot-plan ~/.claude/skills/
-
-For other agents, each `SKILL.md` works as plain markdown guidance — drop
-it into whatever rules / context mechanism your tool uses
-(`.cursorrules`, `AGENTS.md`, system prompts, etc.).
 
 ## Requirements
 
