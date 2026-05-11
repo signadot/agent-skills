@@ -31,37 +31,55 @@ Load these one-hop references only when the workflow reaches that topic:
 
 ## Core Workflow
 
-1. **Define what "validated" means before coding.** If the user did not specify
-   the validation type, ask one question and offer these choices: integration
-   tests, existing e2e suite, ad-hoc Playwright automation, or existing tagged
-   Signadot plan. The validation type affects implementation shape, sandbox
-   ports, and routing-key plumbing. If they name another tool, such as Locust,
-   Postman, or a custom Cypress script, use the same principle: find where its
-   HTTP/gRPC client lives and how it will send the routing key.
-2. **Resolve cluster and workload.** Use the Signadot MCP server when available;
-   otherwise use the CLI. Resolve names through tools or repo-owned Signadot
-   specs, not guesses. If a tool response asks for confirmation because there
-   are multiple clusters, workloads, or devboxes, ask the user to choose.
-3. **Reuse before creating.** Look for a live sandbox for the same user and
-   workload before making a new one. Reuse keeps the routing key stable across
-   local test env vars, curls, and browser automation.
-4. **Create or update the sandbox.** Use the existing repo spec under
-   `.signadot/` when one matches. Otherwise create the smallest local-mapped
-   sandbox that contains only the service(s) changed or needed to follow the
-   changed user-visible path.
-5. **Pull env and start the service.** Read the repo's normal run commands
-   first. Export every required env var, especially service-to-service
+The workflow has four phases: **A** (before coding), **B** (set up the
+sandbox), **C** (run validation), **D** (iterate). Steps are numbered for
+sequence; each links to the reference that owns its detail.
+
+1. **Define what "validated" means before coding** (*Phase A*). If the user
+   did not specify the validation type, ask one question and offer these
+   choices: integration tests, existing e2e suite, ad-hoc Playwright
+   automation, or existing tagged Signadot plan. The validation type affects
+   implementation shape, sandbox ports, and routing-key plumbing. If they name
+   another tool, such as Locust, Postman, or a custom Cypress script, use the
+   same principle: find where its HTTP/gRPC client lives and how it will send
+   the routing key.
+   See [references/validation-types.md](references/validation-types.md).
+2. **Resolve cluster and workload** (*Phase B*). Use the Signadot MCP server
+   when available; otherwise use the CLI. Resolve names through tools or
+   repo-owned Signadot specs, not guesses. If a tool response asks for
+   confirmation because there are multiple clusters, workloads, or devboxes,
+   ask the user to choose.
+   See [references/sandbox-setup.md](references/sandbox-setup.md#discovery-and-confirmation).
+3. **Reuse before creating** (*Phase B*). Look for a live sandbox for the same
+   user and workload before making a new one. Reuse keeps the routing key
+   stable across local test env vars, curls, and browser automation.
+   See [references/sandbox-setup.md](references/sandbox-setup.md#reuse-before-create).
+4. **Create or update the sandbox** (*Phase B*). Use the existing repo spec
+   under `.signadot/` when one matches. Otherwise create the smallest
+   local-mapped sandbox that contains only the service(s) changed or needed to
+   follow the changed user-visible path.
+   See [references/sandbox-setup.md](references/sandbox-setup.md#creating-or-updating-a-sandbox)
+   for required fields, port rules, and the preview-endpoints policy.
+5. **Pull env and start the service** (*Phase B*). Read the repo's normal run
+   commands first. Export every required env var, especially service-to-service
    addresses, secrets, and feature flags. Build before backgrounding, then
    verify the process is alive and its port is listening.
-6. **Validate through the cluster URL.** Send traffic to
+   See [references/sandbox-setup.md](references/sandbox-setup.md#env-and-config-reconstruction)
+   and the "Starting The Service" section.
+6. **Validate through the cluster URL** (*Phase C*). Send traffic to
    `http://<svc>.<namespace>.svc:<service-port>/...` with routing-key headers.
    Do not validate by calling `localhost:<port>` directly.
-7. **Iterate on failures.** Read the exact failure, fix the smallest cause,
-   restart affected services, and re-run the same validation against the same
-   sandbox. Do not report success until the agreed validation path passes.
-8. **Close out cleanly.** Report the sandbox name, cluster, routing key, target
-   URL, validation command or browser path, and local processes stopped. Leave
-   the sandbox up by default; surface the delete command as an option only.
+   See [references/validation-types.md](references/validation-types.md) for
+   the subsection matching the type chosen in Phase A.
+7. **Iterate on failures** (*Phase D*). Read the exact failure, fix the
+   smallest cause, restart affected services, and re-run the same validation
+   against the same sandbox. Do not report success until the agreed validation
+   path passes.
+   See [references/troubleshooting.md](references/troubleshooting.md).
+8. **Close out cleanly.** Report the sandbox name, cluster, routing key,
+   target URL, validation command or browser path, and local processes
+   stopped. Leave the sandbox up by default; surface the delete command as an
+   option only.
 
 ## MCP And CLI Use
 
@@ -208,14 +226,18 @@ When validation fails, do not stop at "validation failed." Continue the loop:
    consumer that must also run locally.
 3. Apply the smallest fix, rebuild and restart affected processes, and re-run
    the same validation with the same routing key and target URL.
-4. Stop to ask only when the fix requires a product or compatibility decision,
-   such as choosing between fixing forward, making a change backward-compatible,
-   or accepting an intentional break.
+4. Stop to ask only when the fix requires a judgment call that cannot be made
+   without the user — for example, choosing between fixing forward, making a
+   change backward-compatible, or accepting an intentional break. Do not ask
+   permission for mechanical fixes such as typos, missing env vars, or
+   restarting a stopped process; just apply them and continue the loop.
 
 Before declaring done, consider whether the verified behavior should be codified
 as a Signadot plan. Do this when the bug is deterministic, important, and not
 covered elsewhere. Skip it for typos, infra flakes, exploratory checks, and
-non-deterministic failure modes.
+non-deterministic failure modes. The sandbox is still up — running the new
+plan against it once confirms it catches the bug (or passes for the fixed
+code) before tagging.
 
 ## Quick Diagnostics
 

@@ -34,8 +34,12 @@ If the sandbox is ready but requests go to baseline, verify the mapping port and
 look for a virtual sandbox host in `/etc/hosts`. If curl to `.svc` returns Envoy
 503 while the pod is healthy, verify the Service port.
 
-Do not "fix" routing by pointing upstream env vars at `localhost:<port>`. That
-bypasses the cluster path and hides the propagation bug.
+Do not "fix" routing by pointing a proxy, gateway, or upstream env var at
+`localhost:<port>`. That bypasses the cluster path, hides the propagation bug,
+and silently breaks the service for any consumer not running on the same
+devbox. Always fix propagation at the hop that drops the routing key — copy
+the incoming `baggage` and any cluster custom headers onto outbound requests,
+or switch the call site to the service's existing instrumented client.
 
 ## Env Var Failures
 
