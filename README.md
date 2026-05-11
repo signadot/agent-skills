@@ -9,17 +9,15 @@ changes against real Kubernetes microservice dependencies.
 The skills follow the [Agent Skills specification](https://agentskills.io/specification),
 a vendor-neutral `SKILL.md` format. Install into any
 [supported agent](https://github.com/vercel-labs/skills#supported-agents)
-(Claude Code, Codex, Cursor, OpenCode, and 50+ more) with the
-[`skills`](https://github.com/vercel-labs/skills) CLI.
+with the [`skills`](https://github.com/vercel-labs/skills) CLI.
 
 Install everything:
 
     npx skills add signadot/agent-skills
 
 Or install skills individually — see below. Add `-g` to install globally
-and `-a <agent>` to target a specific agent (e.g. `-a claude-code`). The
-skill is picked up on next agent start and triggers when the conversation
-matches its scope.
+and `-a <agent>` to target a supported runtime. The skill is picked up
+on next start and triggers when the conversation matches its scope.
 
 ## Skills
 
