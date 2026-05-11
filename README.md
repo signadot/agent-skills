@@ -19,17 +19,33 @@ The skills follow the [Agent Skills specification](https://agentskills.io/specif
 a vendor-neutral `SKILL.md` format auto-loaded by [Claude Code](https://claude.com/claude-code)
 and other compatible agents.
 
+### Install with the `skills` CLI (recommended)
+
+The [`skills`](https://github.com/vercel-labs/skills) CLI installs these
+skills into any [supported agent](https://github.com/vercel-labs/skills#supported-agents)
+(Claude Code, Codex, Cursor, OpenCode, and 50+ more) — no manual copying:
+
+    # Install all skills to detected agents in the current project
+    npx skills add signadot/agent-skills
+
+    # Install globally for a specific agent
+    npx skills add signadot/agent-skills -g -a claude-code
+
+    # Install a single skill
+    npx skills add signadot/agent-skills --skill signadot-plan
+
+The skill is picked up on next agent start and triggers when the
+conversation matches its scope.
+
+### Manual install
+
 For Claude Code, copy the skill into your skills folder:
 
     cp -r skills/signadot-plan ~/.claude/skills/
 
-It is picked up on next start and triggers when the conversation matches
-its scope.
-
-For other agents (Cursor, Codex CLI, Aider, etc.), each `SKILL.md` works
-as plain markdown guidance — drop it into whatever rules / context
-mechanism your tool uses (`.cursorrules`, `AGENTS.md`, system prompts,
-etc.).
+For other agents, each `SKILL.md` works as plain markdown guidance — drop
+it into whatever rules / context mechanism your tool uses
+(`.cursorrules`, `AGENTS.md`, system prompts, etc.).
 
 ## Requirements
 
