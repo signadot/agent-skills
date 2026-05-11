@@ -23,13 +23,6 @@ matches its scope.
 
 ## Skills
 
-### `signadot-plan`
-
-Author and iterate on Signadot plan specs: discover schema and actions,
-compose params and steps, run plans, and inspect outputs and logs.
-
-    npx skills add signadot/agent-skills --skill signadot-plan
-
 ### `signadot-validate`
 
 Validate code changes against real Kubernetes microservice dependencies
@@ -37,6 +30,13 @@ using Signadot signals: local sandboxes, cluster reachability, logs,
 endpoints, and routing-key isolation.
 
     npx skills add signadot/agent-skills --skill signadot-validate
+
+### `signadot-plan`
+
+Author and iterate on Signadot plan specs: discover schema and actions,
+compose params and steps, run plans, and inspect outputs and logs.
+
+    npx skills add signadot/agent-skills --skill signadot-plan
 
 ## Requirements
 
