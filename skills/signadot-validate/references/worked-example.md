@@ -14,10 +14,11 @@ Validate it."
 ## Phase A: Define Validation
 
 Ask which validation type to run because the user did not specify one:
-integration tests, existing e2e suite, ad-hoc Playwright automation, or an
+integration tests, existing e2e suite, ad-hoc browser automation, or an
 existing tagged Signadot plan.
 
-The user picks ad-hoc Playwright automation because they want to see the page.
+The user picks ad-hoc browser automation (driven via Playwright) because they
+want to see the page.
 
 ## Phase B: Set Up The Sandbox
 
