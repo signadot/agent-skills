@@ -9,465 +9,166 @@ description: >
 
 # Signadot: Authoring and Running Plans
 
-> **Not for explaining plans conceptually.** If the user is asking
-> "what are plans," "how do plans work," or wants a tutorial / overview,
-> this skill isn't the right fit — point them at the Signadot
-> documentation instead. This skill is sized for an agent that needs to
-> produce or execute a plan as part of completing a task.
+> **Not for explaining plans conceptually.** If the user asks "what are
+> plans," "how do plans work," or wants a tutorial or overview, do not use this
+> skill. Point them at Signadot documentation instead. This skill is for
+> producing, executing, or iterating on a concrete plan.
 
-A *Signadot Plan* is an immutable, compiled DAG of action invocations. Each
-step invokes one *action* (a small reusable unit — list the catalog to see
-what's available in your org) and wires its inputs from plan params or
-upstream step outputs. Once compiled, a plan can be executed many times
-with different parameter values.
+A Signadot Plan is an immutable, compiled DAG of action invocations. Each step
+invokes one action from the org's catalog and wires inputs from plan params,
+literal values, or upstream step outputs. Schema, action availability, and
+action contracts are discoverable at runtime; fetch them before authoring.
 
-You don't need to memorize the plan schema or the available actions —
-**both are discoverable at runtime** and you should fetch them before
-authoring anything.
+## Reference Map
 
-## Discovery: schema and action catalog first
+Load these one-hop references only when the workflow reaches that topic:
 
-Before drafting any plan, pull the two things that change per environment.
+- [references/schema-and-actions.md](references/schema-and-actions.md):
+  discovering the plan schema, action catalog, action IDs, disabled actions,
+  and action-body contracts.
+- [references/spec-authoring.md](references/spec-authoring.md): composing YAML
+  specs, refs vs values, drill-in rules, conditions, `extraInputs`,
+  `extraOutputs`, secrets, and common validator failures.
+- [references/routing-and-cluster.md](references/routing-and-cluster.md):
+  `routingContext`, routing-key injection, custom routing headers, query-param
+  fallback, and `spec.cluster`.
+- [references/running-and-debugging.md](references/running-and-debugging.md):
+  create/run commands, execution JSON, logs, output artifacts, exit codes, and
+  distinguishing runner failures from script failures.
+- [references/tagging.md](references/tagging.md): when to tag, retagging
+  safety, and `selectionHint`.
+- [references/worked-examples.md](references/worked-examples.md): small plan
+  snippets for baseline traffic, sandbox-routed traffic, conditional steps, and
+  outputs.
 
-### 1. Plan schema (org-agnostic, static)
+## Core Workflow
+
+1. **Clarify the goal and side effects.** Identify what the plan should prove
+   or automate, what target it will run against, and whether creating,
+   running, or tagging is expected. Ask only when the target, cluster/routing
+   context, or side-effect risk is ambiguous.
+2. **Discover the schema and catalog.** Fetch `signadot plan schema` and scan
+   enabled actions before drafting. Read
+   [schema-and-actions.md](references/schema-and-actions.md).
+3. **Choose actions by contract, not by name alone.** For every selected
+   action, fetch the action body and ID. The step spec uses
+   `action.actionID`, not the action name.
+4. **Resolve routing and cluster shape.** If the plan targets a sandbox, route
+   group, routing key, or `.svc` URL that should hit isolated code, read
+   [routing-and-cluster.md](references/routing-and-cluster.md) before drafting.
+5. **Draft the YAML spec.** Compose `params`, `steps`, `output`, and optional
+   `cluster`/`runner` directly. Under each step's `action`, include only
+   `actionID`; the server snapshots the rest of the action contract at create
+   time. Read [spec-authoring.md](references/spec-authoring.md).
+6. **Self-check before create.** Verify refs use path expressions only, every
+   arg is declared by the action or as an `extraInput`, drill-in sources have a
+   schema, conditions read resolved args, secrets are not in literals, and every
+   traffic-issuing step has the right routing context.
+7. **Create, then inspect validation errors precisely.** Use
+   `signadot plan create -f <spec.yaml> -o json`. The server validates at
+   create time and fails on the first issue; fix the exact issue rather than
+   rewriting broadly.
+8. **Run and iterate when needed.** Run by plan ID or tag with `-o json`, fetch
+   failed step logs or output artifacts explicitly, then re-run with corrected
+   params or a fresh plan spec. Read
+   [running-and-debugging.md](references/running-and-debugging.md).
+9. **Tag only when the plan is reusable.** Default to leaving one-off plans
+   untagged. If a tag is needed, inspect existing tag state before applying and
+   add a useful `selectionHint` when creating the plan. Read
+   [tagging.md](references/tagging.md).
+10. **Close with the durable identifiers and evidence.** Report what was
+    created or run, the target, params used, outputs inspected, and any
+    remaining operator action.
+
+## MCP And CLI Use
+
+If a Signadot MCP server is available, use it for supported control-plane reads:
+clusters, sandboxes, route groups, workloads, endpoints, and other discovery
+that it exposes. Prefer tool output over memory.
+
+Use the Signadot CLI for plan-specific operations unless an MCP tool clearly
+covers the same command:
 
 ```bash
 signadot plan schema
+signadot plan action list -o json
+signadot plan action get <name> -o json
+signadot plan create -f <spec.yaml> -o json
+signadot plan run <plan-id> --param k=v -o json
+signadot plan x logs <exec-id> <step-id>
+signadot plan x get-output <exec-id> <name>
+signadot plan get <plan-id> -o json
+signadot plan tag get <name> -o json
+signadot plan tag apply <name> --plan <plan-id>
 ```
 
-Returns the JSON Schema for `PlanSpec` with field-level descriptions. Treat
-this as the source of truth for field names, types, what's required, and
-what each field means. Re-fetch if anything in this skill conflicts with
-what the schema says — the schema wins.
+## Side-Effect Policy
 
-Before drafting, inspect the shape of the fields you're about to write
-rather than guessing from prose. Common targets:
-
-```bash
-# params, output, and the per-step shape — the three you'll author
-# directly:
-signadot plan schema | jq '.properties.params, .properties.output, .properties.steps.items'
-
-# routingContext and cluster — nullable but structurally tricky:
-signadot plan schema | jq '.properties.steps.items.properties.routingContext, .properties.cluster'
-```
-
-### 2. Action catalog (org-scoped, dynamic)
-
-Scan the org's actions by name + description; pick from those with
-`enabled: true`:
-
-```bash
-signadot plan action list -o json | jq '.[] | {name, description: .status.description, enabled: .status.enabled}'
-```
-
-Entries with `enabled: false` are gated for this org — `plan create`
-will reject any spec that references them. Use them as the answer to
-"is this capability available *at all*, even if not right now?" — they
-tell you which gated action to name when escalating to the admin.
-
-Once you've picked one, fetch its full body to learn the per-action
-rules (declared inputs/outputs, schema policy, anti-patterns):
-
-```bash
-signadot plan action get <name> -o json | jq -r .spec.body
-```
-
-The body is the action author's contract with you — read it before
-wiring the action into a step. Each step's `action.actionID` in the
-spec uses the action's `id`, **not** its name; grab the ID from
-`signadot plan action get <name> -o json | jq -r .id` (or from the
-catalog entry directly).
-
-If the user asks for a capability that no enabled action provides, **say
-so explicitly** and offer two options: pick the closest enabled
-alternative, or — if a gated entry from the catalog actually fits —
-name it explicitly and ask the org admin to enable it.
-
-## Mental model
-
-- **Plans are immutable.** Once created, a plan's spec is frozen. The
-  server snapshots each step's action contract at create time, so
-  updating an action later does not affect plans that already reference
-  it. To pick up action updates, author a fresh spec and create a new
-  plan.
-- **Steps form a DAG.** Step ordering in the array is *not* execution
-  order — execution order is derived from the dependency graph implied by
-  `args.refs`. A step that references `steps.foo.outputs.bar` runs after
-  `foo` completes.
-- **Three places to put a value into a step:** `args.values` (literal
-  constants — strings, numbers, booleans, fixed JSON), `args.refs` (path
-  reference into `params.X` or `steps.X.outputs.Y`), or `extraInputs`
-  (a declared additional input the step takes beyond the action's params,
-  wired via `args.refs`). A given arg name appears in `values` *or*
-  `refs`, never both.
-- **Plan params are external; step outputs are internal.** `params.X`
-  comes from the caller at execution time. `steps.X.outputs.Y` comes from
-  an upstream step. The plan's own outputs (`spec.output`) wire one or
-  the other to the plan's external interface.
-- **Schema controls how a value enters and leaves an action's working
-  directory.** *On the input side* — a param or extra_input *with* a
-  schema lands as `./context/<name>.json` (raw JSON bytes preserved);
-  *without* a schema it lands as `./context/<name>` (raw text — JSON
-  string values get unquoted, but objects/arrays become opaque strings
-  the consumer sees as text). *On the output side* — symmetric: an
-  action script writes schema'd outputs to `./outputs/<name>.json` and
-  schemaless ones to `./outputs/<name>`. This matters when extending an
-  action via `extraOutputs` — pick the file path the script writes to
-  based on whether the extra_output declared a schema. The same rule
-  governs drill-in refs: a drill source must declare a schema because
-  the runtime needs to walk a parsed value, not a string. When in
-  doubt, declare a schema — symptoms of getting this wrong include
-  opaque expression-language errors like *"type string has no field X"*
-  downstream.
-
-## Authoring the plan spec
-
-You compose the spec directly — `params`, `steps`, `output`, optional
-`cluster` and `runner` — and submit it. Each step references its action
-by ID:
-
-```yaml
-steps:
-- id: send_request
-  action:
-    actionID: <id from catalog>
-  args:
-    values:
-      url: http://api.example.svc:8080/health
-      method: GET
-```
-
-The server hydrates the action's `body`, declared `params`, `outputs`,
-`extraInputsSchemaPolicy`, and `image` from the registered action at
-create time. **Do not embed those fields yourself** — `actionID` is all
-a step needs under `action`.
-
-Submit with:
-
-```bash
-signadot plan create -f /tmp/plan.yaml -o json
-```
-
-Validation runs at create time and fails on the first issue. Read the
-schema (Discovery, above) for the full field set; the rules below cover
-the parts the schema can't fully express.
-
-## Decision rules
-
-### Reference expressions
-
-- **Forms**: `params.<name>`, `steps.<id>.outputs.<name>`, with optional
-  drill-in by appending `.field` or `[index]`
-  (`steps.send.outputs.capture.response.statusCode`).
-- **Refs are path expressions, not general expressions.** No operators,
-  function calls, conditionals, or string concatenation. To compose a
-  value, use a composing action from the catalog (whichever action
-  accepts an expression and emits its result) — its body documents
-  when and how to use it.
-- **Drill-in requires a schema on the source.** `params.X.field` works
-  only if `X` declared a `schema`. `steps.X.outputs.Y.field` works only
-  if the action's `\output{Y, schema=...}` declared one. Drill into a
-  schemaless source is rejected at compile time.
-- **Drill source must be JSON at runtime, ≤1 MB.** Non-JSON outputs
-  (binary, plain text) can only be referenced as whole values.
-
-### Action-specific rules: read the action body
-
-Most "when do I use action X / when do I not" rules live on the action
-itself (`spec.body`), not in this skill. When you pick an action, **read
-its body before wiring it into a step.** It documents the inputs and
-outputs, the schema policy, what the script reads from `./context/`,
-which environment variables it expects, and the anti-patterns that
-come up specifically for that action. Re-read after each action update —
-the body is the action author's contract with you.
-
-Cross-action rules (when one action's existence affects how you compose
-another) are spelled out on whichever action's body the agent is most
-likely to be reading at the moment of the mistake — so if the action
-catalog says "don't insert X before this," trust it.
-
-### Routing context: literal vs ref, and when it's required
-
-If the plan acts against a sandbox or route group, **set
-`routingContext` on every step that needs the routing key** (request
-steps, shell scripts that need `$SIGNADOT_ROUTING_KEY` or
-`$SIGNADOT_SANDBOX_NAME`):
-
-- `routingContext.literal` — for hardcoded sandbox/routeGroup/routingKey
-- `routingContext.ref.sandboxRef` / `routeGroupRef` / `routingKeyRef` —
-  when the value comes from a plan param (e.g.
-  `sandboxRef: params.sandbox`)
-- `routingContext.ref.anyRef` — polymorphic, plan param holds a
-  `RoutingTarget` whose variant is decided at execution time
-
-Forgetting `routingContext` on a request step that hits a sandboxed
-service is a silent footgun: the request goes to the cluster baseline,
-the sandbox sees no traffic, and the test passes against the wrong code.
-
-Conversely, **omit `routingContext` entirely when the plan exercises
-baseline cluster traffic with no sandbox or route group involved.** The
-decision is symmetric: set it when you target an isolated routing
-context; leave it unset when you don't.
-
-### Injecting the routing key on outbound requests
-
-`routingContext` only sets `SIGNADOT_ROUTING_KEY` in the step's env —
-the value still has to land on each outbound HTTP request as a header
-(or query param) the cluster recognizes, or the request silently
-routes to baseline. Both halves are required.
-
-**Identify the target cluster first.** The conveyance methods and
-their names are cluster-scoped — the discovery command below is
-useless until you know which cluster the plan will run against. If
-the user hasn't told you, ask. Don't proceed against a default or a
-guess; cluster mismatches surface only as silent routing-to-baseline
-at runtime.
-
-**Discovery.** Each cluster declares which conveyance methods it
-accepts under `clusterConfig.routing`:
-
-```bash
-signadot cluster list -o json | \
-  jq '.[] | {name, routing: .clusterConfig.routing}'
-```
-
-**Headers always accepted** (key name `sd-routing-key`):
-
-```
-baggage:    sd-routing-key=<key>
-tracestate: sd-routing-key=<key>
-```
-
-**Custom headers.** If `customHeaders` lists names, inject every one
-with the routing key as the value (e.g. `customHeaders: ["x-org-rk"]`
-→ `x-org-rk: <key>`). Inject *all* of them rather than picking one —
-the cluster matches on any, but downstream context propagation
-depends on which header your app's instrumentation library actually
-forwards (which is app-specific). Hedging across all of them mirrors
-the platform's own preview-URL injection behavior.
-
-**Query-param fallback.** If `queryParamRouting.enabled: true`, the
-cluster also accepts `?<paramName>=<key>` in the URL. Use this only
-when the test surface genuinely can't set headers (browser
-address-bar navigation, redirect URLs that strip headers). Headers
-are the primary mechanism.
-
-**The value comes from `$SIGNADOT_ROUTING_KEY`** (set by
-`routingContext` on the step). The action body says how the value is
-expected to reach the wire — some actions auto-inject the routing-key
-headers when `SIGNADOT_ROUTING_KEY` is set; others rely on the
-step's code to inject them using the action's per-tool syntax. Read
-the action body before authoring the step.
-
-### Cluster affinity
-
-`spec.cluster` is independent of `routingContext` — cluster decides
-*where the runner runs*, `routingContext` decides *how a step directs
-traffic*. When the plan is sandbox- or route-group-scoped you typically
-set both, often referencing the same param (e.g.
-`cluster.fromSandbox: sandbox` plus `routingContext.ref.sandboxRef:
-params.sandbox` on every traffic-issuing step). They answer different
-questions; setting one does not satisfy the other.
-
-`spec.cluster` declares how the plan resolves its target cluster. At most
-one field set:
-
-| Field | Use when |
+| Action | Default behavior |
 |---|---|
-| `fromCluster: <param>` | Plan takes a cluster name directly as a param |
-| `fromSandbox: <param>` | Plan takes a sandbox name; cluster is the sandbox's cluster |
-| `fromRouteGroup: <param>` | Plan takes a route group name; cluster resolves from the RG (only if RG is bound to one cluster) |
-| `fromAnyTarget: <param>` | Plan takes a `RoutingTarget`; the variant decides at execution time |
-| `pattern: "<glob>"` | The plan should run on whichever connected cluster matches (e.g. `prod-*`) |
+| Read schema, actions, clusters, tags, plans, executions, logs, and outputs | Do autonomously |
+| Create an untagged plan for the requested task | Do autonomously when the spec and target are clear |
+| Run a newly created plan against a dev/test sandbox or explicit non-production target | Do autonomously when params and cluster/routing target are clear |
+| Run any plan against production, shared customer-facing targets, or ambiguous targets | Ask first |
+| Apply a new tag requested by the user | Do after confirming it does not already point somewhere important |
+| Re-point an existing tag | Inspect with `plan tag get`; ask before overwriting unless the user explicitly requested that exact retag |
+| Include secret values in a spec or chat summary | Never; use plan params and `--param-secret` |
 
-If the plan has no cluster relationship, omit `cluster` — the execution
-caller must then specify a cluster explicitly. When you author a
-cluster-agnostic plan, surface this to the user up front so they know
-they'll need to pass `--cluster <name>` at run time, and offer
-`signadot cluster list` if they're not sure which cluster their target
-services live on.
+## Essential Rules
 
-### `extraInputs` and `extraOutputs`
+- **Schema wins.** If this skill conflicts with `signadot plan schema`, follow
+  the schema.
+- **Actions are org-scoped.** Filter to `status.enabled == true`; disabled
+  actions cannot be referenced by a created plan.
+- **Plans are immutable.** Updating an action later does not affect existing
+  plans. Author a fresh spec and create a new plan to pick up action updates.
+- **Step order is dependency-driven.** Array order is not execution order; refs
+  imply the DAG.
+- **Refs are paths, not expressions.** Use `params.<name>` or
+  `steps.<id>.outputs.<name>` with optional drill-in; use a composing action
+  for operators, conditionals, string concatenation, or transformations.
+- **Drill-in requires schema.** The source param/output must declare a schema
+  and the runtime value must be JSON.
+- **Routing has two halves.** `routingContext` sets env vars such as
+  `SIGNADOT_ROUTING_KEY`; outbound requests still need the routing key injected
+  in accepted headers or query params.
+- **`spec.cluster` is not `routingContext`.** Cluster decides where the runner
+  runs; routing context decides how a step directs traffic.
+- **Tagging is optional.** Tags are stable pointers for reusable plans, not a
+  default naming mechanism for every draft.
 
-Step-level fields that extend an action's declared interface for one
-invocation. Use them when the plan needs to wire an additional named
-input or output that the action itself didn't declare:
+## Quick Reference
 
-- **`extraInputs`**: any value the action's body needs to read at run
-  time that isn't already in the action's declared `params`. The schema
-  policy (`extraInputsSchemaPolicy` on the action) controls whether you
-  must declare a schema or can omit it.
-- **`extraOutputs`**: additional named output files the action's script
-  writes to `./outputs/<name>`. Names must not shadow the action's
-  declared outputs.
+Reads use `-o json`; the CLI already pretty-prints JSON, so pipe through `jq`
+only when filtering. Writes (`plan create`) use a YAML file.
 
-The action's body documents which `extraInputs` / `extraOutputs` make
-sense for that action. Read it.
-
-## Common pitfalls
-
-- **Refs and values for the same arg name.** Pick one. If both appear,
-  validation rejects the step.
-- **Arg name not declared on the action.** Every key under `args.refs`
-  or `args.values` must match either a declared param of the action or
-  an `extraInputs` entry on the step. Wiring a ref to an undeclared
-  name is a common first-draft mistake when composing values through
-  `eval` or similar — declare the missing name in `extraInputs` first,
-  then reference it.
-- **Ref source not in scope.** A ref to `steps.foo.outputs.bar` requires
-  step `foo` to declare an output `bar` (or for the step to declare
-  `bar` as an `extraOutput`). The validator catches this; phrase your
-  refs against the actual catalog, not a guess.
-- **Drill into a schemaless source.** If you need
-  `steps.X.outputs.Y.field`, the action's `\output{Y}` must declare a
-  schema. Pick a different action, declare an `extraOutput` with a
-  schema, or refactor to consume the whole output and extract the field
-  in a composing action.
-- **A `condition` referencing something not in `args`.** Conditions
-  are [expr-lang](https://github.com/expr-lang/expr) boolean expressions
-  evaluated against the step's *resolved args*, not against `params` or
-  `steps` directly. Whatever the condition reads must already be in
-  `refs` or `values` on the same step.
-- **Forgetting `routingContext`.** If the plan operates against a
-  sandbox/route group, every step that issues outbound traffic to it
-  needs `routingContext` set. See the routing section above.
-- **Disabled action referenced in the spec.** `plan create` rejects any
-  step whose action is currently disabled in this org. Filter to
-  `status.enabled == true` when picking IDs:
-  `signadot plan action list -o json | jq '.[] | select(.status.enabled == true) | .name'`.
-
-## Running and iterating
-
-After `plan create` returns a plan ID, run it and read the result as a
-single JSON document:
-
-```bash
-signadot plan run <plan-id> --param sandbox=my-sb --param expected_status=200 -o json
-# or, if a tag points at the plan:
-signadot plan run --tag <tag-name> --param ... -o json
-```
-
-`-o json` blocks until the execution completes and emits one JSON
-object containing the plan's spec (as authored), its status (overall
-phase, per-step phases and errors, plan-level outputs), and the
-execution's identifying metadata. Logs and output values may be
-inlined when small but are not guaranteed to be — for anything beyond
-phase / error / "did this step pass" inspection, fetch them
-explicitly with the standalone subcommands below. Probe the actual
-document shape (with `jq` filters as needed) rather than hardcoding
-field paths.
-
-Useful flag: `--param-secret <name>=<secret-name>` for secret values
-you don't want in the command line.
-
-Exit codes: `0` completed, `1` failed, `2` cancelled.
-
-To pull logs or outputs reliably (regardless of inline truncation),
-or to fetch raw artifact bytes, use the standalone commands keyed by
-exec ID:
-
-```bash
-signadot plan x logs <exec-id> <step-id>           # one step's logs
-signadot plan x get-output <exec-id> <name>        # plan-level output
-signadot plan x get-output <exec-id> <step>/<name> # step-level output
-signadot plan x get-output <exec-id> --all --dir ./outputs/
-```
-
-Plan-level outputs use the bare `<name>` form; step-level outputs
-require the `<step>/<name>` form. The CLI returns a generic *"output
-not found"* 404 when a name is queried as plan-level but only exists
-at step-level — if you hit that, retry with the `<step>/<name>`
-form.
-
-If a step failed, read its error from the run JSON, then `plan x
-logs <exec-id> <step-id>` to read its full output. If the execution
-needs a re-run with different params, just run again — plan
-executions are at-least-once, action code should be written
-idempotently.
-
-### Should I tag this plan?
-
-**Default: no.** The agent's first instinct is to name everything it
-creates. Plans don't need names — they need IDs. Names are for things
-humans will reference later.
-
-- **Tag** when the plan is reusable: multiple consumers (CI, other
-  automation, repeated human invocations) will refer to it by a stable
-  name. Re-pointing the tag at a fresh plan is how you ship updates
-  without touching consumers.
-- **Don't tag** one-off plans, exploratory compositions, or in-progress
-  iterations. The plan ID returned by `plan create` is sufficient, and
-  stale tags clutter the org's namespace.
-- **When re-tagging,** run `signadot plan tag get <name>` first to see
-  what you're about to overwrite. `plan tag apply` silently re-points;
-  if the existing target looks production-ish, confirm with the user
-  before clobbering.
-- **If you're authoring a plan that's likely to be tagged, set
-  `spec.selectionHint` when you create the plan.** A one-line
-  description of *what* the plan does and *when* it's useful — e.g.
-  *"Verifies the checkout flow returns 200 on a valid cart; pick
-  when you've changed checkout-svc or payment-svc."* The hint
-  surfaces on tag-list responses, so an agent scanning the catalog
-  of tagged plans can pick by purpose without reading every plan
-  body. The hint is part of the plan's spec, not the tag — it has
-  to be set when the plan is authored. Tags whose plan has no hint
-  force consumers to inspect the plan body or ask the user to
-  figure out the tag's purpose.
-
-## Operational notes
-
-- **Plans are immutable.** Updating a referenced action does *not* affect
-  existing plans — the action contract is snapshotted at create time.
-  Author a fresh spec and `plan create` again to pick up new revisions.
-- **Tags vs IDs.** A plan tag is a thin pointer (`name → planID`).
-  `signadot plan tag apply <name> --plan <id>` creates or re-points one;
-  consumers that hardcode the tag name then pick up new versions
-  transparently. *When* to use one: see the "Should I tag this plan?"
-  subsection above.
-- **Step env vars** the runner sets on every step:
-  - `SIGNADOT_PLAN_EXECUTION_ID`, `SIGNADOT_PLAN_STEP_ID`
-  - `SIGNADOT_PLAN_WORKDIR` (contains `context/` and `outputs/`)
-  - `SIGNADOT_PLAN_BINDIR` (per-execution `bin/`, prepended to PATH)
-  - `SIGNADOT_CACHE_DIR` (read-only PRG image cache available to image-backed actions)
-  - `HOME`, `TMPDIR` (per-step writable)
-  - With `routingContext`: `SIGNADOT_ROUTING_KEY`,
-    `SIGNADOT_SANDBOX_NAME`, `SIGNADOT_ROUTEGROUP_NAME` (subset, depending
-    on what the resolved target carries)
-- **Don't include secrets in `args.values` literals.** They land in the
-  compiled plan body. For caller-provided secrets, declare a plan param
-  and use `--param-secret name=secret-ref` at execution time so the
-  value resolves through the secrets store.
-- **`spec.prompt` is for compile-flow plans only.** The field shows up
-  populated on plans authored via `plan compile` (where it's the
-  natural-language source). When authoring a spec directly, leave it
-  absent — the create path doesn't read it.
-- **Runner-level failures vs script failures.** If a step fails before
-  any script logic runs (image pull errors, runc errors, namespace
-  permission denials, missing runner-side dependencies), the plan
-  itself is correct — the failure is at the runtime layer, not in
-  what you authored. Don't re-author the plan; surface the issue to
-  the org admin or substitute an action whose runtime is satisfied in
-  this runner. If the error message points at a script error code,
-  stderr line, or output the script wrote, that's the script-failure
-  case — read the step's `error` and `stderr` and iterate normally.
-
-## Quick reference
-
-Reads use `-o json` (already pretty-printed; pipe through `jq` only
-when filtering); writes (`plan create`) use a YAML file.
-
-| Want to… | How |
+| Want to... | How |
 |---|---|
-| Scan actions (name + description + enabled) | `signadot plan action list -o json \| jq '.[] \| {name, description: .status.description, enabled: .status.enabled}'` |
-| Read one action's body | `signadot plan action get <name> -o json \| jq -r .spec.body` |
-| Get an action's ID for `actionID` | `signadot plan action get <name> -o json \| jq -r .id` |
-| Fetch the plan schema | `signadot plan schema` |
-| Create a plan from a spec | `signadot plan create -f plan.yaml -o json` |
-| Run a plan and read the result | `signadot plan run <plan-id> --param k=v -o json` |
-| Run via tag and read the result | `signadot plan run --tag <name> --param k=v -o json` |
-| Re-inspect a finished step's logs | `signadot plan x logs <exec-id> <step-id>` |
-| Fetch a plan-level output (or its artifact bytes) | `signadot plan x get-output <exec-id> <name>` |
-| Fetch a step-level output | `signadot plan x get-output <exec-id> <step>/<name>` |
-| Tag a plan | `signadot plan tag apply <name> --plan <plan-id>` |
+| Scan actions | `signadot plan action list -o json \| jq '.[] \| {name, description: .status.description, enabled: .status.enabled}'` |
+| Read one action body | `signadot plan action get <name> -o json \| jq -r .spec.body` |
+| Get action ID | `signadot plan action get <name> -o json \| jq -r .id` |
+| Fetch plan schema | `signadot plan schema` |
+| Inspect key schema fields | `signadot plan schema \| jq '.properties.params, .properties.output, .properties.steps.items'` |
+| Create a plan | `signadot plan create -f plan.yaml -o json` |
+| Run by ID | `signadot plan run <plan-id> --param k=v -o json` |
+| Run by tag | `signadot plan run --tag <name> --param k=v -o json` |
+| Fetch step logs | `signadot plan x logs <exec-id> <step-id>` |
+| Fetch plan output | `signadot plan x get-output <exec-id> <name>` |
+| Fetch step output | `signadot plan x get-output <exec-id> <step>/<name>` |
 | Get plan details | `signadot plan get <plan-id> -o json` |
+| Inspect a tag | `signadot plan tag get <name> -o json` |
+| Tag a plan | `signadot plan tag apply <name> --plan <plan-id>` |
+
+## Final Report
+
+Include the parts that exist for the task:
+
+- Plan ID, execution ID, and tag name if one was created or updated.
+- Cluster, sandbox, route group, routing key, or explicit note that the run was
+  baseline/cluster-agnostic.
+- Params used, with secret values redacted and secret refs named only when safe.
+- Action names and IDs selected, especially if a close alternative was used.
+- Outputs inspected and the final pass/fail signal.
+- Failed step errors, log locations, or artifact commands when unresolved.
+- Side effects left behind: untagged plans, retagged names, generated YAML files,
+  or any operator follow-up.
