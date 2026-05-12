@@ -69,7 +69,9 @@ Schema controls how values enter and leave an action's working directory:
 JSON strings passed to a schemaless input arrive unquoted. Objects and arrays
 passed to a schemaless input become opaque text to the consumer. When extending
 an action through `extraOutputs`, choose the output file path based on whether
-the extra output declares a schema. When in doubt, declare a schema.
+the extra output declares a schema. When in doubt, declare a schema. A symptom
+of getting this wrong is an opaque expression-language error like *"type string
+has no field X"* in a downstream step that tries to drill into the value.
 
 ## Conditions
 

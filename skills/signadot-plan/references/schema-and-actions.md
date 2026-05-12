@@ -41,7 +41,10 @@ signadot plan action get <name> -o json | jq -r .spec.body
 
 The body is the action author's contract. It documents declared params and
 outputs, schema policy, context/output file paths, expected environment
-variables, anti-patterns, and cross-action rules.
+variables, anti-patterns, and cross-action rules. Cross-action rules (when one
+action's existence affects how you compose another) are spelled out on
+whichever action's body is most likely to be open at the moment of the mistake.
+If an action body says "don't insert X before this," trust it.
 
 Fetch the ID for `action.actionID`:
 

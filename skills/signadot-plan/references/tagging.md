@@ -1,7 +1,9 @@
 # Tagging
 
-Default to **no tag**. Plans do not need names; they have IDs. Tags are stable
-pointers for humans, CI, or automation that need to run a reusable plan later.
+Default to **no tag**. Plans do not need names; they have IDs. A tag is a thin
+pointer (`name → planID`) — a stable handle for humans, CI, or automation that
+need to run a reusable plan later. Consumers that hardcode the tag name pick up
+new versions transparently when the tag is re-pointed.
 
 ## When To Tag
 

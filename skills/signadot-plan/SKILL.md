@@ -80,13 +80,14 @@ Load these one-hop references only when the workflow reaches that topic:
     created or run, the target, params used, outputs inspected, and any
     remaining operator action.
 
-## MCP And CLI Use
+## Tool Integrations And CLI Use
 
-If a Signadot MCP server is available, use it for supported control-plane reads:
-clusters, sandboxes, route groups, workloads, endpoints, and other discovery
-that it exposes. Prefer tool output over memory.
+If an integrated Signadot tool (MCP server, plugin, IDE extension, or similar)
+exposes control-plane reads — clusters, sandboxes, route groups, workloads,
+endpoints — prefer its output over recalled values. Otherwise use the CLI for
+the same reads.
 
-Use the Signadot CLI for plan-specific operations unless an MCP tool clearly
+Use the Signadot CLI for plan-specific operations unless an integration clearly
 covers the same command:
 
 ```bash
@@ -136,6 +137,9 @@ signadot plan tag apply <name> --plan <plan-id>
   runs; routing context decides how a step directs traffic.
 - **Tagging is optional.** Tags are stable pointers for reusable plans, not a
   default naming mechanism for every draft.
+- **Executions are at-least-once.** A step can run more than once across
+  retries or re-runs. Action code should be idempotent; do not author plans
+  that assume exactly-once execution.
 
 ## Quick Reference
 
@@ -155,6 +159,7 @@ only when filtering. Writes (`plan create`) use a YAML file.
 | Fetch step logs | `signadot plan x logs <exec-id> <step-id>` |
 | Fetch plan output | `signadot plan x get-output <exec-id> <name>` |
 | Fetch step output | `signadot plan x get-output <exec-id> <step>/<name>` |
+| Bulk-fetch all outputs | `signadot plan x get-output <exec-id> --all --dir ./outputs/` |
 | Get plan details | `signadot plan get <plan-id> -o json` |
 | Inspect a tag | `signadot plan tag get <name> -o json` |
 | Tag a plan | `signadot plan tag apply <name> --plan <plan-id>` |
