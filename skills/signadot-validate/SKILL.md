@@ -21,7 +21,7 @@ Load these one-hop references only when the workflow reaches that topic:
   workload resolution, sandbox reuse/create/update, devbox detection, env var
   reconstruction, process startup, and port rules.
 - [references/validation-types.md](references/validation-types.md): how to run
-  integration tests, existing e2e suites, ad-hoc Playwright automation, and
+  integration tests, existing e2e suites, ad-hoc browser automation, and
   existing tagged Signadot plans with routing-key injection.
 - [references/troubleshooting.md](references/troubleshooting.md): fast
   diagnostics for 503s, baseline-looking responses, browser blanks, propagation
@@ -37,7 +37,7 @@ sequence; each links to the reference that owns its detail.
 
 1. **Define what "validated" means before coding** (*Phase A*). If the user
    did not specify the validation type, ask one question and offer these
-   choices: integration tests, existing e2e suite, ad-hoc Playwright
+   choices: integration tests, existing e2e suite, ad-hoc browser
    automation, or existing tagged Signadot plan. The validation type affects
    implementation shape, sandbox ports, and routing-key plumbing. If they name
    another tool, such as Locust, Postman, or a custom Cypress script, use the
@@ -205,12 +205,14 @@ When reconstructing env vars from workload specs, ConfigMaps, or Secrets:
 - **Existing e2e suite**: use the repo's existing command and config. Point its
   base URL at the `.svc` URL and attach routing headers at the framework HTTP
   layer.
-- **Ad-hoc Playwright automation**: use available Playwright-compatible tooling.
-  Inject routing headers with `page.route('**/*', ...)`, clear previous routes
-  first when browser state persists, and drive the full UI path.
-- **Existing tagged Signadot plan**: pick a tag by `selectionHint`, run it
-  against the sandbox, and inspect failed step logs or outputs. If authoring a
-  new plan, use the `signadot-plan` skill.
+- **Ad-hoc browser automation**: drive the UI from a browser to exercise the
+  change end-to-end. Use whatever browser-automation tooling is available
+  (Playwright is the common one); inject routing headers on every request,
+  clear previous routes first when browser state persists, and drive the full
+  UI path.
+- **Existing tagged Signadot plan**: pick a tag by `selectionHint` and run it
+  against the sandbox. For everything else about plans — params, secrets,
+  logs/outputs, authoring, tagging — defer to the `signadot-plan` skill.
 
 Read [references/validation-types.md](references/validation-types.md) before
 running the chosen type.

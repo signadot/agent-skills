@@ -5,7 +5,7 @@
 - Shared routing setup
 - Integration tests
 - Existing e2e suites
-- Ad-hoc Playwright automation
+- Ad-hoc browser automation
 - Existing tagged Signadot plans
 - Browser golden path checks
 
@@ -80,11 +80,16 @@ repo command exists.
   Allure output.
 - Mirror CI env vars when the suite normally runs in CI.
 
-## Ad-Hoc Playwright Automation
+## Ad-Hoc Browser Automation
 
-Use available Playwright-compatible tooling for one-shot browser validation.
-Before navigation, clear previous routes when state persists, then inject the
-routing key on every request:
+Drive the UI from a real browser to exercise the change end-to-end. Use
+whatever browser-automation tooling is available; Playwright is the common
+one, but the principle is the same with any equivalent (Puppeteer, a
+controlled Chrome session, etc.) — point the browser at the cluster `.svc`
+URL and ensure every outbound request carries the routing headers.
+
+The examples below use Playwright syntax. Before navigation, clear previous
+routes when state persists, then inject the routing key on every request:
 
 ```js
 async (page) => {
@@ -114,31 +119,16 @@ add or update a real e2e test or Signadot plan.
 ## Existing Tagged Signadot Plans
 
 Use an existing tagged plan when its `selectionHint` matches the behavior being
-validated. Plans are typed DAGs of action invocations; common actions include
-`request-http`, `playwright`, `k6`, `check`, and `eval`. Plan steps have typed,
-inspectable outputs, refs can drill into prior step outputs, and pass/fail is
-explicit per step. For plans with `routingContext`, the runner provides routing
-context directly to each step, so the plan action usually owns header injection
-rather than the test framework.
+validated. List tags and pick by hint:
 
 ```bash
 signadot plan tag list -o json | jq '.[] | {name, selectionHint: .plan.spec.selectionHint}'
-signadot plan run --tag <tag> --param sandbox=<sandbox-name> -o json
 ```
 
-The run command blocks until completion. Exit codes are commonly `0` completed,
-`1` failed, and `2` cancelled.
-
-Read failed steps from the run JSON, then fetch logs or outputs:
-
-```bash
-signadot plan x logs <exec-id> <step-id>
-signadot plan x get-output <exec-id> <name>
-signadot plan x get-output <exec-id> <step>/<name>
-```
-
-Use the `signadot-plan` skill for inspecting plan params in detail, handling
-`--param-secret`, authoring new plans, or tagging a newly created reusable plan.
+Run it against the sandbox produced in Phase B, passing the sandbox name as a
+param so the plan's `routingContext` targets the right fork. For everything
+else about plans — full run/inspect/log/output commands, params and secrets,
+authoring, and tagging — use the `signadot-plan` skill.
 
 ## Browser Golden Path Checks
 
