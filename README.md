@@ -21,6 +21,14 @@ on next start and triggers when the conversation matches its scope.
 
 ## Skills
 
+### `signadot-install`
+
+Install and configure Signadot in a cluster: CLI, Operator (Helm),
+authentication, routing (DevMesh / Istio / Linkerd / Gateway API),
+and CLI config for local development.
+
+    npx skills add signadot/agent-skills --skill signadot-install
+
 ### `signadot-validate`
 
 Validate code changes against real Kubernetes microservice dependencies
