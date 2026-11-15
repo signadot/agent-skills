@@ -1,0 +1,13 @@
+name: local-route@{suffix}
+spec:
+  cluster: "@{cluster}"
+  description: "Signadot trial C3: route service running on this computer"
+  local:
+  - name: local-route
+    from:
+      kind: Deployment
+      namespace: hotrod
+      name: route
+    mappings:
+    - port: 8083
+      toLocal: localhost:8083

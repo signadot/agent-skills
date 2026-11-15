@@ -1,0 +1,43 @@
+name: hotrod-trial-db@{suffix}
+spec:
+  description: |
+    Signadot trial (database per sandbox): per-sandbox database on HotROD's shared MariaDB, seeded with a different
+    set of locations. Output 'dbname' for the forked location service.
+  runner:
+    image: mariadb:11.6
+    namespace: signadot
+  create:
+  - name: provision
+    outputs:
+    - name: dbname
+      valueFromPath: /tmp/dbname
+    script: |
+      #!/bin/bash
+      set -euo pipefail
+      DB="location_${SIGNADOT_SANDBOX_ID}"
+      echo "Creating database ${DB} on mysql.hotrod.svc"
+      mariadb -h mysql.hotrod.svc -uroot -pabc <<SQL
+      CREATE DATABASE IF NOT EXISTS \`${DB}\`;
+      USE \`${DB}\`;
+      CREATE TABLE IF NOT EXISTS locations (
+        id bigint unsigned NOT NULL AUTO_INCREMENT,
+        name varchar(255) NOT NULL,
+        coordinates varchar(255) NOT NULL,
+        PRIMARY KEY (id), UNIQUE KEY name (name)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+      INSERT IGNORE INTO locations (id, name, coordinates) VALUES
+        (1, 'Sandbox HQ', '231,773'),
+        (123, 'Test Kitchen', '115,277'),
+        (392, 'Staging Cafe', '577,322'),
+        (567, 'Preview Park', '211,653'),
+        (731, 'Ephemeral Diner', '728,326');
+      SQL
+      echo -n "${DB}" > /tmp/dbname
+  delete:
+  - name: deprovision
+    script: |
+      #!/bin/bash
+      set -euo pipefail
+      DB="location_${SIGNADOT_SANDBOX_ID}"
+      echo "Dropping database ${DB}"
+      mariadb -h mysql.hotrod.svc -uroot -pabc -e "DROP DATABASE IF EXISTS \`${DB}\`;"

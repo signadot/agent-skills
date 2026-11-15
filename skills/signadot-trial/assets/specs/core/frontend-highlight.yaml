@@ -1,0 +1,15 @@
+name: frontend-highlight@{suffix}
+spec:
+  cluster: "@{cluster}"
+  description: "Signadot trial C2: frontend highlights SD- plates"
+  labels:
+    feature: hotrod-plates@{suffix}
+  forks:
+  - forkOf:
+      kind: Deployment
+      namespace: hotrod
+      name: frontend
+    customizations:
+      images:
+      - image: signadot/hotrod:97de62bf5a6d91482f62db23de565282ff97e60d-linux-amd64
+        container: hotrod

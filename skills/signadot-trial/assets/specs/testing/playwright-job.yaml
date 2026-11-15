@@ -1,0 +1,21 @@
+spec:
+  namePrefix: hotrod-playwright-e2e
+  runnerGroup: hotrod-playwright@{suffix}
+  script: |
+    #!/bin/bash
+    set -e
+    git clone --depth 1 --single-branch -b main https://github.com/signadot/hotrod.git
+    cd hotrod
+    export HOTROD_NAMESPACE=hotrod CI=true
+    npm ci
+    set +e
+    npm run e2e:playwright --spec playwright-tests/basic.spec.ts
+    E2E_EXIT_CODE=$?
+    set -e
+    tar czf playwright-report.tar.gz playwright-report
+    exit $E2E_EXIT_CODE
+  routingContext:
+    sandbox: "@{sandbox}"
+  uploadArtifact:
+    - path: hotrod/playwright-report/index.html
+    - path: hotrod/playwright-report.tar.gz

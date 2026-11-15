@@ -1,0 +1,19 @@
+name: location-db@{suffix}
+spec:
+  cluster: "@{cluster}"
+  description: "Signadot trial (database per sandbox): location service on its own database with different data"
+  resources:
+  - name: locationdb
+    plugin: hotrod-trial-db@{suffix}
+  forks:
+  - forkOf:
+      kind: Deployment
+      namespace: hotrod
+      name: location
+    customizations:
+      env:
+      - name: MYSQL_DBNAME
+        valueFrom:
+          resource:
+            name: locationdb
+            outputKey: provision.dbname

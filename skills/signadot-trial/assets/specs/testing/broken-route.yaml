@@ -1,0 +1,13 @@
+name: broken-route@{suffix}
+spec:
+  cluster: "@{cluster}"
+  description: "Signadot trial (plans): route fork with a bad Redis address, a simulated regression"
+  forks:
+  - forkOf:
+      kind: Deployment
+      namespace: hotrod
+      name: route
+    customizations:
+      env:
+      - name: REDIS_ADDR
+        value: redis-missing.hotrod:6379
