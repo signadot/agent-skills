@@ -1,0 +1,126 @@
+# Run the suite as a Plan, and catch a regression
+
+`<cluster>` and `<suffix>` as in C1. Needs C1's `driver-plates<suffix>`; the last step also needs C3's
+`local-route<suffix>`.
+
+## What it shows
+
+- **Problem:** test automation that a person or agent can rerun on demand, against any change, usually means
+  maintaining CI glue for every environment.
+- **What Signadot does:** a Plan is a reusable, parameterized test run that Signadot executes in the cluster on a
+  managed runner. The trial wraps HotROD's Playwright suite in a one-step Plan, tags it, runs it against the C1
+  sandbox, then against a sandbox with a deliberate bug, and sees the Plan catch it. A coding agent can author and
+  run Plans like this with the `signadot-plan` and `signadot-validate` skills.
+- **Why it matters:** the same tagged Plan validates any sandbox, including one running on a developer's computer,
+  so regressions are caught before merge.
+
+## Costs
+
+About 4 minutes. No extra memory beyond a short-lived runner pod. Changes two org settings (below).
+
+## Before you start
+
+Plans need two org settings that only an org admin can change, in the dashboard. Ask the user for an explicit yes
+first, then change them in a browser you drive (signed in to the trial org), or give the user these steps:
+
+1. **A plan runner on the trial cluster:** https://app.signadot.com → Platform → Managed Runners → `<cluster>` →
+   set Plan Runners to 1, and save.
+2. **Allow the Playwright image:** Settings → Plan Runner Actions → Configure → Allowed images → add
+   `mcr.microsoft.com/playwright:*`, and apply.
+
+Record both as `org_setting plan-runner <cluster>` and `org_setting allowed-image mcr.microsoft.com/playwright:*`
+under Resources, so teardown lists them for the user to revert. Done when a Plan run doesn't fail with "no plan
+runner group on cluster" or an image-policy error.
+
+## Set up
+
+Plan specs reference an action by its ID, which differs per org. Look it up, create the Plan, and tag it:
+
+```bash
+"$T/bin/sd" plan action get run-container -o json | sed -n 's/^  "id": *"\([^"]*\)".*/\1/p' | head -1
+"$T/bin/sd" plan create -f "$S/assets/specs/testing/hotrod-e2e-plan.yaml" --set actionID=<action id> -o json
+"$T/bin/sd" plan tag get hotrod-e2e<suffix> -o json    # expect "not found"; if it exists, ask before moving it
+"$T/bin/sd" plan tag apply hotrod-e2e<suffix> --plan <plan id>
+```
+
+The plan ID is the first `"id"` in the create output. Record `plan_tag hotrod-e2e<suffix>` under Resources.
+
+## Run
+
+Against C1's sandbox:
+
+```bash
+"$T/bin/sd" plan run --tag hotrod-e2e<suffix> --param sandbox=driver-plates<suffix> --timeout 10m -o json > "$T/logs/plan-driver.json"
+```
+
+Then against a sandbox with a deliberate bug (`route` pointed at a Redis that doesn't exist):
+
+```bash
+"$T/bin/sd" sandbox apply -f "$S/assets/specs/testing/broken-route.yaml" --set cluster=<cluster> --set suffix=<suffix>
+"$T/bin/sd" plan run --tag hotrod-e2e<suffix> --param sandbox=broken-route<suffix> --timeout 10m -o json > "$T/logs/plan-broken.json"
+```
+
+Record `sandbox broken-route<suffix>` under Resources. If C3 ran, also run it against the service on this computer:
+
+```bash
+"$T/bin/sd" plan run --tag hotrod-e2e<suffix> --param sandbox=local-route<suffix> --timeout 10m -o json > "$T/logs/plan-local.json"
+```
+
+## Prove it
+
+```bash
+grep -oE '"exit_code": *"?[0-9]+' "$T/logs/plan-driver.json" "$T/logs/plan-broken.json" "$T/logs/plan-local.json"
+```
+
+Done when:
+- the run against `driver-plates<suffix>` exits 0;
+- the run against `broken-route<suffix>` fails (non-zero exit code): the rides never get past "Resolving routes";
+- the run against `local-route<suffix>` exits 0, and `$T/logs/route-local.log` shows the in-cluster test's requests
+  reaching the process on this computer.
+
+To see the failure in detail, `"$T/bin/sd" plan execution get <execution id>` and
+`"$T/bin/sd" plan execution logs <execution id> e2e` (the execution ID is in the run's JSON).
+
+Flow for the card: `plan(runner) → frontend → … → route(broken-route<suffix>) ✗` next to `plan(runner) → frontend →
+… → driver(driver-plates<suffix>) ✓`.
+
+## Record
+
+```markdown
+## Scenario plans
+status: passed
+seconds: <first run to last proof>
+baseline: Plan hotrod-e2e<suffix> passed against driver-plates<suffix> (exit 0)
+sandbox: the same Plan failed against broken-route<suffix> (regression caught)[; passed against local-route<suffix>]
+hops-baseline: plan(runner) → frontend(baseline) → driver(driver-plates<suffix>) → route(baseline)
+hops-sandbox: plan(runner) → frontend(baseline) → driver(baseline) → route(broken-route<suffix>)
+proof: one tagged Plan, three sandboxes: passed on the good change, failed on the broken one[, passed on this computer]
+commands: sd plan create -f assets/specs/testing/hotrod-e2e-plan.yaml --set actionID=…; sd plan tag apply …; sd plan run --tag … --param sandbox=…
+specs: assets/specs/testing/hotrod-e2e-plan.yaml, assets/specs/testing/broken-route.yaml
+links: https://www.signadot.com/docs/tutorials/quickstart/plan-based-validation
+try: run the tagged plan against any sandbox: sd plan run --tag hotrod-e2e<suffix> --param sandbox=<name>
+```
+
+In the report, add a short Jobs-vs-Plans note: Jobs run your own script on your own runner group (good for CI); Plans
+are reusable, parameterized runs on a managed runner that people and coding agents can call by tag.
+
+## Try it yourself
+
+- Run the tagged Plan against any sandbox: `<T>/bin/sd plan run --tag hotrod-e2e<suffix> --param sandbox=<name>`.
+- Install the agent skills that author and run Plans for your own services:
+  `npx skills add signadot/agent-skills --skill signadot-plan` and `--skill signadot-validate`.
+
+## Tear down
+
+```bash
+"$T/bin/sd" sandbox delete broken-route<suffix>
+"$T/bin/sd" plan tag delete hotrod-e2e<suffix>
+"$T/bin/sd" plan delete <plan id>
+```
+
+The two org settings stay; teardown lists them for the user to revert.
+
+## Docs
+
+https://www.signadot.com/docs/tutorials/quickstart/plan-based-validation.md, where a coding agent authors the Plan
+with the `signadot-plan` skill. The trial ships a ready-made spec and only looks up the org's action ID.
