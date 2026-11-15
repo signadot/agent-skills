@@ -42,6 +42,17 @@ Only if the user picked one in the briefing:
 Record `cluster_mode: existing`, `created_kind_cluster: no` and `kube_context: <ctx>`. Use `<ctx>` wherever these
 files say `kind-signadot-trial`. Skip the image pre-pull in §2 (it only works on kind).
 
+On an existing cluster, never take over what was already there. Before creating any namespace (`hotrod`, a demo
+app's, `signadot-tests`), check it:
+
+```bash
+"$T/bin/kc" get namespace <ns>
+```
+
+If it already exists and the trial log doesn't list it, stop and ask the user: it may hold their own work. Record
+`namespace <ns>` under Resources only for namespaces the trial created, because teardown deletes everything listed
+there. The infra files apply the same rule to a mesh that's already installed.
+
 ## 2. HotROD (`cluster`, part 2)
 
 ```bash

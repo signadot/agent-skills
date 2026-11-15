@@ -12,13 +12,15 @@ fill the briefing and to decide what's missing.
 | Must have | A browser the user can use | — | Needed for signup. |
 | Install with consent | kubectl, kind, helm, git | `kubectl`, `kind`, `helm`, `git` | Show the command below; run it only after a yes. |
 | Installed by the trial | Signadot CLI ≥ 1.9.1 | `signadot` | `scripts/install-cli.sh` installs 1.9.1 into `$T/bin`, or reuses theirs if it's new enough. |
-| Optional | Go ≥ 1.21 | `go` | C3 builds in a `golang` container. |
+| Optional | Go ≥ 1.27.1 | `go` | C3 builds in a `golang` container. |
 | Optional | A browser you can drive | — | The user does the browser steps; no screenshots. |
 
 Other facts preflight reports:
 
 - `signadot_config` and `signadot_login`: if either shows the user already uses Signadot, the trial isolates its
-  config (`--isolate yes`), so `~/.signadot` and their login stay untouched.
+  config (`--isolate yes`), so `~/.signadot` and their login stay untouched. On resume, keep `isolated:` from the trial log
+  instead: a run that didn't isolate created `~/.signadot/config.yaml` itself, and re-deriving would wrongly switch
+  to isolation.
 - `local_connect`: a connection is running. `(trial)` means it is the trial's own from an earlier run; otherwise see
   "Another local connection is running" in SKILL.md.
 - `kube_context` and `kube_contexts`: name their current context in the briefing, and list the ones that look local

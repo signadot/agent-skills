@@ -11,7 +11,8 @@ stays, and get a yes. Never touch `~/.signadot`, the user's own login, or anythi
 2. **Core tutorial.**
 
    ```bash
-   kill "$(cat "$T/route-local.pid")" "$(cat "$T/redis-pf.pid")" 2>/dev/null   # C3's local processes
+   # C3's local processes, only if the recorded PIDs still belong to the trial (a PID can be reused after a reboot)
+   for f in route-local redis-pf; do p=$(cat "$T/$f.pid" 2>/dev/null) && ps -p "$p" -o args= 2>/dev/null | grep -qF "$T/" && kill "$p"; done
    "$T/bin/sd" sandbox delete local-route<suffix>
    "$T/bin/sd" routegroup delete hotrod-plates<suffix>
    "$T/bin/sd" sandbox delete frontend-highlight<suffix>

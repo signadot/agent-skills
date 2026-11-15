@@ -11,6 +11,15 @@ to their sandbox.
 
 ## Install before HotROD
 
+**On an existing cluster, check first** whether Linkerd is already installed:
+
+```bash
+"$T/bin/kc" get namespace linkerd
+```
+
+If it succeeds, use the mesh that's there: skip this install, don't record `mesh` or `linkerd` (teardown must not
+remove them), and tell the user the trial adds HotROD to their mesh.
+
 Run this after the kind cluster is up (`references/setup/cluster.md` §1) and before HotROD (§2). Linkerd's identity
 needs a trust anchor and an issuer certificate; generate them with openssl, then install the charts with helm (the
 chart repository is given per command, so the user's helm repositories don't change).

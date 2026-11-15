@@ -59,9 +59,9 @@ behave differently in bash and zsh). Right after a sandbox becomes ready, give r
 about 10 seconds in the trial's demo apps. Wait, then send the message again.
 
 **C3: port 8083 is busy.** `lsof -nP -iTCP:8083 -sTCP:LISTEN` shows what holds it. Stop the trial's own process
-(`kill "$(cat "$T/route-local.pid")"`), or ask the user about another one.
+(the guarded stop command in `references/core/local-development.md`), or ask the user about another one.
 
-**C3: the build fails.** Without Go 1.21+, the build runs in Docker (`golang:1.27.1`); make sure Docker is running.
+**C3: the build fails.** Without Go 1.27.1+, the build runs in Docker (`golang:1.27.1`); make sure Docker is running.
 The first container build downloads modules (about a minute); later ones take seconds.
 
 **C3: keyed rides stop at "Resolving routes".** The local route service can't reach Redis. With the no-sudo

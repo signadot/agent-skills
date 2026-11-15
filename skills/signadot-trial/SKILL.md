@@ -61,7 +61,7 @@ one.
 | Must have | macOS or Linux, a shell, Docker running with enough memory (about 4 GB for the core, more per variation), internet access, curl, a browser the user can use for signup | Stop. Say what's missing and how to get it. |
 | Install with consent | kubectl, kind, helm, git | Show the install command from [references/setup/prerequisites.md](references/setup/prerequisites.md); run it only after a yes. |
 | Installed by the trial | Signadot CLI 1.9.1 or newer, into `$T/bin` | `scripts/install-cli.sh` (covered by the briefing OK) |
-| Optional | Go 1.21 or newer | C3 builds in a `golang` container instead. |
+| Optional | Go 1.27.1 or newer | C3 builds in a `golang` container instead. |
 | Optional | A browser you can drive | The user does the browser steps from your exact instructions; no screenshots; the report still has flow diagrams. |
 
 ## The flow
@@ -91,9 +91,12 @@ If your shell can't keep a background job running, run it in the foreground and 
 `--set suffix=<suffix>` to every spec. The Signadot cluster is named `signadot-trial<suffix>`; the kind cluster stays
 `signadot-trial`.
 
-**Another local connection is running** (`local_connect: running …` in preflight without `(trial)`): only one can run per computer. Ask the user to disconnect it with their own CLI (`signadot local
-disconnect`) and record `disconnected_user_connection: yes` under Run, so the report and teardown remind them to
-reconnect.
+**Another local connection is running:** preflight shows `local_connect: running <cluster>`. If the connection
+names `signadot-trial<suffix>`, it's the trial's own from an earlier run (preflight adds `(trial)` when only the
+trial's CLI can see it): keep using it. Any other connection blocks the trial, since only one can run per computer.
+Ask the user to disconnect it with their own CLI (`signadot local disconnect`); if they decline, setup can't
+continue, so stop and say so. If they do, record `disconnected_user_connection: yes` under Run, so the report and
+teardown remind them to reconnect.
 
 ## Menu and briefing
 
@@ -174,7 +177,9 @@ Read only the files for what the user chose. Each one is self-contained and foll
 - **Infrastructure:** exactly one, chosen before setup, because it changes how HotROD and the operator are
   installed.
 - **Namespaces:** HotROD runs in `hotrod`. Every other demo app runs in its own namespace, named in its file. Never
-  deploy two apps into one namespace, and never change a namespace the trial didn't create.
+  deploy two apps into one namespace, and never change a namespace the trial didn't create. If a namespace
+  already exists on an existing cluster, ask before using it, and don't record it for teardown
+  (`references/setup/cluster.md` §1).
 - **Memory:** add up the core and each chosen variation from the index, compare with `docker_mem_gb`, and settle it
   in the briefing.
 - **Demo apps** other than HotROD come from `signadot/examples` at the commit their file pins. Start their deploys

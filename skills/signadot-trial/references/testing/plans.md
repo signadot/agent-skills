@@ -34,16 +34,19 @@ runner group on cluster" or an image-policy error.
 
 ## Set up
 
-Plan specs reference an action by its ID, which differs per org. Look it up, create the Plan, and tag it:
+Plan specs reference an action by its ID, which differs per org. First check the tag: if the trial log already lists
+`plan_tag hotrod-e2e<suffix>` (a resumed trial), skip `plan create` and reuse the tagged Plan. Otherwise the tag
+should not exist yet; if it does, ask before moving it.
 
 ```bash
+"$T/bin/sd" plan tag get hotrod-e2e<suffix> -o json    # expect "not found" on a first run
 "$T/bin/sd" plan action get run-container -o json | sed -n 's/^  "id": *"\([^"]*\)".*/\1/p' | head -1
 "$T/bin/sd" plan create -f "$S/assets/specs/testing/hotrod-e2e-plan.yaml" --set actionID=<action id> -o json
-"$T/bin/sd" plan tag get hotrod-e2e<suffix> -o json    # expect "not found"; if it exists, ask before moving it
 "$T/bin/sd" plan tag apply hotrod-e2e<suffix> --plan <plan id>
 ```
 
-The plan ID is the first `"id"` in the create output. Record `plan_tag hotrod-e2e<suffix>` under Resources.
+The plan ID is the first `"id"` in the create output. Record `plan <plan id>` and `plan_tag hotrod-e2e<suffix>` under
+Resources.
 
 ## Run
 
@@ -114,9 +117,13 @@ are reusable, parameterized runs on a managed runner that people and coding agen
 
 ```bash
 "$T/bin/sd" sandbox delete broken-route<suffix>
+# The plan ID: from the trial log (`plan <id>`), or read it from the tag before deleting the tag
+"$T/bin/sd" plan tag get hotrod-e2e<suffix> -o json | tr -d '\n ' | sed -n 's/.*"plan":{"id":"\([^"]*\)".*/\1/p'
 "$T/bin/sd" plan tag delete hotrod-e2e<suffix>
 "$T/bin/sd" plan delete <plan id>
 ```
+
+There is no command that lists plans, so a plan whose ID wasn't recorded can only be found through its tag.
 
 The two org settings stay; teardown lists them for the user to revert.
 

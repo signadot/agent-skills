@@ -1,6 +1,6 @@
 # C3 · Run a service on this computer against the cluster
 
-Runs by default. About 3 minutes, most of it the first build. Needs Go 1.21+ or Docker, and port 8083 free.
+Runs by default. About 3 minutes, most of it the first build. Needs Go 1.27.1+ or Docker, and port 8083 free.
 `<cluster>`, `<suffix>` and `<proxy>` as in C1.
 
 ## What it shows
@@ -24,17 +24,18 @@ git fetch -q --depth 1 origin b16178651580a8ba3ceb45ac7c59f4579611b0b3 && git ch
 git apply --reverse --check "$S/assets/patches/route-eta.patch" 2>/dev/null || git apply "$S/assets/patches/route-eta.patch"
 ```
 
-Build with Go 1.21+ if it's installed:
+Build with Go if preflight shows 1.27.1 or newer (HotROD's `go.mod` asks for 1.27.1; an older Go would download a
+newer toolchain into `~/go` on its own, outside the trial folder):
 
 ```bash
-go build -o "$T/bin/hotrod" ./cmd/hotrod
+cd "$T/hotrod" && go build -o "$T/bin/hotrod" ./cmd/hotrod
 ```
 
 Otherwise build in a container as the user, with a module cache so rebuilds take about a second. `<os>` is
 `darwin` or `linux` and `<arch>` is `amd64` or `arm64`, from preflight:
 
 ```bash
-docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/src" -w /src -e CGO_ENABLED=0 \
+cd "$T/hotrod" && docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/src" -w /src -e CGO_ENABLED=0 \
   -e GOCACHE=/src/.trial-cache/build -e GOMODCACHE=/src/.trial-cache/mod -e GOOS=<os> -e GOARCH=<arch> \
   golang:1.27.1 go build -o /src/.trial-bin/hotrod ./cmd/hotrod && cp .trial-bin/hotrod "$T/bin/hotrod"
 ```
@@ -52,20 +53,30 @@ With the no-sudo connection, cluster names don't resolve on this computer, so gi
 a port-forward on a free local port (not 6379, which developers often use for their own Redis):
 
 ```bash
-for p in $(seq 16379 16399); do lsof -nP -iTCP:$p -sTCP:LISTEN >/dev/null 2>&1 || { PORT=$p; break; }; done
+PORT=""; for p in $(seq 16379 16399); do lsof -nP -iTCP:$p -sTCP:LISTEN >/dev/null 2>&1 || { PORT=$p; break; }; done
+[ -n "$PORT" ] || { echo "no free port in 16379-16399"; exit 1; }
+echo "$PORT" > "$T/redis-pf.port"
 nohup "$T/bin/kc" -n hotrod port-forward svc/redis "$PORT:6379" > "$T/logs/redis-pf.log" 2>&1 &
 echo $! > "$T/redis-pf.pid"
 ```
 
-Start the route service with the sandbox's environment:
+Start the route service with the sandbox's environment (it reads the port from `$T/redis-pf.port`, so it works in a
+new shell):
 
 ```bash
-( set -a; . "$T/local-route.env"; set +a; export REDIS_ADDR=localhost:$PORT   # skip REDIS_ADDR when privileged
+( set -a; . "$T/local-route.env"; set +a; export REDIS_ADDR="localhost:$(cat "$T/redis-pf.port")"   # skip REDIS_ADDR when privileged
   nohup "$T/bin/hotrod" route > "$T/logs/route-local.log" 2>&1 & echo $! > "$T/route-local.pid" )
 ```
 
-Record `sandbox local-route<suffix>`, `process <pid> hotrod route (C3)` and `portforward <pid> redis <PORT>:6379`
+Record `sandbox local-route<suffix>`, `process <pid> hotrod route (C3)` and `portforward <pid> redis <port>:6379`
 under Resources. Done when `lsof -nP -iTCP:8083 -sTCP:LISTEN` shows the process.
+
+To stop the local processes (for the edit loop below, or at teardown), kill them only if their recorded PIDs still
+belong to the trial; after a reboot a PID can belong to something else:
+
+```bash
+for f in route-local redis-pf; do p=$(cat "$T/$f.pid" 2>/dev/null) && ps -p "$p" -o args= 2>/dev/null | grep -qF "$T/" && kill "$p"; done
+```
 
 ## Prove it
 
@@ -80,8 +91,8 @@ exporting traces to `jaeger.hotrod` are harmless: there is no tracing backend in
 especially), routing to the local process can take a few seconds to apply after the sandbox is ready: if the route
 hop still shows `baseline`, book another keyed ride.
 
-Then show the edit loop: rebuild (same build command as above), stop the process (`kill $(cat "$T/route-local.pid")`),
-start it again, and time it. Done when rebuild plus restart takes a few seconds, with no image build or deploy.
+Then show the edit loop: rebuild (same build command as above), stop the route process (the stop command above, or
+just its `route-local` PID), start it again with the start command, and time it. Done when rebuild plus restart takes a few seconds, with no image build or deploy.
 
 ## Record
 
@@ -110,7 +121,7 @@ try: edit $T/hotrod/services/route/server.go, rebuild, restart, and book a keyed
 ## Tear down
 
 ```bash
-kill "$(cat "$T/route-local.pid")" "$(cat "$T/redis-pf.pid")" 2>/dev/null
+for f in route-local redis-pf; do p=$(cat "$T/$f.pid" 2>/dev/null) && ps -p "$p" -o args= 2>/dev/null | grep -qF "$T/" && kill "$p"; done
 "$T/bin/sd" sandbox delete local-route<suffix>
 ```
 

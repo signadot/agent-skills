@@ -10,6 +10,15 @@ the routing key in the `baggage` header; requests without it keep going to the b
 
 ## Install before HotROD
 
+**On an existing cluster, check first** whether Istio is already installed:
+
+```bash
+helm status istiod -n istio-system --kubeconfig "$T/kubeconfig"
+```
+
+If it succeeds, use the mesh that's there: skip this install, don't record `mesh` or `istio-system` (teardown must
+not remove them), and tell the user the trial adds HotROD to their mesh.
+
 Run this after the kind cluster is up (`references/setup/cluster.md` §1) and before HotROD (§2). It uses helm only,
 with the chart repository given per command, so the user's helm repositories don't change.
 

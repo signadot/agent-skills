@@ -11,11 +11,22 @@ the routing key, to HotROD's VirtualServices; the waypoint applies them.
 
 ## Install before HotROD
 
+**On an existing cluster, check first** whether Istio is already installed:
+
+```bash
+helm status istiod -n istio-system --kubeconfig "$T/kubeconfig"
+```
+
+If it succeeds, use the mesh that's there (it must run in ambient mode): skip this install, don't record `mesh` or
+`istio-system` (teardown must not remove them), and tell the user the trial adds HotROD to their mesh. Still label the
+`hotrod` namespace as below.
+
 Run this after the kind cluster is up (`references/setup/cluster.md` §1) and before HotROD (§2). Waypoints are
 Gateway API resources, so the Gateway API CRDs come first. Helm only, with the chart repository given per command.
 
 ```bash
-"$T/bin/kc" apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.5.1/standard-install.yaml > "$T/logs/istio.log"
+"$T/bin/kc" get crd gateways.gateway.networking.k8s.io >/dev/null 2>&1 \
+  || "$T/bin/kc" apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.5.1/standard-install.yaml > "$T/logs/istio.log"
 R=https://istio-release.storage.googleapis.com/charts
 helm upgrade --install istio-base base --repo $R --version 1.30.8 -n istio-system --create-namespace \
   --kubeconfig "$T/kubeconfig" --wait >> "$T/logs/istio.log" 2>&1

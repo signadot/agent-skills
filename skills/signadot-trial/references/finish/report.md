@@ -74,8 +74,8 @@ Rules:
 - **Steps:** one line each, `<id> · ok|failed|skipped · <seconds>s · <proving value>`. The step IDs are `preflight`,
   `cli`, `cluster`, `account`, `login`, `operator`, `connect`, `baseline`. On resume, skip every step marked `ok`.
 - **Resources:** one line per thing the trial created, `<kind> <name> [namespace or detail]`. Kinds:
-  `kind_cluster`, `namespace`, `mesh`, `sandbox`, `routegroup`, `plugin`, `runnergroup`, `plan_tag`, `process`,
-  `portforward`, `org_setting`. Teardown reads this list; anything missing from it is left behind.
+  `kind_cluster`, `namespace`, `mesh`, `sandbox`, `routegroup`, `plugin`, `runnergroup`, `plan`, `plan_tag`,
+  `process`, `portforward`, `org_setting`. Teardown reads this list; anything missing from it is left behind.
 - **Scenarios:** IDs are `C1`, `C2`, `C3`, then each variation's file name (`sandbox-database`, `kafka`, `temporal`,
   `rabbitmq`, `redis-streams`, `jobs`, `plans`). `status` is `passed`, `failed` or `skipped`.
 - **Hops** are the flow diagram's data. For a request: `service(served-by)` joined by ` → `, where `served-by` is

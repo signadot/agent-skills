@@ -26,10 +26,15 @@ SD="$T/bin/sd" KC="$T/bin/kc" KCFG="$T/kubeconfig"
 mkdir -p "$T/logs"
 
 # 1. Register the cluster (once).
-if "$SD" cluster list -o json | tr -d ' \n' | grep -q "\"name\":\"$CLUSTER\""; then
+# `cluster add` prints a token on stdout, so stdout is discarded and only errors are kept.
+clusters=$("$SD" cluster list -o json 2>"$T/logs/cluster-list.log") \
+  || { echo "error: signadot cluster list failed (login expired?); see $T/logs/cluster-list.log" >&2; exit 4; }
+if echo "$clusters" | tr -d ' \n' | grep -q "\"name\":\"$CLUSTER\""; then
   registered=existing
 else
-  "$SD" cluster add --name "$CLUSTER" >"$T/logs/cluster-add.log" 2>&1; registered=added
+  "$SD" cluster add --name "$CLUSTER" >/dev/null 2>"$T/logs/cluster-add.log" \
+    || { echo "error: signadot cluster add failed; see $T/logs/cluster-add.log" >&2; exit 4; }
+  registered=added
 fi
 
 # 2. Install the operator (once).
