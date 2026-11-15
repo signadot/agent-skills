@@ -23,14 +23,16 @@ About 4 minutes. No extra memory beyond a short-lived runner pod. Changes two or
 Plans need two org settings that only an org admin can change, in the dashboard. Ask the user for an explicit yes
 first, then change them in a browser you drive (signed in to the trial org), or give the user these steps:
 
-1. **A plan runner on the trial cluster:** https://app.signadot.com → Platform → Managed Runners → `<cluster>` →
-   set Plan Runners to 1, and save.
-2. **Allow the Playwright image:** Settings → Plan Runner Actions → Configure → Allowed images → add
-   `mcr.microsoft.com/playwright:*`, and apply.
+1. **A plan runner on the trial cluster:** https://app.signadot.com → Platform → Managed Runners → click
+   `<cluster>` → under Plan Runners, press + once (it saves at once and shows "Provisioning"). Done when the cluster's
+   row shows "1/1 runner ready", usually within a minute.
+2. **Allow the Playwright image:** on the same page, open Settings → Plan Runner Actions → Configure → under
+   `run-container`, expand Allowed images. If `mcr.microsoft.com/playwright:*` is already listed, change nothing;
+   otherwise add it and press Apply.
 
-Record both as `org_setting plan-runner <cluster>` and `org_setting allowed-image mcr.microsoft.com/playwright:*`
-under Resources, so teardown lists them for the user to revert. Done when a Plan run doesn't fail with "no plan
-runner group on cluster" or an image-policy error.
+Record what you changed as `org_setting plan-runner <cluster>` and, only if you added it,
+`org_setting allowed-image mcr.microsoft.com/playwright:*` under Resources, so teardown lists them for the user to
+revert. Done when a Plan run doesn't fail with "no plan runner group on cluster" or an image-policy error.
 
 ## Set up
 
@@ -71,18 +73,24 @@ Record `sandbox broken-route<suffix>` under Resources. If C3 ran, also run it ag
 
 ## Prove it
 
+Each run's execution ID is the first `"id"` in its JSON (`sed -n 's/^  "id": *"\([^"]*\)".*/\1/p' <file> | head -1`).
+For each one:
+
 ```bash
-grep -oE '"exit_code": *"?[0-9]+' "$T/logs/plan-driver.json" "$T/logs/plan-broken.json" "$T/logs/plan-local.json"
+"$T/bin/sd" plan execution get <execution id> | grep '^Phase'
+"$T/bin/sd" plan execution get-output <execution id> exit_code     # the test step's exit code
+"$T/bin/sd" plan execution logs <execution id> e2e | grep -E 'passed|failed|✘'
 ```
 
 Done when:
-- the run against `driver-plates<suffix>` exits 0;
-- the run against `broken-route<suffix>` fails (non-zero exit code): the rides never get past "Resolving routes";
-- the run against `local-route<suffix>` exits 0, and `$T/logs/route-local.log` shows the in-cluster test's requests
-  reaching the process on this computer.
+- the run against `driver-plates<suffix>` is `completed` with exit code `0`;
+- the run against `broken-route<suffix>` is `failed`, and its log shows the test "check route resolve routes"
+  failing: the ride never gets past "Resolving routes". The other test still passes;
+- the run against `local-route<suffix>` is `completed` with exit code `0`, and `$T/logs/route-local.log` shows the
+  in-cluster test's requests (`Finding route`) reaching the process on this computer.
 
-To see the failure in detail, `"$T/bin/sd" plan execution get <execution id>` and
-`"$T/bin/sd" plan execution logs <execution id> e2e` (the execution ID is in the run's JSON).
+If a run is `failed` but its exit code is `0`, the tests passed and only uploading the report failed (its error says
+"artifact upload failed"); run it again.
 
 Flow for the card: `plan(runner) → frontend → … → route(broken-route<suffix>) ✗` next to `plan(runner) → frontend →
 … → driver(driver-plates<suffix>) ✓`.
@@ -117,13 +125,12 @@ are reusable, parameterized runs on a managed runner that people and coding agen
 
 ```bash
 "$T/bin/sd" sandbox delete broken-route<suffix>
-# The plan ID: from the trial log (`plan <id>`), or read it from the tag before deleting the tag
-"$T/bin/sd" plan tag get hotrod-e2e<suffix> -o json | tr -d '\n ' | sed -n 's/.*"plan":{"id":"\([^"]*\)".*/\1/p'
 "$T/bin/sd" plan tag delete hotrod-e2e<suffix>
-"$T/bin/sd" plan delete <plan id>
 ```
 
-There is no command that lists plans, so a plan whose ID wasn't recorded can only be found through its tag.
+Don't try `plan delete`: Signadot keeps a plan that has run, as the record of its executions, and refuses to delete it
+("cannot delete a plan that has been executed"). With its tag gone, nothing points at it. The recorded `plan <id>`
+stays in the trial log for reference.
 
 The two org settings stay; teardown lists them for the user to revert.
 

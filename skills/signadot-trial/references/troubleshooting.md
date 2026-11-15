@@ -86,6 +86,9 @@ seconds later.
 **A plan step fails on an image policy.** The org doesn't allow `mcr.microsoft.com/playwright:*` for `run-container`
 yet (same section).
 
+**A plan run is `failed`, but `plan execution get-output <id> exit_code` prints `0`.** The tests passed; uploading the
+report afterwards failed (the run's error says "artifact upload failed … unexpected EOF"). Run the plan again.
+
 ## Meshes
 
 **`install-operator.sh` stops with "operator deployments not available", or mesh pods stay `Pending`.** On a
