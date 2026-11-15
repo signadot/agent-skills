@@ -93,8 +93,12 @@ try: run the same job against another sandbox, e.g. --set sandbox=frontend-highl
 
 ```bash
 "$T/bin/sd" jobrunnergroup delete hotrod-playwright<suffix>
+"$T/bin/sd" jobrunnergroup list     # repeat until hotrod-playwright<suffix> is gone; it drains first
 "$T/bin/kc" delete namespace signadot-tests
 ```
+
+Wait for the runner group to finish draining before deleting the namespace or the cluster; otherwise it stays
+listed as `draining`.
 
 ## Docs
 

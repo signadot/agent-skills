@@ -57,20 +57,25 @@ while [ -z "$version" ] && [ "$(date +%s)" -lt "$deadline" ]; do
 done
 [ -n "$version" ] || { echo "error: $CLUSTER reported no operator version within 180 s" >&2; exit 7; }
 
-# 4. Restart the workloads so new pods get the proxy, then count the ones that have it.
-ok=0 total=0
-for w in $(echo "$WORKLOADS" | tr , ' '); do
-  "$KC" -n "$NS" rollout restart "deploy/$w" >/dev/null
-done
-for w in $(echo "$WORKLOADS" | tr , ' '); do
-  "$KC" -n "$NS" rollout status "deploy/$w" --timeout=300s >/dev/null
-  total=$((total + 1))
-  if [ "$PROXY" = none ]; then ok=$((ok + 1)); continue; fi
-  has=$("$KC" -n "$NS" get pods -o jsonpath='{range .items[*]}{.metadata.name}{"|"}{.metadata.deletionTimestamp}{"|"}{.spec.containers[*].name}{"\n"}{end}' \
-    | awk -F'|' -v w="$w" -v p="$PROXY" '$1 ~ "^" w "-[a-z0-9]+-[a-z0-9]+$" && $2 == "" { n++; k = split($3, c, " "); for (i = 1; i <= k; i++) if (c[i] == p) { h++; break } }
-      END { print (n > 0 && h == n) ? "yes" : "no" }')
-  if [ "$has" = yes ]; then ok=$((ok + 1)); fi
-done
+# 4. Count the workloads whose pods have the proxy. Restart them (so new pods get it) only when the operator was
+#    just installed or a proxy is missing, so a re-run on a healthy cluster restarts nothing.
+count() {
+  ok=0 total=0
+  for w in $(echo "$WORKLOADS" | tr , ' '); do
+    total=$((total + 1))
+    if [ "$PROXY" = none ]; then ok=$((ok + 1)); continue; fi
+    has=$("$KC" -n "$NS" get pods -o jsonpath='{range .items[*]}{.metadata.name}{"|"}{.metadata.deletionTimestamp}{"|"}{.spec.initContainers[*].name}{" "}{.spec.containers[*].name}{"\n"}{end}' \
+      | awk -F'|' -v w="$w" -v p="$PROXY" '$1 ~ "^" w "-[a-z0-9]+-[a-z0-9]+$" && $2 == "" { n++; k = split($3, c, " "); for (i = 1; i <= k; i++) if (c[i] == p) { h++; break } }
+        END { print (n > 0 && h == n) ? "yes" : "no" }')
+    if [ "$has" = yes ]; then ok=$((ok + 1)); fi
+  done
+}
+count
+if [ "$operator" = installed ] || [ "$ok" -lt "$total" ]; then
+  for w in $(echo "$WORKLOADS" | tr , ' '); do "$KC" -n "$NS" rollout restart "deploy/$w" >/dev/null; done
+  for w in $(echo "$WORKLOADS" | tr , ' '); do "$KC" -n "$NS" rollout status "deploy/$w" --timeout=300s >/dev/null; done
+  count
+fi
 
 printf 'cluster_registered: %s\noperator: %s\noperator_version: %s\nsidecars: %s/%s\n' \
   "$registered" "$operator" "$version" "$ok" "$total"

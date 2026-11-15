@@ -41,7 +41,9 @@ kind load docker-image temporal-py-client-ui:v1.0 temporal-money-transfer:v1.0 -
 ```
 
 The worker restarts a few times until the Temporal server is up; that's expected. Done when every deployment in
-`temporal` is available. Record `namespace temporal` under Resources.
+`temporal` is available. If the operator wasn't installed yet when you deployed, restart them once it is:
+`"$T/bin/kc" -n temporal rollout restart deploy`; otherwise the worker sandbox stays Not Ready with
+`RoutingNotReady`. Record `namespace temporal` under Resources.
 
 ## Run
 

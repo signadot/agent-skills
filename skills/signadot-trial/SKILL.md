@@ -178,7 +178,8 @@ Read only the files for what the user chose. Each one is self-contained and foll
 - **Memory:** add up the core and each chosen variation from the index, compare with `docker_mem_gb`, and settle it
   in the briefing.
 - **Demo apps** other than HotROD come from `signadot/examples` at the commit their file pins. Start their deploys
-  as soon as the cluster is up, so image pulls overlap the core tutorial.
+  as soon as the cluster is up, so image pulls overlap the core tutorial. Once the operator is installed, restart the
+  deployments of any app deployed before it (`references/setup/cluster.md` §3).
 - **Order:** C1, C2, C3, then data, then async (Kafka first, then the menu order), then testing (Jobs, then Plans).
   Kafka, Jobs and Plans reuse C1's sandbox; the Plans file's local step needs C3.
 

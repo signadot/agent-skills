@@ -35,7 +35,8 @@ kind load docker-image redis-streams-demo-python:latest --name signadot-trial
 "$T/bin/kc" -n redis-streams-demo wait --for=condition=available deploy --all --timeout=300s
 ```
 
-Done when every deployment in `redis-streams-demo` is available. Record `namespace redis-streams-demo` under
+Done when every deployment in `redis-streams-demo` is available. If the operator wasn't installed yet when you
+deployed, restart them once it is: `"$T/bin/kc" -n redis-streams-demo rollout restart deploy`. Record `namespace redis-streams-demo` under
 Resources.
 
 ## Run

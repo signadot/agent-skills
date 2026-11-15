@@ -40,7 +40,8 @@ cd "$T/examples/rabbitmq-signadot-demo"
 "$T/bin/kc" -n rabbitmq-demo wait --for=condition=available deploy --all --timeout=300s
 ```
 
-Done when every deployment in `rabbitmq-demo` is available. Record `namespace rabbitmq-demo` under Resources.
+Done when every deployment in `rabbitmq-demo` is available. If the operator wasn't installed yet when you
+deployed, restart them once it is: `"$T/bin/kc" -n rabbitmq-demo rollout restart deploy`. Record `namespace rabbitmq-demo` under Resources.
 
 ## Run
 

@@ -78,6 +78,13 @@ privately, waits until Signadot sees it, and restarts HotROD's four services so 
 it prints `operator_version: …` and `sidecars: 4/4`. Record the operator version under Run. If `sidecars` is short,
 see troubleshooting.md. It's safe to re-run: it skips what's already done.
 
+If you started a demo app's deploy before this step (its file's "Set up"), restart its deployments now so they get
+the routing proxy too, or its sandbox stays Not Ready with `RoutingNotReady`:
+
+```bash
+"$T/bin/kc" -n <namespace> rollout restart deploy
+```
+
 ## 4. Connection (`connect`)
 
 The connection lets this computer reach services in the cluster. Write it into the CLI config the trial uses:
@@ -97,7 +104,7 @@ local:
 EOF
 mv "$CFG.new" "$CFG"
 "$T/bin/sd" local connect --unprivileged
-"$T/bin/sd" local status -o json | sed -n 's/.*"localAddress": *"\([^"]*\)".*/\1/p'
+"$T/bin/sd" local status -o json | tr -d '\n ' | sed -n 's/.*"portforward":{[^}]*"localAddress":"\([^"]*\)".*/\1/p'
 ```
 
 The last command prints the address of a local SOCKS proxy, e.g. `127.0.0.1:60123`. Record
