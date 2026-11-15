@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Signadot trial report</title>
+<!--
+  How to fill this template (see references/finish/report.md):
+  - Each slot is one comment that starts with FILL and a name, holding example markup. Replace the whole comment with
+    real content in the same shape.
+  - Copy the CARD block once per scenario that ran, and the NOT-RUN block once per menu item that didn't.
+  - Escape <, > and & in anything copied from command output.
+  - Screenshots live next to this file in screens/ and are linked relatively. No scripts, no external requests.
+-->
+<style>
+:root {
+  --bg: #f6f6f3; --surface: #ffffff; --text: #1c1c1e; --muted: #5d6066; --border: #e2e2dd;
+  --accent: #3451d1; --code-bg: #f0f0ec;
+  --ok: #17663f; --ok-bg: #e3f3ea; --fail: #a8261b; --fail-bg: #fbe9e7; --skip: #7a5d00; --skip-bg: #fbf1cf;
+  --base: #5d6066; --base-bg: #f2f2ef; --sbx: #3451d1; --sbx-bg: #eef1fd; --msg: #7a4fc4; --msg-bg: #f3eefc;
+  --radius: 10px; --shadow: 0 1px 2px rgba(0,0,0,.05);
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #131416; --surface: #1c1d20; --text: #ececee; --muted: #a2a5ab; --border: #2e3034;
+    --accent: #8fa2ff; --code-bg: #25272b;
+    --ok: #6fd3a0; --ok-bg: #173527; --fail: #ff9a8f; --fail-bg: #3d1d1a; --skip: #f0cf6b; --skip-bg: #3a3116;
+    --base: #a2a5ab; --base-bg: #232529; --sbx: #9fb0ff; --sbx-bg: #1f2540; --msg: #c7a8ff; --msg-bg: #2a2140;
+    --shadow: none;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text);
+  font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+.wrap { max-width: 960px; margin: 0 auto; padding: 32px 16px 64px; }
+a { color: var(--accent); overflow-wrap: anywhere; }
+code, pre { font: 12.5px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+pre { background: var(--code-bg); border-radius: 6px; padding: 10px 12px; overflow-x: auto; white-space: pre-wrap;
+  word-break: break-word; margin: 8px 0; }
+h1 { font-size: 26px; line-height: 1.25; margin: 4px 0 12px; letter-spacing: -0.01em; }
+h2 { font-size: 18px; margin: 40px 0 14px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 16px; margin: 0; }
+h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; margin: 0 0 4px; color: var(--muted); }
+.eyebrow { margin: 0; color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: .06em; }
+.hero, .card, .tile { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow); }
+.hero { padding: 22px 22px 18px; }
+.summary { margin: 0 0 10px; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+.intro, .muted { color: var(--muted); margin: 0; max-width: 72ch; }
+.pill { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 999px;
+  white-space: nowrap; }
+.pill.passed, .pill.ok { color: var(--ok); background: var(--ok-bg); }
+.pill.failed { color: var(--fail); background: var(--fail-bg); }
+.pill.not-run, .pill.skipped { color: var(--skip); background: var(--skip-bg); }
+.card { padding: 18px 20px; margin: 0 0 16px; break-inside: avoid; }
+.card.not-run { opacity: .8; }
+.card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.card-head .num { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.card-head h3 { flex: 1; min-width: 12ch; }
+.pcw { display: grid; grid-template-columns: 150px 1fr; gap: 4px 14px; margin: 0 0 12px; }
+.pcw dt { color: var(--muted); font-size: 13px; padding-top: 1px; }
+.pcw dd { margin: 0; }
+.compare { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0 0 10px; }
+.side { border-radius: 8px; padding: 10px 12px; border-left: 3px solid; }
+.side p { margin: 0; overflow-wrap: anywhere; }
+.side.base { background: var(--base-bg); border-color: var(--base); }
+.side.sbx { background: var(--sbx-bg); border-color: var(--sbx); }
+.side.sbx h4 { color: var(--sbx); }
+/* Flow diagram: one row per request (or message), sandbox hops highlighted. */
+.flows { margin: 4px 0 12px; display: grid; gap: 8px; }
+.flow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.flow .label { width: 92px; flex: none; font-size: 12px; color: var(--muted); text-transform: uppercase;
+  letter-spacing: .04em; }
+.hop { display: inline-flex; flex-direction: column; align-items: center; padding: 4px 10px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--base-bg); font-size: 13px; line-height: 1.25; }
+.hop small { font-size: 11px; color: var(--muted); }
+.hop.sbx { background: var(--sbx-bg); border-color: var(--sbx); color: var(--sbx); font-weight: 600; }
+.hop.sbx small { color: var(--sbx); font-weight: 500; }
+.hop.local { border-style: dashed; }
+.hop.msg { background: var(--msg-bg); border-color: var(--msg); color: var(--msg); }
+.arrow { color: var(--muted); }
+.proof { margin: 8px 0; }
+.why { margin: 10px 0 0; color: var(--muted); }
+.why strong, .proof strong { color: var(--text); }
+figure { margin: 10px 0; }
+figure img { max-width: 100%; border: 1px solid var(--border); border-radius: 6px; display: block; }
+figcaption { font-size: 12px; color: var(--muted); }
+details { margin: 10px 0 0; border-top: 1px solid var(--border); padding-top: 8px; }
+summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.tile { padding: 14px 16px; }
+.tile h3 { font-size: 14px; margin-bottom: 4px; }
+.tile p { margin: 0; color: var(--muted); font-size: 14px; overflow-wrap: anywhere; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); }
+th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top;
+  font-size: 14px; }
+th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+tr:last-child td { border-bottom: 0; }
+.overview svg { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
+.overview svg .box { fill: var(--surface); stroke: var(--border); stroke-width: 1.5; }
+.overview svg .store { fill: var(--base-bg); stroke: var(--border); stroke-width: 1.5; }
+.overview svg .bus { fill: var(--msg-bg); stroke: var(--msg); stroke-width: 1.5; }
+.overview svg text { fill: var(--text); font: 600 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+.overview svg text.sub { fill: var(--muted); font-weight: 400; font-size: 11px; }
+.overview svg .line { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+.overview svg .head { fill: var(--muted); }
+ul.plain { margin: 6px 0 0; padding-left: 18px; }
+@media (max-width: 640px) {
+  .compare, .pcw { grid-template-columns: 1fr; }
+  .pcw dd { margin-bottom: 6px; }
+  .flow .label { width: 100%; }
+  h1 { font-size: 22px; }
+}
+@media print {
+  body { background: #fff; color: #000; font-size: 12px; }
+  .wrap { max-width: none; padding: 0; }
+  .card, .hero, .tile, table { box-shadow: none; border-color: #ccc; }
+  details > summary { display: none; }
+  a { color: #000; }
+  h2 { break-after: avoid; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<p class="eyebrow">Signadot trial report</p>
+<h1><!-- FILL:title e.g. Signadot trial: 3 of 3 scenarios proven in 14 minutes --></h1>
+<!-- FILL:summary
+  <p class="summary"><span class="pill passed">3 passed</span> <span class="pill failed">0 failed</span>
+  <span class="pill not-run">5 not run</span> <span class="muted">· org ORG · cluster CLUSTER · infra INFRA ·
+  DATE · MINUTES min</span></p>
+-->
+<p class="intro">Signadot gives every change its own lightweight sandbox inside one shared Kubernetes cluster. A
+sandbox runs only the services you changed. Requests that carry its routing key go to those services, and everything
+else uses the shared baseline, so you test against real dependencies without copying the whole stack.</p>
+</header>
+<main>
+
+<section id="hotrod" class="overview">
+<h2>The demo app: HotROD</h2>
+<p class="muted">HotROD is a small ride-sharing app made of four services. Booking a ride sends one request through
+all of them, which makes it easy to see which version of each service handled it.</p>
+<svg viewBox="0 0 760 210" role="img" aria-label="HotROD services: the browser calls frontend; frontend calls location (MySQL) and publishes a dispatch request to Kafka; driver consumes it, reads driver positions from Redis and asks route for an ETA per driver.">
+  <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <rect class="box" x="10" y="80" width="100" height="50" rx="8"/><text x="60" y="102" text-anchor="middle">Browser</text><text class="sub" x="60" y="119" text-anchor="middle">book a ride</text>
+  <rect class="box" x="160" y="80" width="120" height="50" rx="8"/><text x="220" y="102" text-anchor="middle">frontend</text><text class="sub" x="220" y="119" text-anchor="middle">web UI and API</text>
+  <rect class="box" x="330" y="10" width="120" height="50" rx="8"/><text x="390" y="32" text-anchor="middle">location</text><text class="sub" x="390" y="49" text-anchor="middle">pickup and drop-off</text>
+  <rect class="store" x="510" y="10" width="100" height="50" rx="8"/><text x="560" y="40" text-anchor="middle">MySQL</text>
+  <rect class="bus" x="330" y="150" width="120" height="50" rx="8"/><text x="390" y="172" text-anchor="middle">Kafka</text><text class="sub" x="390" y="189" text-anchor="middle">dispatch requests</text>
+  <rect class="box" x="510" y="150" width="100" height="50" rx="8"/><text x="560" y="172" text-anchor="middle">driver</text><text class="sub" x="560" y="189" text-anchor="middle">nearest drivers</text>
+  <rect class="store" x="650" y="80" width="100" height="50" rx="8"/><text x="700" y="110" text-anchor="middle">Redis</text>
+  <rect class="box" x="650" y="150" width="100" height="50" rx="8"/><text x="700" y="172" text-anchor="middle">route</text><text class="sub" x="700" y="189" text-anchor="middle">ETA per driver</text>
+  <path class="line" d="M110,105 H156" marker-end="url(#arr)"/>
+  <path class="line" d="M280,95 L326,45" marker-end="url(#arr)"/>
+  <path class="line" d="M450,35 H506" marker-end="url(#arr)"/>
+  <path class="line" d="M280,115 L326,165" marker-end="url(#arr)"/>
+  <path class="line" d="M450,175 H506" marker-end="url(#arr)"/>
+  <path class="line" d="M610,165 L646,115" marker-end="url(#arr)"/>
+  <path class="line" d="M610,180 H646" marker-end="url(#arr)"/>
+</svg>
+<p class="muted">The browser shows each step as a notification, ending with "Driver T7… arriving in N min". Every
+notification records which service handled it and whether a sandbox did, which is how each card below proves where
+a request went.</p>
+</section>
+
+<section id="scenarios">
+<h2>What each scenario proved</h2>
+<!-- FILL:cards  (one CARD per scenario that ran, in run order, then one NOT-RUN per menu item that didn't) -->
+
+<!-- CARD
+<article class="card" id="ID">
+  <div class="card-head"><span class="num">N</span><h3>TITLE</h3><span class="pill passed">passed</span></div>
+  <dl class="pcw">
+    <dt>The problem</dt><dd>PROBLEM</dd>
+    <dt>What Signadot did</dt><dd>CAPABILITY</dd>
+  </dl>
+  <div class="flows">
+    <div class="flow"><span class="label">Without key</span>
+      <span class="hop">frontend<small>baseline</small></span><span class="arrow">→</span>
+      <span class="hop">driver<small>baseline</small></span></div>
+    <div class="flow"><span class="label">With key</span>
+      <span class="hop">frontend<small>baseline</small></span><span class="arrow">→</span>
+      <span class="hop sbx">driver<small>driver-plates</small></span></div>
+  </div>
+  <div class="compare">
+    <div class="side base"><h4>Without routing key</h4><p>BASELINE RESULT</p></div>
+    <div class="side sbx"><h4>With routing key</h4><p>SANDBOX RESULT</p></div>
+  </div>
+  <p class="proof"><strong>Proof:</strong> PROOF</p>
+  <figure><img src="screens/ID.png" alt="ALT"><figcaption>CAPTION</figcaption></figure>
+  <p class="why"><strong>Why it matters:</strong> WHY <a href="DOCS">Learn more</a></p>
+  <details><summary>Commands and specs</summary><pre>COMMANDS</pre></details>
+</article>
+  Hop classes: "hop sbx" for a sandbox, "hop sbx local" for a service running on this computer, "hop msg" for a
+  topic or queue. Leave out the figure when there is no screenshot. Use pill "failed" and say what was seen when a
+  scenario failed.
+/CARD -->
+
+<!-- NOT-RUN
+<article class="card not-run" id="ID">
+  <div class="card-head"><h3>TITLE</h3><span class="pill not-run">not run</span></div>
+  <p class="muted">WHAT IT SHOWS, IN ONE SENTENCE</p>
+  <p class="muted">Ask your agent to run it, or follow <a href="DOCS">the docs</a>.</p>
+</article>
+/NOT-RUN -->
+</section>
+
+<section id="adoption">
+<h2>What adopting this would take for your team</h2>
+<div class="grid">
+<div class="tile"><h3>Header propagation</h3><p>Services pass the routing key along with each request, usually through
+OpenTelemetry baggage, which many teams already propagate.</p></div>
+<div class="tile"><h3>Request routing</h3><p>Signadot DevMesh (a lightweight sidecar), Istio or Linkerd sends keyed
+requests to sandboxes.</p></div>
+<div class="tile"><h3>Queue consumers</h3><p>Consumers of Kafka, RabbitMQ, Redis Streams, Temporal and similar
+systems check the routing key, so sandboxes and baseline each process only their own messages.</p></div>
+<div class="tile"><h3>Database strategy</h3><p>Shared databases, per-sandbox databases from resource plugins, or a
+mix, depending on what each change touches.</p></div>
+<div class="tile"><h3>Operator and CLI</h3><p>One Helm-installed operator per cluster, and the Signadot CLI or a CI
+integration to create sandboxes from pull requests.</p></div>
+</div>
+</section>
+
+<section id="timeline">
+<h2>Setup timeline: what was done on your behalf</h2>
+<!-- FILL:timeline
+  <div class="table-wrap"><table><thead><tr><th>Step</th><th>Result</th><th>Time</th><th>Detail</th></tr></thead>
+  <tbody><tr><td>cluster</td><td><span class="pill ok">ok</span></td><td>95 s</td><td>kind cluster signadot-trial</td></tr></tbody></table></div>
+  <h4>What you did</h4><ul class="plain"><li>…</li></ul>
+  <h4>Fallbacks</h4><ul class="plain"><li>…</li></ul>  (leave out when empty)
+-->
+</section>
+
+<section id="running">
+<h2>What's still running</h2>
+<!-- FILL:running
+  <ul class="plain"><li>kind cluster signadot-trial (context kind-signadot-trial)</li>
+  <li>Sandboxes: driver-plates (routing key …), …</li><li>Preview URL: <a href="…">…</a></li>
+  <li>Local connection (no-sudo, proxy socks5h://127.0.0.1:…)</li><li>…</li></ul>
+  <p class="muted">Nothing expires on its own. Ask your agent to tear the trial down when you're done.</p>
+-->
+</section>
+
+<section id="next">
+<h2>Next steps</h2>
+<!-- FILL:next-steps
+  <div class="grid"><div class="tile"><h3>Use Signadot on your own services</h3><p>npx skills add signadot/agent-skills --skill signadot-validate</p></div>
+  <div class="tile"><h3>Connect your agent</h3><p>Signadot MCP server: COMMAND (org ORG)</p></div>
+  <div class="tile"><h3>Try another variation</h3><p>…</p></div></div>
+-->
+</section>
+
+<section id="teardown">
+<h2>Teardown</h2>
+<!-- FILL:teardown
+  <p>Ask your agent to "tear down the Signadot trial". It removes, in order: …</p>
+  <h4>Left for you</h4><ul class="plain"><li>Remove the cluster registration in the dashboard (Settings → Clusters).</li><li>…</li></ul>
+-->
+</section>
+
+<section id="details">
+<h2>Run details</h2>
+<!-- FILL:run-details
+  <div class="table-wrap"><table><tbody><tr><th>Org</th><td>…</td></tr><tr><th>Cluster</th><td>…</td></tr>
+  <tr><th>Infrastructure</th><td>…</td></tr><tr><th>Connection</th><td>…</td></tr><tr><th>CLI</th><td>…</td></tr>
+  <tr><th>Config isolated</th><td>…</td></tr><tr><th>Started / finished</th><td>…</td></tr></tbody></table></div>
+-->
+</section>
+</main>
+</div>
+</body>
+</html>
