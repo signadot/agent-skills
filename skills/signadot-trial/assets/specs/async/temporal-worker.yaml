@@ -1,0 +1,16 @@
+name: temporal-worker@{suffix}
+spec:
+  cluster: "@{cluster}"
+  description: "Signadot trial (Temporal): a sandboxed worker on the shared money-transfer task queue"
+  labels:
+    demo: temporal
+  forks:
+  - forkOf:
+      kind: Deployment
+      namespace: temporal
+      name: temporal-worker
+    customizations:
+      env:
+      # Pick up routing changes quickly in the trial (the demo's default is 120 s).
+      - name: ROUTES_API_REFRESH_INTERVAL_SECONDS
+        value: "10"

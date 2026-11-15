@@ -1,0 +1,21 @@
+name: rabbitmq-consumer@{suffix}
+spec:
+  cluster: "@{cluster}"
+  description: "Signadot trial (RabbitMQ): consumer fork on its own temporary queue"
+  labels:
+    demo: rabbitmq
+  forks:
+  - forkOf:
+      kind: Deployment
+      namespace: rabbitmq-demo
+      name: consumer
+    # The fork copies the baseline's env, including QUEUE_NAME=consumer-baseline.
+    # Give it its own temporary queue so it doesn't compete with the baseline for messages.
+    customizations:
+      env:
+      - name: QUEUE_NAME
+        value: consumer-trial@{suffix}
+      - name: QUEUE_DURABLE
+        value: "false"
+      - name: QUEUE_AUTO_DELETE
+        value: "true"

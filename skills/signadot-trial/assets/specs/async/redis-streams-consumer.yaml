@@ -1,0 +1,16 @@
+name: redis-streams-consumer@{suffix}
+spec:
+  cluster: "@{cluster}"
+  description: "Signadot trial (Redis Streams): consumer fork running processor v2"
+  labels:
+    demo: redis-streams
+  forks:
+  - forkOf:
+      kind: Deployment
+      namespace: redis-streams-demo
+      name: consumer
+    customizations:
+      env:
+      # The change under test: v2 uppercases message bodies.
+      - name: PROCESSOR_VERSION
+        value: v2

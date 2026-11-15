@@ -112,7 +112,7 @@ Variations (pick any number)
   Infrastructure  DevMesh (default) · Istio · Istio ambient · Linkerd     pick one
   Data            A database per sandbox                                   +3 min
   Async           Kafka (built into the demo app)                          +2 min
-                  Temporal · RabbitMQ · Redis Streams                      each deploys its own demo app (see times)
+                  Temporal +6 min · RabbitMQ +3 min · Redis Streams +3 min  each deploys its own demo app
   Testing         Run a Playwright suite as a Job and as a Plan,           +8 min, changes two org settings
                   and catch a regression
 
@@ -163,9 +163,9 @@ Read only the files for what the user chose. Each one is self-contained and foll
 | Infra | Linkerd | [references/infra/linkerd.md](references/infra/linkerd.md) | +5 min | +0.5 GB | chosen before setup |
 | Data | A database per sandbox | [references/data/sandbox-database.md](references/data/sandbox-database.md) | +3 min | — | — |
 | Async | Kafka | [references/async/kafka.md](references/async/kafka.md) | +2 min | — | C1 |
-| Async | Temporal | [references/async/temporal.md](references/async/temporal.md) | +15 min | +2 GB | — |
-| Async | RabbitMQ | [references/async/rabbitmq.md](references/async/rabbitmq.md) | +8 min | +0.5 GB | — |
-| Async | Redis Streams | [references/async/redis-streams.md](references/async/redis-streams.md) | +8 min | +0.5 GB | — |
+| Async | Temporal | [references/async/temporal.md](references/async/temporal.md) | +6 min | +1 GB | Docker (local image build) |
+| Async | RabbitMQ | [references/async/rabbitmq.md](references/async/rabbitmq.md) | +3 min | +0.5 GB | — |
+| Async | Redis Streams | [references/async/redis-streams.md](references/async/redis-streams.md) | +3 min | +0.5 GB | Docker (local image build) |
 | Testing | Playwright suite as a Job | [references/testing/jobs.md](references/testing/jobs.md) | +4 min | +1 GB | C1; an org setting |
 | Testing | Same suite as a Plan; catch a regression | [references/testing/plans.md](references/testing/plans.md) | +4 min | — | C1; two org settings |
 
