@@ -158,9 +158,9 @@ Read only the files for what the user chose. Each one is self-contained and foll
 | Core | C2 two services + preview URL | [references/core/multi-service-preview.md](references/core/multi-service-preview.md) | 2 min | — | C1 |
 | Core | C3 a service on this computer | [references/core/local-development.md](references/core/local-development.md) | 3 min | — | Go or Docker |
 | Infra | DevMesh (default) | [references/infra/devmesh.md](references/infra/devmesh.md) | — | — | — |
-| Infra | Istio | [references/infra/istio.md](references/infra/istio.md) | +5 min | +1 GB | chosen before setup |
-| Infra | Istio ambient | [references/infra/istio-ambient.md](references/infra/istio-ambient.md) | +5 min | +1 GB | chosen before setup |
-| Infra | Linkerd | [references/infra/linkerd.md](references/infra/linkerd.md) | +5 min | +0.5 GB | chosen before setup |
+| Infra | Istio | [references/infra/istio.md](references/infra/istio.md) | +2 min | +0.5 GB | chosen before setup |
+| Infra | Istio ambient | [references/infra/istio-ambient.md](references/infra/istio-ambient.md) | +2 min | +0.5 GB | chosen before setup |
+| Infra | Linkerd | [references/infra/linkerd.md](references/infra/linkerd.md) | +2 min | +0.5 GB | chosen before setup; openssl |
 | Data | A database per sandbox | [references/data/sandbox-database.md](references/data/sandbox-database.md) | +3 min | — | — |
 | Async | Kafka | [references/async/kafka.md](references/async/kafka.md) | +2 min | — | C1 |
 | Async | Temporal | [references/async/temporal.md](references/async/temporal.md) | +6 min | +1 GB | Docker (local image build) |

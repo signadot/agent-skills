@@ -46,7 +46,8 @@ else
     || { echo "error: helm install failed; see $T/logs/operator-install.log" >&2; exit 6; }
   rm -f "$tok"; operator=installed
 fi
-"$KC" -n signadot wait --for=condition=available deploy --all --timeout=300s >/dev/null
+"$KC" -n signadot wait --for=condition=available deploy --all --timeout=300s >/dev/null \
+  || { echo "error: operator deployments not available after 5 min; see: $KC -n signadot get pods" >&2; exit 8; }
 
 # 3. Wait until the control plane sees the operator.
 version="" deadline=$(( $(date +%s) + 180 ))

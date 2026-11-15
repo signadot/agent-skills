@@ -85,3 +85,16 @@ seconds later.
 
 **A plan step fails on an image policy.** The org doesn't allow `mcr.microsoft.com/playwright:*` for `run-container`
 yet (same section).
+
+## Meshes
+
+**`install-operator.sh` stops with "operator deployments not available", or mesh pods stay `Pending`.** On a
+single-node cluster, Istio's default requests (istiod asks for 2 GiB, each sidecar 128 MiB) and the operator's two
+traffic-manager replicas don't fit. `describe pod` shows "Insufficient memory". Install the mesh with the infra
+file's resource flags and `trafficManager.replicas: 1` from the start. On a cluster where the mesh is already
+installed, run the infra file's helm commands again (they upgrade in place), then delete the old, larger pod so the
+new one can schedule.
+
+**Sandboxes on Istio ambient stay Not Ready with `RoutingNotReady`.** A forked service needs a waypoint and a route
+object. Check that the `hotrod` namespace has `istio.io/dataplane-mode=ambient` and `istio.io/use-waypoint=waypoint`,
+and that the `waypoint` Gateway's pod is running.

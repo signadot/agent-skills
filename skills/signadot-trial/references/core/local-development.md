@@ -76,7 +76,9 @@ bash "$S/scripts/ride.sh" --proxy <proxy> --key <local-route routing key>
 
 Done when the ride without the key has an ETA in minutes (like `12m30s`), and the keyed ride has an ETA in seconds
 with the hop `route local-route<suffix>`. The log `$T/logs/route-local.log` shows the request arriving. Lines about
-exporting traces to `jaeger.hotrod` are harmless: there is no tracing backend in the trial.
+exporting traces to `jaeger.hotrod` are harmless: there is no tracing backend in the trial. On a mesh (Istio ambient
+especially), routing to the local process can take a few seconds to apply after the sandbox is ready: if the route
+hop still shows `baseline`, book another keyed ride.
 
 Then show the edit loop: rebuild (same build command as above), stop the process (`kill $(cat "$T/route-local.pid")`),
 start it again, and time it. Done when rebuild plus restart takes a few seconds, with no image build or deploy.
