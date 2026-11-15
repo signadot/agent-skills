@@ -21,6 +21,23 @@ on next start and triggers when the conversation matches its scope.
 
 ## Skills
 
+### `signadot-trial`
+
+Try Signadot hands-on, end to end, from your coding agent. It signs you up, sets
+up a local kind cluster with the HotROD demo app, and proves each capability by
+sending the same request with and without a routing key: one service in
+isolation, a multi-service preview URL, and a service running on your computer.
+Optional variations cover Istio, Istio ambient and Linkerd, a database per
+sandbox, Kafka, Temporal, RabbitMQ and Redis Streams, and test automation with
+Jobs and Plans. It ends with an HTML report and leaves everything running until
+you ask for teardown.
+
+    npx skills add signadot/agent-skills --skill signadot-trial
+
+Then ask your agent to "try Signadot". Needs Docker with about 4 GB of memory
+for the core tutorial, plus curl; kubectl, kind, helm and git are installed
+with your consent if missing. No sudo is needed by default.
+
 ### `signadot-validate`
 
 Validate code changes against real Kubernetes microservice dependencies

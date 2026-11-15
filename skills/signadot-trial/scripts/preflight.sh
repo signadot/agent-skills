@@ -59,14 +59,20 @@ fi
 kv signadot_login "$login"
 
 # A running local connection (only one is possible per machine, across orgs and CLI installs).
+# Ask the user's CLI, then the trial's own wrapper (a resumed trial), then fall back to the process list.
 lc=none
-if [ -n "${sd:-}" ]; then
-  st=$("$sd" local status 2>&1 || true)
-  case "$st" in *[Nn]ot\ connected*|*not\ running*) ;; *[Hh]ealthy*|*[Cc]onnected*)
-    c=$(echo "$st" | sed -n "s/.*runtime config: cluster \([^ ,]*\).*/\1/p" | head -1); lc="running ${c:-unknown}" ;; esac
-fi
-if [ "$lc" = none ] && ps -Ao args= 2>/dev/null | grep -v grep | grep 'signadot' | grep -q ' locald'; then
-  lc="running unknown"
+for cli in ${sd:-} "$T/bin/sd"; do
+  [ -x "$cli" ] || continue
+  st=$("$cli" local status 2>&1 || true)
+  case "$st" in *[Nn]ot\ connected*|*not\ running*) continue ;; *[Hh]ealthy*|*[Cc]onnected*)
+    c=$(echo "$st" | sed -n "s/.*runtime config: cluster \([^ ,]*\).*/\1/p" | head -1); lc="running ${c:-unknown}"
+    [ "$cli" = "$T/bin/sd" ] && lc="$lc (trial)"; break ;; esac
+done
+if [ "$lc" = none ]; then
+  procs=$(ps -Ao args= 2>/dev/null | grep -v grep | grep 'signadot' | grep ' locald' || true)
+  if [ -n "$procs" ]; then
+    lc="running unknown"; case "$procs" in "$T"/*) lc="running unknown (trial)" ;; esac
+  fi
 fi
 kv local_connect "$lc"
 

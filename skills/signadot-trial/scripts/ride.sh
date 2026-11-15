@@ -38,9 +38,10 @@ while :; do
 done
 
 # One hop per distinct (workload, served-by) pair, in the order the notifications arrived.
-hops=$(echo "$notes" | grep -oE '"context":\{[^}]*\}' | while read -r ctx; do
-  w=$(echo "$ctx" | sed -n 's/.*"baselineWorkload":"\([^"]*\)".*/\1/p')
-  s=$(echo "$ctx" | sed -n 's/.*"sandboxName":"\([^"]*\)".*/\1/p')
+# Split the JSON so each notification is on its own line, then read its two context fields.
+hops=$(echo "$notes" | awk '{ gsub(/\{"id":/, "\n{\"id\":"); print }' | grep '"baselineWorkload"' | while read -r n; do
+  w=$(echo "$n" | sed -n 's/.*"baselineWorkload":"\([^"]*\)".*/\1/p')
+  s=$(echo "$n" | sed -n 's/.*"sandboxName":"\([^"]*\)".*/\1/p')
   [ -n "$w" ] && echo "$w ${s:-baseline}"
 done | awk '!seen[$0]++')
 

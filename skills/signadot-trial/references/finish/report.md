@@ -59,8 +59,8 @@ status: passed
 seconds: 48
 baseline: plate T751234C
 sandbox: plate SD-T751234C
-hops-baseline: frontend(baseline) → location(baseline) → driver(baseline) → route(baseline)
-hops-sandbox: frontend(baseline) → location(baseline) → driver(driver-plates) → route(baseline)
+hops-baseline: location(baseline) → driver(baseline) → route(baseline)
+hops-sandbox: location(baseline) → driver(driver-plates) → route(baseline)
 proof: the driver step was served by sandbox driver-plates only when the routing key was sent
 commands: sd sandbox apply -f driver-plates.yaml --set cluster=signadot-trial --set suffix=
 specs: assets/specs/core/driver-plates.yaml
@@ -80,7 +80,8 @@ Rules:
   `rabbitmq`, `redis-streams`, `jobs`, `plans`). `status` is `passed`, `failed` or `skipped`.
 - **Hops** are the flow diagram's data. For a request: `service(served-by)` joined by ` → `, where `served-by` is
   `baseline`, a sandbox name, or `local` for a process on this computer. `scripts/ride.sh` prints a ready-made
-  `hops:` line. For messages: `producer → <topic or queue> → consumer(handled)`, e.g.
+  `hops:` line. HotROD records location, driver and route; add `frontend(<served-by>)` in front yourself when a
+  scenario proves which frontend served the page (C2). For messages: `producer → <topic or queue> → consumer(handled)`, e.g.
   `frontend → kafka:dispatch → driver(baseline: T7…) · driver(driver-plates: SD-T7…)`.
 
 ## The report
