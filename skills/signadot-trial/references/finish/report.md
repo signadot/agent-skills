@@ -117,14 +117,21 @@ For HotROD scenarios, card 1 shows how to send the key with curl from the user's
 connection makes every address inside the cluster reachable from the laptop, so the commands use the real
 in-cluster address, the one in the spec's `target`:
 
-1. Only when the trial's connection is `connect_mode: unprivileged` (the default): a command block that reconnects
-   with sudo, `<trial folder>/bin/sd local disconnect && <trial folder>/bin/sd local connect`, saying it asks for
-   their password once and that they should tell the agent if it's still running scenarios. With
-   `connect_mode: privileged`, leave it out: cluster addresses already work.
-2. Book a ride with the key:
-   `curl -s -X POST http://frontend.hotrod.svc:8080/dispatch -H 'baggage: sd-routing-key=<key>' -H 'Content-Type: application/json' -d '{"SessionID":4242,"RequestID":1,"PickupLocationID":1,"DropoffLocationID":123}'`
-3. Read the ride's notifications: `curl -s 'http://frontend.hotrod.svc:8080/notifications?sessionID=4242&cursor=0' | grep -o 'Driver [^"]*'`
+1. Only when the trial's connection is `connect_mode: unprivileged` (the default), first: a command block marked
+   **First, once:** that reconnects with sudo, `<trial folder>/bin/sd local disconnect && <trial folder>/bin/sd local connect`,
+   saying it asks for their password and that they should tell the agent if it's still running scenarios. Then a
+   check, `curl -sS -o /dev/null -w '%{http_code}\n' http://frontend.hotrod.svc:8080/`, which prints `200`, and
+   "Could not resolve host" until the reconnect is done. Without the reconnect, cluster names don't resolve and the
+   commands below print nothing useful. With `connect_mode: privileged`, leave both out: cluster addresses already
+   work.
+2. Book a ride with the key (prints `{}`):
+   `curl -sS -X POST http://frontend.hotrod.svc:8080/dispatch -H 'baggage: sd-routing-key=<key>' -H 'Content-Type: application/json' -d '{"SessionID":4242,"RequestID":1,"PickupLocationID":1,"DropoffLocationID":123}'`
+3. Read the ride's notifications a few seconds later (prints `Driver <plate> arriving in <ETA>`; run it again if
+   it prints nothing): `curl -sS 'http://frontend.hotrod.svc:8080/notifications?sessionID=4242&cursor=0' | grep -o 'Driver [^"]*'`
    (escape `&` as `&amp;` in the page).
+
+Use `curl -sS`, never `-s` alone: `-s` hides errors such as "Could not resolve host", and the user sees a blank
+line instead. Say what each command prints.
 
 Say what it prints with the key, and that the same request without the header (and another `SessionID`) reaches
 the baseline. For multi-service-preview, use the route group's key; the changed frontend answers too.

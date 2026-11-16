@@ -183,16 +183,20 @@ request made through it. The <a href="https://chromewebstore.google.com/detail/s
 Chrome extension</a> does the same for any page you open, and any HTTP client can send the header itself.</p>
 <p>To try that from your laptop, use Signadot's local connection: it makes every address inside the cluster, like
 <code>http://frontend.hotrod.svc:8080</code>, reachable from your laptop. The trial connected without sudo, so
-those names only work through the trial's own proxy for now.</p>
-<div class="cmd"><p>Reconnect so cluster addresses work in any terminal and browser. It asks for your password once,
-for sudo. If your agent is still running scenarios, tell it you reconnected.</p>
+those names don't work in your terminal yet; the first step below fixes that.</p>
+<div class="cmd"><p><strong>First, once:</strong> reconnect with sudo, so cluster addresses work in any terminal and
+browser. It asks for your password. If your agent is still running scenarios, tell it you reconnected.</p>
 <pre><code>/Users/me/project/.signadot-trial/bin/sd local disconnect && /Users/me/project/.signadot-trial/bin/sd local connect</code></pre></div>
-<div class="cmd"><p>Book a ride with the routing key:</p>
-<pre><code>curl -s -X POST http://frontend.hotrod.svc:8080/dispatch -H 'baggage: sd-routing-key=7g2k9xq4m1ab' -H 'Content-Type: application/json' -d '{"SessionID":4242,"RequestID":1,"PickupLocationID":1,"DropoffLocationID":123}'</code></pre></div>
-<div class="cmd"><p>A few seconds later, read the ride's notifications (run it again if nothing prints yet):</p>
-<pre><code>curl -s 'http://frontend.hotrod.svc:8080/notifications?sessionID=4242&amp;cursor=0' | grep -o 'Driver [^"]*'</code></pre></div>
-<p>It prints a driver arriving in 1s. Book again without the <code>baggage</code> header and with another
-<code>SessionID</code>, and the ETA is back in minutes.
+<div class="cmd"><p>Check that it worked: this prints <code>200</code>. "Could not resolve host" means the reconnect
+hasn't happened yet.</p>
+<pre><code>curl -sS -o /dev/null -w '%{http_code}\n' http://frontend.hotrod.svc:8080/</code></pre></div>
+<div class="cmd"><p>Book a ride with the routing key. It prints <code>{}</code> when the ride is booked:</p>
+<pre><code>curl -sS -X POST http://frontend.hotrod.svc:8080/dispatch -H 'baggage: sd-routing-key=7g2k9xq4m1ab' -H 'Content-Type: application/json' -d '{"SessionID":4242,"RequestID":1,"PickupLocationID":1,"DropoffLocationID":123}'</code></pre></div>
+<div class="cmd"><p>A few seconds later, read the ride's notifications. It prints a line like <code>Driver T738719C
+arriving in 1s</code>; if it prints nothing, wait a moment and run it again:</p>
+<pre><code>curl -sS 'http://frontend.hotrod.svc:8080/notifications?sessionID=4242&amp;cursor=0' | grep -o 'Driver [^"]*'</code></pre></div>
+<p>Book again without the <code>baggage</code> header and with another <code>SessionID</code>, and the ETA is back
+in minutes.
 <a href="https://www.signadot.com/docs/guides/developer-environments/access-sandboxes">Ways to reach a sandbox</a></p></div>
 <div class="box"><h3><span class="step-n">2</span>Each service passes the key along</h3>
 <p>HotROD's services use OpenTelemetry, which carries the key in the <code>baggage</code> header from frontend into

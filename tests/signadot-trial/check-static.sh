@@ -78,6 +78,7 @@ for f in "$R/index.html" "$R/scenario.html"; do
   grep -qiE '(src|href)="https?://[^"]*\.(js|css)|src="https?://' "$f" && bad "${f#"$S"/} loads something from the network"
 done
 grep -qE 'fetch\(|XMLHttpRequest|https?://' "$R/report.js" && bad "report.js must not reach the network"
+grep -nE 'curl -s ' "$R/scenario.html" && bad "scenario template: use curl -sS, not -s, so the user sees errors instead of a blank line"
 
 # 7. Snippets: no ${x:+…}, which zsh and bash expand differently.
 grep -rnE '\$\{[A-Za-z_]+:\+' "$S/SKILL.md" "$S/references" && bad "a snippet uses \${x:+…}"
