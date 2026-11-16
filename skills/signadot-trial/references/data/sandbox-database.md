@@ -89,14 +89,17 @@ proof: the sandbox read and wrote its own database location_<key>; the baseline 
 commands: sd resourceplugin apply -f assets/specs/data/hotrod-trial-db-plugin.yaml …; sd sandbox apply -f assets/specs/data/location-db.yaml …
 specs: assets/specs/data/hotrod-trial-db-plugin.yaml, assets/specs/data/location-db.yaml
 links: https://www.signadot.com/docs/tutorials/testing-database-schema-changes
-try: delete the sandbox and watch location_<key> disappear from the database list
+try: book rides on both links; delete the sandbox and watch location_<key> disappear
 ```
 
 ## Try it yourself
 
-- Add more locations with the key and see they never show up without it.
-- Delete the sandbox (`<T>/bin/sd sandbox delete location-db<suffix>`) and run the `SHOW DATABASES` command again:
-  the plugin drops `location_<key>` within a minute. Apply the sandbox again to get a fresh database.
+- Book rides on the baseline and sandbox links: the sandbox's pickup and drop-off locations come from its own
+  database.
+- See the sandbox's database next to the shared one:
+  `kubectl --kubeconfig <T>/kubeconfig -n hotrod exec mysql-0 -c mysql -- mariadb -uroot -pabc -N -e "SHOW DATABASES LIKE 'location\_%'"`.
+- Delete the sandbox (`<T>/bin/sd sandbox delete location-db<suffix>`) and run that command again: the plugin drops
+  `location_<key>` within a minute. Apply the sandbox again to get a fresh database.
 
 ## Tear down
 

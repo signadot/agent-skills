@@ -161,3 +161,15 @@ bash "$S/scripts/ride.sh" --proxy "socks5h://<address>"
 Done when it prints `completed: yes`, a plate, an ETA, and every hop as `baseline`. Explain in one line: "HotROD is a
 ride-sharing demo; one ride goes through frontend, location, driver (via Kafka) and route." Record the step with the
 plate and ETA.
+
+Then create the baseline link: a route group that matches no sandbox, so its preview link always opens the unchanged
+app. The report pages show it next to each sandbox's link.
+
+```bash
+"$T/bin/sd" routegroup apply -f "$S/assets/specs/core/hotrod-baseline.yaml" --set cluster=<cluster> --set suffix=<suffix>
+"$T/bin/sd" routegroup get hotrod-baseline<suffix> -o json | grep -oE '"url": *"https://[^"]+"' | head -1
+```
+
+The link can take a few seconds to appear; repeat the second command until it does. Record `routegroup
+hotrod-baseline<suffix>` under Resources and `baseline_url: <the link>` under Run. Preview links open in any browser
+signed in to the org: https://www.signadot.com/docs/reference/sandboxes/preview-urls.md.

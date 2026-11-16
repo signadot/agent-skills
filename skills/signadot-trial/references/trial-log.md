@@ -19,6 +19,7 @@ created_kind_cluster: yes
 infra: devmesh
 connect_mode: unprivileged
 proxy: socks5h://127.0.0.1:60123
+baseline_url: https://frontend--hotrod-baseline.preview.signadot.com
 trial_dir: /Users/me/project/.signadot-trial
 cli_path: /Users/me/project/.signadot-trial/bin/signadot
 cli_on_path: no
@@ -48,6 +49,7 @@ kind_cluster signadot-trial
 namespace hotrod
 sandbox driver-plates
 routegroup hotrod-plates
+routegroup hotrod-baseline
 process 48211 hotrod route (local-development)
 portforward 48190 redis 16379:6379
 
@@ -63,7 +65,9 @@ commands: sd sandbox apply -f driver-plates.yaml --set cluster=signadot-trial --
 specs: assets/specs/core/driver-plates.yaml
 screenshot: screens/isolated-change.png
 links: https://www.signadot.com/docs/tutorials/quickstart/first-sandbox
-try: book a ride with and without the key: scripts/ride.sh --key <key> --proxy <proxy>
+link-baseline: https://frontend--hotrod-baseline.preview.signadot.com
+link-sandbox: https://frontend--driver-plates.preview.signadot.com
+try: open the baseline and sandbox links and compare the plates
 ```
 
 ## Rules

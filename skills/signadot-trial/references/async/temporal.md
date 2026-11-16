@@ -43,6 +43,16 @@ The worker restarts a few times until the Temporal server is up; that's expected
 `temporal` is available. If you deployed it before the operator, restart it as
 `references/setup/cluster.md` §3 says, or the worker sandbox stays Not Ready. Record `namespace temporal` under Resources.
 
+Once the operator is installed, create the baseline link for the report (a route group that matches no sandbox, so
+its preview link always opens the unchanged Temporal demo app's page; see `references/setup/cluster.md` §5):
+
+```bash
+"$T/bin/sd" routegroup apply -f "$S/assets/specs/async/temporal-baseline.yaml" --set cluster=<cluster> --set suffix=<suffix>
+"$T/bin/sd" routegroup get temporal-baseline<suffix> -o json | grep -oE '"url": *"https://[^"]+"' | head -1
+```
+
+Record `routegroup temporal-baseline<suffix>` under Resources.
+
 ## Run
 
 ```bash
@@ -90,18 +100,20 @@ proof: one Temporal server and task queue; each worker ran only the tasks carryi
 commands: docker build + kind load; kubectl apply -n temporal …; sd sandbox apply -f assets/specs/async/temporal-worker.yaml …; curl …/api/start-workflow
 specs: assets/specs/async/temporal-worker.yaml
 links: https://www.signadot.com/docs/tutorials/testing-temporal-workers
-try: open the Temporal UI and see both workflows on the one task queue
+try: start transfers from both links; open the Temporal UI and see the workflows on the one task queue
 ```
 
 ## Try it yourself
 
-- Start more transfers with and without the key and follow both worker logs.
-- Open the Temporal UI: `<T>/bin/kc -n temporal port-forward svc/temporal-ui-service 8233:80`, then http://localhost:8233.
-  Both workflows are there, on the same task queue.
+- Start transfers from the baseline and sandbox links, and follow the baseline worker's log:
+  `kubectl --kubeconfig <T>/kubeconfig -n temporal logs -f deploy/temporal-worker -c temporal-worker | grep 'routing key'`.
+- Open the Temporal UI: `kubectl --kubeconfig <T>/kubeconfig -n temporal port-forward svc/temporal-ui-service 8233:80`, then
+  http://localhost:8233. All the workflows are there, on the same task queue.
 
 ## Tear down
 
 ```bash
+"$T/bin/sd" routegroup delete temporal-baseline<suffix>
 "$T/bin/sd" sandbox delete temporal-worker<suffix>
 "$T/bin/kc" delete namespace temporal
 ```

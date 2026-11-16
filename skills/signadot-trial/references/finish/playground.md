@@ -23,7 +23,7 @@ What keeps running, and what doesn't:
 | kind cluster, HotROD, demo apps, operator | Yes, while Docker runs | Start Docker again; the cluster comes back |
 | Sandboxes, route group, plugin, runner group, plan tag | Yes (stored in Signadot) | — |
 | Local connection | Yes (a background daemon), until reboot | `<T>/bin/sd local connect --unprivileged` |
-| local-development's route process, Redis port-forward, a local proxy | Usually; they're background processes this session started | the start commands in `references/core/local-development.md` "Run", or below |
+| local-development's route process and Redis port-forward | Usually; they're background processes this session started | the start commands in `references/core/local-development.md` "Run" |
 
 If the proxy address changed after a reconnect, read it again with the command in `references/setup/cluster.md` §4
 (the `portforward` section's `localAddress`).
@@ -33,24 +33,10 @@ If the proxy address changed after a reconnect, read it again with the command i
 Rebuild `$T/report/index.html` one last time (`references/finish/report.md`, "The overview page"), with real values
 and full paths:
 
-- **What's running now:** each item above that's still up, with how to restart it if it stops. Include:
-  - **See a sandbox in any browser:** a local proxy serves the frontend on a plain localhost URL and adds the
-    sandbox's routing key to every request, so no header extension or proxy setting is needed. Start and stop
-    commands (one proxy at a time on this port):
-
-    ```bash
-    nohup "$T/bin/sd" local proxy --sandbox driver-plates<suffix> --map http://frontend.hotrod.svc:8080@localhost:18080 \
-      > "$T/logs/local-proxy.log" 2>&1 & echo $! > "$T/local-proxy.pid"
-    p=$(cat "$T/local-proxy.pid" 2>/dev/null) && ps -p "$p" -o args= 2>/dev/null | grep -qF 'local proxy' && kill "$p"
-    ```
-
-    Then http://localhost:18080 books rides on the sandbox (plates start with `SD-`). Use `--sandbox
-    local-route<suffix>` for the service on this computer (ETAs in seconds) or `--routegroup hotrod-plates<suffix>`
-    for the two-service change. If you start one yourself, record `process <pid> local proxy` under Resources.
-  - **The preview link** (multi-service-preview): opens in a browser signed in to the org, with no setup.
-  - **Any request through the connection:**
-    `curl --proxy socks5h://<address> -H "baggage: sd-routing-key=<key>" http://frontend.hotrod.svc:8080/`.
-  - **The dashboard:** https://app.signadot.com, with the sandboxes, route group and any jobs or plans.
+- **Open the demo app,** at the top: the baseline link and each scenario's sandbox link (`references/finish/report.md`,
+  "App links"). Preview links need no proxy or setup on the user's computer, only a browser signed in to the org.
+- **What's running now:** each item above that's still up, with how to restart it if it stops, and the dashboard
+  (https://app.signadot.com) for the sandboxes, route groups and any jobs or plans.
 - **Look at the cluster yourself:** the template's section, with the trial folder's path (the user won't find the
   cluster with `kubectx` otherwise, since its credentials are in `$T/kubeconfig`).
 - **Next steps:** the agent skills that run this loop on their own services (`npx skills add signadot/agent-skills

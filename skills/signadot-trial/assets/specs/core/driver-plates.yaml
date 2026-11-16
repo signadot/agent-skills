@@ -2,6 +2,11 @@ name: driver-plates@{suffix}
 spec:
   cluster: "@{cluster}"
   description: "Signadot trial: driver plates get an SD- prefix"
+  # The sandbox's preview link: opens the app with this sandbox's routing key added to every request.
+  defaultRouteGroup:
+    endpoints:
+    - name: frontend
+      target: http://frontend.hotrod.svc:8080
   labels:
     feature: hotrod-plates@{suffix}
   forks:

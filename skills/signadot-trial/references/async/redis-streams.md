@@ -37,6 +37,16 @@ kind load docker-image redis-streams-demo-python:latest --name signadot-trial
 Done when every deployment in `redis-streams-demo` is available. If you deployed it before the operator, restart it
 as `references/setup/cluster.md` §3 says. Record `namespace redis-streams-demo` under Resources.
 
+Once the operator is installed, create the baseline link for the report (a route group that matches no sandbox, so
+its preview link always opens the unchanged producer's page; see `references/setup/cluster.md` §5):
+
+```bash
+"$T/bin/sd" routegroup apply -f "$S/assets/specs/async/redis-streams-baseline.yaml" --set cluster=<cluster> --set suffix=<suffix>
+"$T/bin/sd" routegroup get redis-streams-baseline<suffix> -o json | grep -oE '"url": *"https://[^"]+"' | head -1
+```
+
+Record `routegroup redis-streams-baseline<suffix>` under Resources.
+
 ## Run
 
 ```bash
@@ -87,20 +97,22 @@ proof: one stream; a consumer group per version; each processed only the entries
 commands: docker build + kind load; kubectl apply -f k8s/; sd sandbox apply -f assets/specs/async/redis-streams-consumer.yaml …; curl …/api/publish
 specs: assets/specs/async/redis-streams-consumer.yaml
 links: https://www.signadot.com/docs/tutorials/testing-redis-streams
-try: publish more entries and look at the consumer groups with XINFO GROUPS
+try: publish messages from both links and look at the consumer groups with XINFO GROUPS
 ```
 
 ## Try it yourself
 
-- Publish more entries with and without the key and follow both consumer logs.
+- Publish messages from the baseline and sandbox links (the producer's page shows each message's trail): only
+  the sandbox's are processed by "processor v2", in upper case.
 - See the consumer groups on the stream:
-  `<T>/bin/kc -n redis-streams-demo exec deploy/redis -- redis-cli XINFO GROUPS demo:messages`.
+  `kubectl --kubeconfig <T>/kubeconfig -n redis-streams-demo exec deploy/redis -- redis-cli XINFO GROUPS demo:messages`.
 - The docs page also forks the producer and the notifier; their specs are in
   `<T>/examples/selective-consumption-with-redis-streams/python/signadot/`.
 
 ## Tear down
 
 ```bash
+"$T/bin/sd" routegroup delete redis-streams-baseline<suffix>
 "$T/bin/sd" sandbox delete redis-streams-consumer<suffix>
 "$T/bin/kc" delete namespace redis-streams-demo
 ```

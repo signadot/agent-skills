@@ -1,0 +1,12 @@
+name: hotrod-baseline@{suffix}
+spec:
+  cluster: "@{cluster}"
+  description: "Signadot trial: a link to the unchanged HotROD app (no sandbox is attached)"
+  # Matches no sandbox, so requests through its link always reach the baseline.
+  match:
+    label:
+      key: signadot-trial
+      value: baseline-only
+  endpoints:
+  - name: frontend
+    target: http://frontend.hotrod.svc:8080

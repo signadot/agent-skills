@@ -110,13 +110,15 @@ proof: route ran on this computer for keyed requests; rebuild and restart took <
 commands: sd sandbox apply -f assets/specs/core/local-route.yaml …; sd sandbox get-env local-route<suffix>; hotrod route
 specs: assets/specs/core/local-route.yaml, assets/patches/route-eta.patch
 links: https://www.signadot.com/docs/tutorials/quickstart/local-development
-try: edit $T/hotrod/services/route/server.go, rebuild, restart, and book a keyed ride
+try: edit <T>/hotrod/services/route/server.go, rebuild, restart, and book a ride on the sandbox's link
 ```
 
 ## Try it yourself
 
-- Change the ETA again in `<T>/hotrod/services/route/server.go`, rebuild, restart the process, and book a keyed ride.
-- Restart it with `FAST_ROUTE=1` set: every keyed ETA becomes one second, with no rebuild.
+- Book a ride on the sandbox's link: the ETA comes from the route service on this computer, in seconds.
+- Change the ETA again in `<T>/hotrod/services/route/server.go`, rebuild, restart the process (the commands under
+  Set up and Run), and book another ride on the sandbox's link.
+- Restart it with `FAST_ROUTE=1` set: every ETA through the sandbox becomes one second, with no rebuild.
 - The local process and the Redis port-forward run in the background; if they stopped (for example after a reboot),
   start them again with the commands under Run.
 

@@ -90,8 +90,8 @@ try: publish more orders with and without the key and watch both consumer logs
 
 ## Try it yourself
 
-- Publish more orders with and without the key and follow both logs
-  (`<T>/bin/kc -n rabbitmq-demo logs -f deploy/consumer | grep PROCESSING`).
+- Follow both consumers' logs: `kubectl --kubeconfig <T>/kubeconfig -n rabbitmq-demo logs -f deploy/consumer | grep -E 'PROCESSING|SKIP'`,
+  and the same for the sandbox's consumer pod. Ask your agent to publish more orders with and without the key.
 - The docs page also forks the publisher and joins both in a route group; its sandbox specs are in
   `<T>/examples/rabbitmq-signadot-demo/signadot/`.
 

@@ -51,18 +51,19 @@ commands: sd sandbox apply -f assets/specs/core/driver-plates.yaml --set cluster
 specs: assets/specs/core/driver-plates.yaml
 screenshot: screens/isolated-change.png (only if you took one)
 links: https://www.signadot.com/docs/tutorials/quickstart/first-sandbox
-try: book rides with and without the key: bash <S>/scripts/ride.sh --proxy <proxy> [--key <routing key>]
+try: open the baseline and sandbox links and compare the plates; kubectl --kubeconfig <T>/kubeconfig -n hotrod get pods
 ```
 
-**Screenshot (optional):** if you can drive a browser, start a local proxy for `driver-plates<suffix>`
-(`references/finish/report.md` "Screenshots"), open `http://localhost:18080`, book a ride, and save
-`$T/report/screens/isolated-change.png`.
+**Screenshot (optional):** if you can drive a browser, open the sandbox's link in the browser session from signup,
+book a ride, and save `$T/report/screens/isolated-change.png`.
 
 ## Try it yourself
 
-- Book rides with and without the key: `bash <S>/scripts/ride.sh --proxy <proxy> --key <routing key>`.
-- See the sandbox in the dashboard: https://app.signadot.com/sandboxes.
-- List it from the CLI: `<T>/bin/sd sandbox list`.
+- Open the baseline and sandbox links (`references/finish/report.md`, "App links") and book a ride in each: only
+  the sandbox's plates start with `SD-`.
+- See the sandbox's pod next to the normal ones: `kubectl --kubeconfig <T>/kubeconfig -n hotrod get pods`.
+- See the sandbox, its routing key and its link: `<T>/bin/sd sandbox get driver-plates<suffix>`.
+- See it in the dashboard: https://app.signadot.com/sandboxes.
 
 ## Tear down
 

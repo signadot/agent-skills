@@ -62,19 +62,22 @@ for k in trial_dir os arch docker docker_mem_gb kubectl kind helm git curl go ls
   echo "$pf" | grep -q "^$k: " || bad "preflight: no key $k"
 done
 
-# 6. Report templates: every slot report.md fills, a stylesheet next to the pages, and nothing that runs or loads
-#    from the network.
+# 6. Report templates: every slot report.md fills, the stylesheet and copy script next to the pages, and nothing
+#    that loads from the network.
 R=$S/assets/report
-for k in title summary scenarios running next-steps teardown timeline run-details; do
+for k in title summary urls scenarios running next-steps teardown timeline run-details; do
   grep -q "<!-- FILL:$k" "$R/index.html" || bad "overview template: no FILL:$k slot"
 done
-for k in title status headline tested app how result value adopt try details; do
+for k in title status headline urls try tested app how result value adopt details; do
   grep -q "<!-- FILL:$k" "$R/scenario.html" || bad "scenario template: no FILL:$k slot"
 done
 for f in "$R/index.html" "$R/scenario.html"; do
   grep -q '<link rel="stylesheet" href="report.css">' "$f" || bad "${f#"$S"/}: must use report.css next to it"
-  grep -qiE '<script|(src|href)="https?://[^"]*\.(js|css)|src="https?://' "$f" && bad "${f#"$S"/} runs or loads something"
+  grep -q '<script src="report.js" defer></script>' "$f" || bad "${f#"$S"/}: must load report.js (the Copy buttons)"
+  grep -iE '<script' "$f" | grep -vq '<script src="report.js" defer></script>' && bad "${f#"$S"/}: runs a script other than report.js"
+  grep -qiE '(src|href)="https?://[^"]*\.(js|css)|src="https?://' "$f" && bad "${f#"$S"/} loads something from the network"
 done
+grep -qE 'fetch\(|XMLHttpRequest|https?://' "$R/report.js" && bad "report.js must not reach the network"
 
 # 7. Snippets: no ${x:+…}, which zsh and bash expand differently.
 grep -rnE '\$\{[A-Za-z_]+:\+' "$S/SKILL.md" "$S/references" && bad "a snippet uses \${x:+…}"

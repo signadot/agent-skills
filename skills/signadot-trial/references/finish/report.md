@@ -7,7 +7,7 @@ the next scenario runs. The scenario pages are the main thing the user takes awa
 ## Before the first page
 
 ```bash
-mkdir -p "$T/report/screens" && cp "$S/assets/report/report.css" "$T/report/"
+mkdir -p "$T/report/screens" && cp "$S/assets/report/report.css" "$S/assets/report/report.js" "$T/report/"
 ```
 
 ## After each scenario
@@ -29,12 +29,22 @@ template block behind.
 Write for someone who is new to Signadot and didn't watch the run: what was tested, how Signadot handled it, the
 proof, and why it matters to a team like theirs. Plain words; define a Signadot term the first time it appears; no
 file names, step IDs or placeholders. Use the scenario file's "What it shows" for the story and its trial-log entry
-for every value.
+for every value. The page leads with what the user can open and run; the explanation follows.
+
+**Commands on the pages.** Each command the user might run goes in its own `<div class="cmd">` block (a one-line
+explanation, then `<pre><code>`), so it gets a Copy button. Make it paste-ready: full paths, the real sandbox names
+and suffix, no `$T`, `<…>` or other placeholders. Use `kubectl --kubeconfig <trial folder>/kubeconfig …` and
+`<trial folder>/bin/sd …`. Never show `ride.sh`, `--proxy` or a local proxy: the preview links replace
+them.
 
 - **title:** the scenario's menu name.
 - **status:** the pill (`passed` or `failed`), "Scenario n of N" (in run order, of the scenarios chosen), the time
   from the scenario's first command to its proof, the cluster and the date.
 - **headline:** one or two sentences that say what was proven, with the proving values.
+- **urls:** the box with the demo app's two links (see "App links"): the baseline, and the sandbox with a line saying
+  that Signadot adds the sandbox's routing key to every request made through it, so it reaches the changed version.
+  Say what to look for in each. Leave the box out only for a demo app with no web page (RabbitMQ).
+- **try:** the file's "Try it yourself", as command blocks with real values (see "Commands on the pages").
 - **tested:** three boxes. *The situation:* the file's Problem, told as a team's day-to-day problem. *What we
   changed:* the concrete change and the service it's in (from the file's Run and spec). *What we sent:* the requests
   or messages, without and with the routing key.
@@ -52,12 +62,27 @@ for every value.
   matters".
 - **adopt:** what it would take on the user's own services (table below), with links. End with the file's Docs page,
   linked as the HTML page (drop `.md`).
-- **try:** the file's "Try it yourself", with real values and the full trial folder path.
-- **details:** what this scenario created and whether it's still running, the spec with the cluster and suffix
-  filled in, and the commands.
+- **details:** what this scenario created and whether it's still running, then the spec (with the cluster and suffix
+  filled in) and the commands that created it, as command blocks.
 
 If the scenario failed, say plainly what was seen and what was tried in the headline and result, keep the flow rows
 you have, and still explain the value it would have shown.
+
+**App links.** Preview links open the app in any browser signed in to the user's Signadot org; Signadot adds the
+routing key of the sandbox or route group to every request made through them. Read a link with
+`"$T/bin/sd" sandbox get <name> -o json | grep -oE '"url": *"https://[^"]+"' | head -1` (or `routegroup get`), and
+record both in the scenario's entry as `link-baseline:` and `link-sandbox:`.
+
+| Scenario | Baseline link | Sandbox link | What to look for |
+|---|---|---|---|
+| isolated-change, kafka, jobs | `baseline_url` (route group `hotrod-baseline<suffix>`) | sandbox `driver-plates<suffix>` | plates start with `SD-` only through the sandbox |
+| multi-service-preview | `baseline_url` | route group `hotrod-plates<suffix>` | `SD-` plates, highlighted |
+| local-development | `baseline_url` | sandbox `local-route<suffix>` (works while the route process runs on this computer) | ETAs in seconds |
+| sandbox-database | `baseline_url` | sandbox `location-db<suffix>` | different pickup and drop-off locations |
+| plans | `baseline_url` | sandboxes `driver-plates<suffix>` and `broken-route<suffix>` | rides through the broken one don't complete: the regression the plan caught |
+| temporal | route group `temporal-baseline<suffix>` | sandbox `temporal-worker<suffix>` | start a transfer from each; the worker logs show which worker ran it |
+| redis-streams | route group `redis-streams-baseline<suffix>` | sandbox `redis-streams-consumer<suffix>` | the message trail: only the sandbox's are processed by processor v2, in upper case |
+| rabbitmq | — | — | no web page: leave out the box |
 
 **What it would take on their services**, by scenario:
 
@@ -75,6 +100,7 @@ you have, and still explain the value it would have shown.
 
 - **title:** e.g. "Your Signadot trial: 3 scenarios proven, 1 to go", or "…: 4 of 4 scenarios proven" at the end.
 - **summary:** pills with counts (passed, failed, to go), then org, cluster and date.
+- **urls:** the baseline link, then each scenario's sandbox link with what to look for (see "App links").
 - **scenarios:** one `ROW` per chosen scenario in run order, linking its page, with a one-sentence result and its
   time; a scenario that hasn't run yet gets the `next` pill and no link. Then one `NOT-PICKED` row per menu item the
   user didn't choose.
@@ -92,18 +118,10 @@ you have, and still explain the value it would have shown.
 
 ## Screenshots
 
-Take them only if you can drive a browser. Preview links (multi-service-preview) need nothing else. For a sandbox,
-start a local proxy that adds the sandbox's routing key to every request, and open the plain localhost URL it serves:
-
-```bash
-nohup "$T/bin/sd" local proxy --sandbox <sandbox> --map http://frontend.hotrod.svc:8080@localhost:18080 \
-  > "$T/logs/local-proxy.log" 2>&1 & echo $! > "$T/local-proxy.pid"
-```
-
-Then open `http://localhost:18080`, book a ride, and save `$T/report/screens/<scenario id>.png`. Stop the proxy before
-starting one for another sandbox (`references/finish/playground.md` has the stop command). Link screenshots
-relatively (`screens/isolated-change.png`). Without a browser, leave out the `<figure>`: the flow rows and the proof
-carry the page.
+Take them only if you can drive a browser. Open the scenario's sandbox link (see "App links") in the browser session
+from signup, book a ride, and save `$T/report/screens/<scenario id>.png`. Link screenshots relatively
+(`screens/isolated-change.png`). Without a browser, leave out the `<figure>`: the flow rows and the proof carry the
+page.
 
 Good screenshots: isolated-change, the ride notifications with the `SD-` plate; multi-service-preview, the preview
 page with the highlighted plate; local-development, the ride with an ETA in seconds.

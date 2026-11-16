@@ -70,13 +70,13 @@ proof: one broker, one topic; each consumer processed only the messages carrying
 commands: ride.sh with and without the key; kubectl logs on both driver pods
 specs: assets/specs/core/driver-plates.yaml (from isolated-change)
 links: https://www.signadot.com/docs/guides/set-up-message-queue-isolation/kafka
-try: book several keyed and unkeyed rides and watch both driver logs
+try: book rides on the baseline and sandbox links and watch both driver logs
 ```
 
 ## Try it yourself
 
-- Follow both driver logs (`<T>/bin/kc -n hotrod logs -f <pod> -c hotrod | grep Dispatch`) while you book rides
-  with and without the key.
+- Follow both driver logs while you book rides on the baseline and sandbox links:
+  `kubectl --kubeconfig <T>/kubeconfig -n hotrod logs -f <pod> -c hotrod | grep Dispatch`, once for each driver pod.
 
 ## Tear down
 

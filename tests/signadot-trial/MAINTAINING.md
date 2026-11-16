@@ -125,7 +125,7 @@ folder, with a coding agent following the skill literally. Use a test org.
 
 1. **Default path:** "try Signadot", default choices, a new org. The first message is only the menu, the second the
    confirmation, and progress lines show no file names or step IDs. The basics pass; each scenario's page opens after it and the trial waits before the next one; the hand-off
-   lists what's running; the local proxy URL shows `SD-` plates in a browser. The agent never asks for access
+   lists what's running; the sandbox's preview link shows `SD-` plates and the baseline link doesn't; command blocks copy. The agent never asks for access
    outside its working folder, and afterwards the only new thing there is `.signadot-trial`.
 2. **Existing user:** with a `~/.signadot` config and login present. The trial uses its own login in the trial folder; checksum
    `~/.signadot` before and after (`find ~/.signadot -type f -exec shasum {} + | sort | shasum`): unchanged.

@@ -1,0 +1,12 @@
+name: temporal-baseline@{suffix}
+spec:
+  cluster: "@{cluster}"
+  description: "Signadot trial: a link to the unchanged Temporal demo app (no sandbox is attached)"
+  # Matches no sandbox, so requests through its link always reach the baseline.
+  match:
+    label:
+      key: signadot-trial
+      value: baseline-only
+  endpoints:
+  - name: ui
+    target: http://temporal-py-client-ui.temporal.svc:8080

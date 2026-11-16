@@ -10,10 +10,12 @@
   - Each slot is one comment that starts with FILL and a name. Its example is a complete page for "Test one change
     in isolation": write every scenario to the same depth, with this run's real values, in plain words for someone
     new to Signadot. Replace the whole comment with real content in the same shape.
-  - Escape <, > and & in anything copied from command output. No scripts and no external requests; screenshots are
-    in screens/ and linked relatively.
+  - Every command goes in its own <div class="cmd"> block, ready to paste: full paths, no placeholders.
+  - Escape <, > and & in anything copied from command output. Nothing loads from the network; report.css,
+    report.js and the screenshots in screens/ sit next to this page.
 -->
 <link rel="stylesheet" href="report.css">
+<script src="report.js" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -25,11 +27,44 @@
 <span>· cluster signadot-trial · 15 Nov 2026</span></p>
 -->
 <!-- FILL:headline
-<p class="lead">A new version of one service ran in a sandbox next to the normal app. Rides booked with the
-sandbox's routing key got the new version (plates starting with SD-); every other ride used the normal app, untouched.</p>
+<p class="lead">A new version of one service ran in a sandbox next to the normal app. Rides booked through the
+sandbox's link got the new version (plates starting with SD-); every other ride used the normal app, untouched.</p>
 -->
 </header>
+
+<!-- FILL:urls  (the demo app's two links; leave the section out only when the demo app has no web page)
+<section class="urls">
+<h2>Open the demo app</h2>
+<p>Open both links in the browser where you're signed in to Signadot, book a ride in each, and compare the driver
+plates.</p>
+<div class="url-pair">
+  <div class="url base"><h4>Baseline: the normal app</h4>
+    <p class="link"><a href="https://frontend--hotrod-baseline.preview.signadot.com">https://frontend--hotrod-baseline.preview.signadot.com</a></p>
+    <p>No sandbox is attached to this link, so every request uses the shared, unchanged services. Plates look like
+    T751234C.</p></div>
+  <div class="url sbx"><h4>Your sandbox</h4>
+    <p class="link"><a href="https://frontend--driver-plates.preview.signadot.com">https://frontend--driver-plates.preview.signadot.com</a></p>
+    <p>Signadot adds the sandbox's routing key to every request made through this link, so the driver step goes to
+    the new version. Plates start with SD-.</p></div>
+</div>
+<p class="note">Both are Signadot preview links: they go through Signadot's servers to the app in your cluster, and
+work for anyone signed in to your Signadot org.</p>
+</section>
+-->
+
 <main>
+<section id="try">
+<h2>Try it yourself</h2>
+<!-- FILL:try
+<div class="cmd"><p>See the sandbox's pod running next to the normal driver pod (the other services have only their
+normal pods):</p>
+<pre><code>kubectl --kubeconfig /Users/me/project/.signadot-trial/kubeconfig -n hotrod get pods</code></pre></div>
+<div class="cmd"><p>See the sandbox, its routing key and its link:</p>
+<pre><code>/Users/me/project/.signadot-trial/bin/sd sandbox get driver-plates</code></pre></div>
+<p class="muted">It's also in the dashboard: <a href="https://app.signadot.com/sandboxes">app.signadot.com/sandboxes</a>.
+The overview page explains how to use the trial's cluster from any terminal.</p>
+-->
+</section>
 
 <section id="tested">
 <h2>What we tested</h2>
@@ -77,9 +112,9 @@ scenario changed; everything else is the shared, unchanged app.</p>
 app (the <strong>baseline</strong>). Nothing else was copied: the frontend, location and route services, Kafka, MySQL
 and Redis were all the shared ones.</p>
 <p>The sandbox has a <strong>routing key</strong>. A request carries it in a standard header
-(<code>baggage: sd-routing-key=…</code>), and each service passes it along on its outgoing calls. When a request
-reaches the driver service, Signadot's routing sends it to the sandbox if it carries the key, and to the baseline
-otherwise.</p>
+(<code>baggage: sd-routing-key=…</code>), and each service passes it along on its outgoing calls. The sandbox's link
+adds that header for you. When a request reaches the driver service, Signadot's routing sends it to the sandbox if
+it carries the key, and to the baseline otherwise.</p>
 <div class="flows">
   <div class="flow"><span class="label">Without the key</span>
     <span class="hop">location<small>baseline</small></span><span class="arrow">→</span>
@@ -108,7 +143,7 @@ otherwise.</p>
 was served by sandbox driver-plates only when the routing key was sent; both rides used the same frontend, location
 and route. The digits differ because the driver is picked at random.</p>
 <figure><img src="screens/isolated-change.png" alt="HotROD ride notifications showing a driver plate that starts with SD-">
-<figcaption>A keyed ride in the browser: the driver's plate starts with SD-.</figcaption></figure>
+<figcaption>A ride booked through the sandbox's link: the driver's plate starts with SD-.</figcaption></figure>
 -->
 </section>
 
@@ -139,35 +174,22 @@ before merge, without anyone waiting for staging or paying for full copies of th
 teams already propagate. <a href="https://www.signadot.com/docs/guides/set-up-context-propagation">How it works</a></li>
 <li>Signadot's routing runs in your cluster: its own lightweight sidecar, or the service mesh you already use.
 <a href="https://www.signadot.com/docs/guides/request-routing">Routing options</a></li>
-<li>Your CI creates a sandbox for each pull request from the image it already builds, and posts the routing key or
+<li>Your CI creates a sandbox for each pull request from the image it already builds, and posts the sandbox's
 preview link on the pull request.</li>
 </ul>
 <p class="muted">Learn more: <a href="https://www.signadot.com/docs/tutorials/quickstart/first-sandbox">Your first sandbox</a>.</p>
 -->
 </section>
 
-<section id="try">
-<h2>Try it yourself</h2>
-<!-- FILL:try
-<ul class="plain">
-<li>Book rides in your browser through a local URL that adds the routing key for you: ask your agent to start a
-local proxy for this sandbox, then open <code>http://localhost:18080</code>.</li>
-<li>See the sandbox in the dashboard: <a href="https://app.signadot.com/sandboxes">app.signadot.com/sandboxes</a>.</li>
-<li>See its pod next to the normal driver pod:
-<code>KUBECONFIG=/Users/me/project/.signadot-trial/kubeconfig kubectl -n hotrod get pods</code>. The overview page
-explains how to use the trial's cluster from any terminal.</li>
-<li>List the sandboxes from a terminal: <code>/Users/me/project/.signadot-trial/bin/sd sandbox list</code>.</li>
-</ul>
--->
-</section>
-
-<section id="details">
-<h2>What the trial ran</h2>
+<section id="setup">
+<h2>How the trial set it up</h2>
 <!-- FILL:details
-<p class="muted">Created for this scenario: sandbox driver-plates, still running. Ask your agent to tear down the
-trial to remove it.</p>
-<details><summary>The sandbox spec (the whole configuration for this change)</summary><pre><code>SPEC, WITH CLUSTER AND SUFFIX FILLED IN</code></pre></details>
-<details><summary>Commands</summary><pre><code>COMMANDS</code></pre></details>
+<p>The whole change is one sandbox spec. Created for this scenario: sandbox driver-plates, still running; ask your
+agent to tear down the trial to remove it.</p>
+<div class="cmd"><p>The sandbox spec:</p>
+<pre><code>SPEC, WITH CLUSTER AND SUFFIX FILLED IN</code></pre></div>
+<div class="cmd"><p>The command that created it (safe to run again):</p>
+<pre><code>/Users/me/project/.signadot-trial/bin/sd sandbox apply -f /Users/me/project/.claude/skills/signadot-trial/assets/specs/core/driver-plates.yaml --set cluster=signadot-trial --set suffix=</code></pre></div>
 -->
 </section>
 

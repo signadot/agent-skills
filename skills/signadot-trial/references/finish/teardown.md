@@ -14,11 +14,11 @@ another local connection.
    ```bash
    # Local processes, only if the recorded PIDs still belong to the trial (a PID can be reused after a reboot)
    for f in route-local redis-pf; do p=$(cat "$T/$f.pid" 2>/dev/null) && ps -p "$p" -o args= 2>/dev/null | grep -qF "$T/" && kill "$p"; done
-   p=$(cat "$T/local-proxy.pid" 2>/dev/null) && ps -p "$p" -o args= 2>/dev/null | grep -qF 'local proxy' && kill "$p"
    "$T/bin/sd" sandbox delete local-route<suffix>
    "$T/bin/sd" routegroup delete hotrod-plates<suffix>
    "$T/bin/sd" sandbox delete frontend-highlight<suffix>
    "$T/bin/sd" sandbox delete driver-plates<suffix>
+   "$T/bin/sd" routegroup delete hotrod-baseline<suffix>
    ```
 
 3. **The connection,** only if it's the trial's: when `"$T/bin/sd" local status` shows
