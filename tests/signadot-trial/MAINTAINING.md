@@ -124,6 +124,13 @@ checklist.
 Run it before a release and after bumping a pin, on a clean machine or at least with the agent started in an empty
 folder, with a coding agent following the skill literally. Use a test org.
 
+To test a pull request before merging, install the skill from the PR's latest commit, with the full 40-character
+SHA. With the skills CLI (1.8), `owner/repo@x` means the skill named `x`, not a commit, and a short SHA fails:
+
+```bash
+npx skills add https://github.com/signadot/agent-skills/tree/<full commit SHA>/skills/signadot-trial
+```
+
 1. **Default path:** "try Signadot", default choices, a new org. The first message is the plan (the three basics),
    the basics run one by one with a menu of more after them, and progress lines show no file names or step IDs. The basics pass; each scenario's page opens after it and the trial waits before the next one; the hand-off
    lists what's running; the first sandbox's preview link gives 1s ETAs and the baseline link doesn't; each page reads
