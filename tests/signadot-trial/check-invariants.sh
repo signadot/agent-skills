@@ -16,6 +16,10 @@ grep -E '^\| Testing \| Playwright suite as a Job' "$S/SKILL.md" | grep -qi 'org
 has references/setup/prerequisites.md 'On resume, keep `isolated:` from the trial log' "resume must not re-derive isolation"
 for t in lsof unzip; do has references/setup/prerequisites.md "$t" "prerequisites don't mention $t"; done
 
+# Login: an expired login still shows the org, so resume must check for Authenticated, not the org alone.
+has references/setup/account.md 'Expired:' "account.md skips the login when an expired one still shows the org"
+has references/troubleshooting.md 'Authentication expired' "no entry for an expired CLI login"
+
 # Trial log lifecycle: teardown retires it, so a later trial doesn't resume a torn-down one.
 has references/trial-log.md 'trial-log.torn-down-' "trial-log.md doesn't say how teardown retires the log"
 has references/finish/teardown.md 'trial-log.torn-down-' "teardown leaves trial-log.md in place, so the next trial resumes it"

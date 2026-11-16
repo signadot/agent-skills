@@ -32,7 +32,8 @@ Keep this browser session open: the CLI login (§2) is confirmed in it, and C2's
 
 ## 2. CLI login (`login`)
 
-About 30 seconds. Skip it if `$T/bin/sd auth status` already shows the org the user wants (a resumed trial).
+About 30 seconds. Skip it only if `$T/bin/sd auth status` shows `Authenticated` and the org the user wants (a resumed
+trial). An expired login still shows the org, with an `Expired:` line instead of `Authenticated`: log in again.
 
 The login prints a URL and a code and tries to open a browser. Catch the URL instead, so it opens in the signed-in
 session from §1. Add `--insecure-storage` when the trial isolates its config (`isolated: yes`): the credentials then

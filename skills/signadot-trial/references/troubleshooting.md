@@ -27,6 +27,9 @@ raise Docker's memory.
 operator is installed. Re-run the script; it restarts them again and re-counts. To see which workloads lack it and
 why: `"$T/bin/sd" cluster devmesh analyze --cluster <cluster> --namespace hotrod`.
 
+**A Signadot command fails with "Authentication expired".** The CLI login has expired (common when resuming a trial
+a day later; `auth status` shows `Expired:`). Run the login again (`references/setup/account.md` §2), then retry.
+
 **The login shows the wrong account, or never finishes.** The confirmation page uses whichever Signadot account the
 browser is signed in to. Use the browser from signup; if it's another account, sign out there and start the login
 again. When the trial isolates its config, the login uses `--insecure-storage`, so no keychain dialog should appear;
