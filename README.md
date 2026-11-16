@@ -1,8 +1,8 @@
 # Signadot Agent Skills
 
 Skills for AI coding agents to work with [Signadot](https://www.signadot.com).
-They give the agent structured workflows for planning and validating
-changes against real Kubernetes microservice dependencies.
+They give the agent structured workflows for trying Signadot, and for planning
+and validating changes against real Kubernetes microservice dependencies.
 
 ## Install
 
@@ -21,7 +21,10 @@ on next start and triggers when the conversation matches its scope.
 
 ## Skills
 
-### `signadot-trial`
+New to Signadot? Start with [`signadot-trial`](skills/signadot-trial/): it creates
+your account and a local cluster, so nothing needs to be set up first.
+
+### [`signadot-trial`](skills/signadot-trial/)
 
 Try Signadot hands-on, end to end, from your coding agent. It signs you up, sets
 up a local kind cluster with the HotROD demo app, and proves each capability by
@@ -38,7 +41,7 @@ Then ask your agent to "try Signadot". Needs Docker with about 4 GB of memory
 for the core tutorial, plus curl; kubectl, kind, helm and git are installed
 with your consent if missing. No sudo is needed by default.
 
-### `signadot-validate`
+### [`signadot-validate`](skills/signadot-validate/)
 
 Validate code changes against real Kubernetes microservice dependencies
 using Signadot signals: local sandboxes, cluster reachability, logs,
@@ -46,7 +49,7 @@ endpoints, and routing-key isolation.
 
     npx skills add signadot/agent-skills --skill signadot-validate
 
-### `signadot-plan`
+### [`signadot-plan`](skills/signadot-plan/)
 
 Author and iterate on Signadot plan specs: discover schema and actions,
 compose params and steps, run plans, and inspect outputs and logs.
@@ -56,7 +59,8 @@ compose params and steps, run plans, and inspect outputs and logs.
 ## Requirements
 
 - An AI coding agent
-- The Signadot CLI, configured against your cluster
+- For `signadot-validate` and `signadot-plan`: the Signadot CLI, configured
+  against your cluster. `signadot-trial` installs what it needs (see above).
 
 ## License
 
