@@ -5,14 +5,17 @@ set -eu
 
 if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then
   echo "Usage: preflight.sh"
-  echo "Prints os, arch, docker, docker_mem_gb, tool versions (kubectl kind helm git curl go), lsof, unzip, signadot,"
-  echo "signadot_config, signadot_login, local_connect, kube_context, kube_contexts, port_8083, apparmor_userns,"
-  echo "trial_log."
+  echo "Prints trial_dir, os, arch, docker, docker_mem_gb, tool versions (kubectl kind helm git curl go), lsof, unzip,"
+  echo "signadot, signadot_login, local_connect, kube_context, kube_contexts, port_8083, apparmor_userns, trial_log."
   exit 0
 fi
 
-T="${SIGNADOT_TRIAL_HOME:-$HOME/.signadot-trial}"
+# The trial folder: .signadot-trial inside the folder the agent was started in, unless SIGNADOT_TRIAL_HOME says otherwise.
+T="${SIGNADOT_TRIAL_HOME:-$PWD/.signadot-trial}"
+case "$T" in /*) ;; *) T="$PWD/$T" ;; esac
 kv() { printf '%s: %s\n' "$1" "$2"; }
+
+kv trial_dir "$T"
 first_line() { head -1 | tr -d '\r'; }
 
 kv os "$(uname -s | tr '[:upper:]' '[:lower:]')"
@@ -42,13 +45,12 @@ ver() {
 for t in kubectl kind helm git curl go; do kv "$t" "$(ver "$t")"; done
 for t in lsof unzip; do if command -v "$t" >/dev/null 2>&1; then kv "$t" present; else kv "$t" missing; fi; done
 
-# Signadot CLI on PATH, the user's own config and login (never read credentials).
+# Signadot CLI on PATH and the org it's logged in to (never read credentials). The trial never changes either.
 if sd=$(command -v signadot 2>/dev/null); then
   kv signadot "$sd $("$sd" --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)"
 else
   kv signadot missing
 fi
-if [ -f "$HOME/.signadot/config.yaml" ]; then kv signadot_config present; else kv signadot_config absent; fi
 login=unknown
 if [ -n "${sd:-}" ]; then
   status=$("$sd" auth status 2>&1 || true)

@@ -13,23 +13,24 @@ the routing key in the `baggage` header; requests without it keep going to the b
 **On an existing cluster, check first** whether Istio is already installed:
 
 ```bash
-helm status istiod -n istio-system --kubeconfig "$T/kubeconfig"
+"$T/bin/hm" status istiod -n istio-system
 ```
 
 If it succeeds, use the mesh that's there: skip this install, don't record `mesh` or `istio-system` (teardown must
 not remove them), and tell the user the trial adds HotROD to their mesh.
 
-Run this after the kind cluster is up (`references/setup/cluster.md` §1) and before HotROD (§2). It uses helm only,
-with the chart repository given per command, so the user's helm repositories don't change.
+Run this after the kind cluster is up (`references/setup/cluster.md` §1) and before HotROD (§2). It uses `$T/bin/hm`
+(helm with the trial's kubeconfig and cache) and gives the chart repository per command, so the user's helm setup
+doesn't change.
 
 ```bash
 R=https://istio-release.storage.googleapis.com/charts
-helm upgrade --install istio-base base --repo $R --version 1.30.8 -n istio-system --create-namespace \
-  --kubeconfig "$T/kubeconfig" --wait > "$T/logs/istio.log" 2>&1
-helm upgrade --install istiod istiod --repo $R --version 1.30.8 -n istio-system \
+"$T/bin/hm" upgrade --install istio-base base --repo $R --version 1.30.8 -n istio-system --create-namespace \
+  --wait > "$T/logs/istio.log" 2>&1
+"$T/bin/hm" upgrade --install istiod istiod --repo $R --version 1.30.8 -n istio-system \
   --set pilot.resources.requests.memory=256Mi --set pilot.resources.requests.cpu=100m \
   --set global.proxy.resources.requests.memory=64Mi --set global.proxy.resources.requests.cpu=10m \
-  --kubeconfig "$T/kubeconfig" --wait >> "$T/logs/istio.log" 2>&1
+  --wait >> "$T/logs/istio.log" 2>&1
 "$T/bin/kc" -n istio-system get pods
 ```
 
@@ -54,21 +55,21 @@ single-node trial cluster can't fit next to HotROD and the operator. Done when `
 ## Mesh check
 
 `install-operator.sh` prints `sidecars: 4/4`: each of driver, frontend, location and route runs an `istio-proxy`
-(as a native sidecar, so it's listed among the init containers). Once C1 runs, the operator has added a route for it:
+(as a native sidecar, so it's listed among the init containers). Once isolated-change runs, the operator has added a route for it:
 
 ```bash
 "$T/bin/kc" -n hotrod get virtualservices
 "$T/bin/kc" -n hotrod get virtualservice route -o yaml | grep -c signadot-operator
 ```
 
-C1–C3 then prove routing on Istio: the same commands and the same "done when" checks as on DevMesh.
+The basics then prove routing on Istio: the same commands and the same "done when" checks as on DevMesh.
 
 ## Tear down
 
 Deleting the kind cluster removes Istio. On an existing cluster, after the operator:
 
 ```bash
-helm uninstall istiod istio-base -n istio-system --kubeconfig "$T/kubeconfig"
+"$T/bin/hm" uninstall istiod istio-base -n istio-system
 "$T/bin/kc" delete namespace istio-system
 ```
 

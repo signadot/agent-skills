@@ -1,4 +1,4 @@
-# C1 · Test one service change in isolation
+# Test one service change in isolation
 
 Always runs. About 1 minute. `<cluster>`, `<suffix>` and `<proxy>` as in SKILL.md.
 
@@ -39,7 +39,7 @@ one pod.
 ## Record
 
 ```markdown
-## Scenario C1
+## Scenario isolated-change
 status: passed
 seconds: <apply to proof>
 baseline: plate <plate>
@@ -49,14 +49,14 @@ hops-sandbox: <hops line from the second ride>
 proof: the driver step was served by sandbox driver-plates<suffix> only when the routing key was sent
 commands: sd sandbox apply -f assets/specs/core/driver-plates.yaml --set cluster=<cluster> --set suffix=<suffix>
 specs: assets/specs/core/driver-plates.yaml
-screenshot: screens/C1.png (only if you took one)
+screenshot: screens/isolated-change.png (only if you took one)
 links: https://www.signadot.com/docs/tutorials/quickstart/first-sandbox
 try: book rides with and without the key: bash <S>/scripts/ride.sh --proxy <proxy> [--key <routing key>]
 ```
 
 **Screenshot (optional):** if you can drive a browser, start a local proxy for `driver-plates<suffix>`
 (`references/finish/report.md` "Screenshots"), open `http://localhost:18080`, book a ride, and save
-`$T/report/screens/C1.png`.
+`$T/report/screens/isolated-change.png`.
 
 ## Try it yourself
 
@@ -70,7 +70,7 @@ try: book rides with and without the key: bash <S>/scripts/ride.sh --proxy <prox
 "$T/bin/sd" sandbox delete driver-plates<suffix>
 ```
 
-Kafka and the testing variations reuse this sandbox, so delete it only at teardown.
+Kafka and the automated tests reuse this sandbox, so delete it only at teardown.
 
 ## Docs
 

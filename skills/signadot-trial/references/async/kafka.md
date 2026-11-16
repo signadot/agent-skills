@@ -1,13 +1,13 @@
 # Kafka
 
-`<suffix>` and `<proxy>` as in SKILL.md. Needs C1's `driver-plates<suffix>`.
+`<suffix>` and `<proxy>` as in SKILL.md. Needs isolated-change's `driver-plates<suffix>`.
 
 ## What it shows
 
 - **Problem:** with a shared message broker, a consumer under test either steals messages meant for everyone else,
   or needs its own broker and topics, which is slow and expensive.
 - **What Signadot does:** HotROD's frontend publishes every ride request to one Kafka topic, and both drivers (the
-  baseline and the C1 sandbox) consume it. Each request carries its routing key; each consumer processes only the
+  baseline and the isolated-change sandbox) consume it. Each request carries its routing key; each consumer processes only the
   messages that are its own and skips the rest.
 - **Why it matters:** async flows are tested end to end on the shared broker, without copying Kafka or topics, and
   without interfering with anyone else.
@@ -18,7 +18,7 @@ About 2 minutes. Nothing new to create or deploy: it uses HotROD's own Kafka in 
 
 ## Before you start
 
-C1's sandbox `driver-plates<suffix>` must exist and be ready.
+isolated-change's sandbox `driver-plates<suffix>` must exist and be ready.
 
 ## Set up
 
@@ -68,7 +68,7 @@ hops-baseline: frontend → kafka:dispatch → driver(baseline)
 hops-sandbox: frontend → kafka:dispatch → driver(driver-plates<suffix>)
 proof: one broker, one topic; each consumer processed only the messages carrying its routing key
 commands: ride.sh with and without the key; kubectl logs on both driver pods
-specs: assets/specs/core/driver-plates.yaml (from C1)
+specs: assets/specs/core/driver-plates.yaml (from isolated-change)
 links: https://www.signadot.com/docs/guides/set-up-message-queue-isolation/kafka
 try: book several keyed and unkeyed rides and watch both driver logs
 ```
@@ -80,7 +80,7 @@ try: book several keyed and unkeyed rides and watch both driver logs
 
 ## Tear down
 
-Nothing of its own: C1's sandbox is removed with the core tutorial.
+Nothing of its own: isolated-change's sandbox is removed with the basics.
 
 ## Docs
 

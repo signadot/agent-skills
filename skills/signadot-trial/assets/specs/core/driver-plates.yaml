@@ -1,7 +1,7 @@
 name: driver-plates@{suffix}
 spec:
   cluster: "@{cluster}"
-  description: "Signadot trial C1: driver plates get an SD- prefix"
+  description: "Signadot trial: driver plates get an SD- prefix"
   labels:
     feature: hotrod-plates@{suffix}
   forks:

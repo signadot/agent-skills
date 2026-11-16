@@ -21,8 +21,9 @@ If it succeeds, use the mesh that's there: skip this install, don't record `mesh
 remove them), and tell the user the trial adds HotROD to their mesh.
 
 Run this after the kind cluster is up (`references/setup/cluster.md` §1) and before HotROD (§2). Linkerd's identity
-needs a trust anchor and an issuer certificate; generate them with openssl, then install the charts with helm (the
-chart repository is given per command, so the user's helm repositories don't change).
+needs a trust anchor and an issuer certificate; generate them with openssl, then install the charts with `$T/bin/hm`
+(helm with the trial's kubeconfig and cache; the chart repository is given per command, so the user's helm setup
+doesn't change).
 
 ```bash
 D="$T/linkerd-certs"; mkdir -p "$D" && cd "$D"
@@ -37,11 +38,11 @@ openssl x509 -req -in issuer.csr -CA ca.crt -CAkey ca.key -CAcreateserial -extfi
 openssl verify -CAfile ca.crt issuer.crt
 
 R=https://helm.linkerd.io/edge
-helm upgrade --install linkerd-crds linkerd-crds --repo $R --version 2026.11.2 -n linkerd --create-namespace \
-  --kubeconfig "$T/kubeconfig" --wait > "$T/logs/linkerd.log" 2>&1
-helm upgrade --install linkerd-control-plane linkerd-control-plane --repo $R --version 2026.11.2 -n linkerd \
+"$T/bin/hm" upgrade --install linkerd-crds linkerd-crds --repo $R --version 2026.11.2 -n linkerd --create-namespace \
+  --wait > "$T/logs/linkerd.log" 2>&1
+"$T/bin/hm" upgrade --install linkerd-control-plane linkerd-control-plane --repo $R --version 2026.11.2 -n linkerd \
   --set-file identityTrustAnchorsPEM=ca.crt --set-file identity.issuer.tls.crtPEM=issuer.crt \
-  --set-file identity.issuer.tls.keyPEM=issuer.key --kubeconfig "$T/kubeconfig" --wait >> "$T/logs/linkerd.log" 2>&1
+  --set-file identity.issuer.tls.keyPEM=issuer.key --wait >> "$T/logs/linkerd.log" 2>&1
 "$T/bin/kc" -n linkerd get pods
 ```
 
@@ -71,14 +72,14 @@ cluster only. Record `mesh linkerd` and `namespace linkerd` under Resources.
 "$T/bin/kc" -n hotrod get pods -o jsonpath='{range .items[*]}{.metadata.name}{"  "}{.spec.initContainers[*].name} {.spec.containers[*].name}{"\n"}{end}'
 ```
 
-C1–C3 then prove routing on Linkerd: the same commands and the same "done when" checks as on DevMesh.
+The basics then prove routing on Linkerd: the same commands and the same "done when" checks as on DevMesh.
 
 ## Tear down
 
 Deleting the kind cluster removes Linkerd. On an existing cluster, after the operator:
 
 ```bash
-helm uninstall linkerd-control-plane linkerd-crds -n linkerd --kubeconfig "$T/kubeconfig"
+"$T/bin/hm" uninstall linkerd-control-plane linkerd-crds -n linkerd
 "$T/bin/kc" delete namespace linkerd
 ```
 

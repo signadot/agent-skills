@@ -1,6 +1,6 @@
 # Run a Playwright suite as a Job
 
-`<cluster>` and `<suffix>` as in SKILL.md. Needs C1's `driver-plates<suffix>`.
+`<cluster>` and `<suffix>` as in SKILL.md. Needs isolated-change's `driver-plates<suffix>`.
 
 ## What it shows
 
@@ -19,12 +19,12 @@ memory. Namespace `signadot-tests`.
 
 ## Before you start
 
-- C1's sandbox must exist.
+- isolated-change's sandbox must exist.
 - No org settings are needed for Jobs.
 
 ## Set up
 
-SKILL.md's flow starts this right after the operator is installed, so the image pulls during the core tutorial:
+SKILL.md's flow starts this right after the operator is installed, so the image pulls during the basics:
 
 ```bash
 "$T/bin/kc" create namespace signadot-tests --dry-run=client -o yaml | "$T/bin/kc" apply -f -

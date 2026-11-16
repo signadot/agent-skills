@@ -57,7 +57,7 @@ for f in "$S"/scripts/*.sh; do
   if command -v shellcheck >/dev/null 2>&1; then shellcheck -S warning "$f" || bad "${f#"$S"/}: shellcheck"; fi
 done
 pf=$(bash "$S/scripts/preflight.sh")
-for k in os arch docker docker_mem_gb kubectl kind helm git curl go lsof unzip signadot signadot_config signadot_login \
+for k in trial_dir os arch docker docker_mem_gb kubectl kind helm git curl go lsof unzip signadot signadot_login \
          local_connect kube_context kube_contexts port_8083 apparmor_userns trial_log; do
   echo "$pf" | grep -q "^$k: " || bad "preflight: no key $k"
 done
@@ -76,12 +76,31 @@ has references/finish/teardown.md 'trial-log.torn-down-' "teardown must retire t
 has references/finish/teardown.md 'delete namespace signadot' "teardown must remove the operator's namespace on an existing cluster"
 has references/setup/cluster.md 'kind export kubeconfig' "reusing a kind cluster must export its kubeconfig"
 has references/setup/cluster.md 'get namespace <ns>' "an existing cluster's namespaces must be checked before use"
-has references/infra/istio.md 'helm status istiod -n istio-system' "an existing Istio must be detected, not reinstalled"
-has references/infra/istio-ambient.md 'helm status istiod -n istio-system' "an existing Istio must be detected, not reinstalled"
+has references/infra/istio.md 'hm" status istiod -n istio-system' "an existing Istio must be detected, not reinstalled"
+has references/infra/istio-ambient.md 'hm" status istiod -n istio-system' "an existing Istio must be detected, not reinstalled"
 has references/infra/linkerd.md 'get namespace linkerd' "an existing Linkerd must be detected, not reinstalled"
 sed -n '/^## Set up/,/^## /p' "$S/references/data/sandbox-database.md" | grep -q 'resourceplugin get' \
   || bad "sandbox-database.md: re-applying the plugin fails; Set up must check it exists first"
 sed -n '/^## Tear down/,/^## /p' "$S/references/testing/plans.md" | grep -q '^"$T/bin/sd" plan delete' \
   && bad "plans.md: Signadot refuses to delete an executed plan; teardown must only remove the tag"
+
+# 9. Confinement: the trial folder is .signadot-trial in the agent's working folder, and the wrappers keep the CLI's
+#    config and login and kubectl's and helm's caches inside it, so the agent never needs access outside it.
+X=$(mktemp -d); trap 'rm -rf "$X"' EXIT; mkdir -p "$X/work" "$X/home" "$X/stub"
+td=$(cd "$X/work" && env -u SIGNADOT_TRIAL_HOME bash "$S/scripts/preflight.sh" | sed -n 's/^trial_dir: //p')
+[ "$td" = "$X/work/.signadot-trial" ] || bad "preflight: trial_dir must be .signadot-trial in the working folder, got $td"
+printf '#!/bin/sh\necho "signadot 9.9.9"\n' > "$X/stub/signadot"; chmod +x "$X/stub/signadot"
+HOME="$X/home" bash "$S/scripts/install-cli.sh" --trial-dir "$td" --reuse "$X/stub/signadot" >/dev/null \
+  || bad "install-cli.sh failed with a reused CLI"
+grep -qx "export HOME=\"$td/home\"" "$td/bin/sd" 2>/dev/null || bad "the sd wrapper must give the CLI the trial's own HOME"
+grep -qF -- "--cache-dir \"$td/kube-cache\"" "$td/bin/kc" 2>/dev/null || bad "kc must keep kubectl's cache in the trial folder"
+grep -qF "HELM_CACHE_HOME=\"$td/helm/cache\"" "$td/bin/hm" 2>/dev/null || bad "hm must keep helm's cache in the trial folder"
+[ "$(cat "$td/.gitignore" 2>/dev/null)" = '*' ] || bad "the trial folder must keep itself out of git"
+[ -z "$(ls -A "$X/home")" ] || bad "install-cli.sh wrote to HOME"
+grep -rnE '\$HOME/\.signadot|~/\.signadot-trial' "$S/scripts" && bad "a script reads or writes a Signadot folder in HOME"
+grep -rnE '^[[:space:]]*helm ' "$S/references" && bad "a helm command bypasses \$T/bin/hm, so its cache lands in HOME"
+grep -q HELM_CACHE_HOME "$S/scripts/install-operator.sh" || bad "install-operator.sh must keep helm's cache in the trial folder"
+grep -q 'GOPATH="$T/go" GOCACHE=' "$S/references/core/local-development.md" \
+  || bad "local-development.md: the Go build must keep its caches in the trial folder"
 
 [ $fail = 0 ] && echo "static OK"; exit $fail

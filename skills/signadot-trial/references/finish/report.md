@@ -18,10 +18,9 @@ entry per scenario.
    - **running:** everything in `## Resources` that still exists, the preview URL, and the connection. Say that
      nothing expires on its own.
    - **next steps:** the agent skills for their own services (`npx skills add signadot/agent-skills --skill
-     signadot-validate`, and `--skill signadot-plan` for Plans); the Signadot MCP server command for the CLI that was
-     actually used (`$T/bin/sd mcp` when the trial isolated its config or the CLI isn't on the user's PATH,
-     otherwise `signadot mcp`) and which org it talks to; installing the operator on their own cluster
-     (https://www.signadot.com/docs/installation/signadot-operator); variations they didn't try.
+     signadot-validate`, and `--skill signadot-plan` for Plans); the Signadot MCP server (`<T>/bin/sd mcp` with the
+     trial's login and org, or `signadot mcp` once their own CLI is logged in); installing the operator on their own cluster
+     (https://www.signadot.com/docs/installation/signadot-operator); add-ons they didn't try.
    - **teardown:** what teardown will remove, and the manual steps (from `references/finish/teardown.md`).
    - **run details:** the `## Run` facts, except secrets.
 3. Escape `<`, `>` and `&` in anything copied from command output.
@@ -30,7 +29,7 @@ entry per scenario.
 
 ## Screenshots
 
-Take them only if you can drive a browser. Preview URLs (C2) need nothing else. For a sandbox, start a local proxy
+Take them only if you can drive a browser. Preview URLs (multi-service-preview) need nothing else. For a sandbox, start a local proxy
 that adds the sandbox's routing key to every request, and open the plain localhost URL it serves:
 
 ```bash
@@ -40,8 +39,8 @@ nohup "$T/bin/sd" local proxy --sandbox <sandbox> --map http://frontend.hotrod.s
 
 Then open `http://localhost:18080`, book a ride, and save `$T/report/screens/<scenario id>.png`. Stop the proxy before
 starting one for another sandbox (`references/finish/playground.md` has the stop command). Link screenshots
-relatively (`screens/C1.png`). Without a browser, leave out the `<figure>`: the flow diagram and the proof carry the
+relatively (`screens/isolated-change.png`). Without a browser, leave out the `<figure>`: the flow diagram and the proof carry the
 card.
 
-Good screenshots: C1 the ride notifications with the `SD-` plate; C2 the preview URL with the highlighted plate;
-C3 the ride with an ETA in seconds.
+Good screenshots: isolated-change, the ride notifications with the `SD-` plate; multi-service-preview, the preview
+URL with the highlighted plate; local-development, the ride with an ETA in seconds.

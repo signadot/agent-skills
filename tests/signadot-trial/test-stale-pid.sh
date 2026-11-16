@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# C3 and teardown kill a recorded PID only if its command line belongs to the trial folder (PIDs are reused).
+# local-development and teardown kill a recorded PID only if its command line belongs to the trial folder (PIDs are reused).
 set -u
 ROOT=$(cd "$(dirname "$0")/../.." && pwd); R=$ROOT/skills/signadot-trial/references; fail=0
 SNIP='for f in route-local redis-pf; do p=$(cat "$T/$f.pid" 2>/dev/null) && ps -p "$p" -o args= 2>/dev/null | grep -qF "$T/" && kill "$p"; done'

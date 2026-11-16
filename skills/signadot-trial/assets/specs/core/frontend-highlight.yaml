@@ -1,7 +1,7 @@
 name: frontend-highlight@{suffix}
 spec:
   cluster: "@{cluster}"
-  description: "Signadot trial C2: frontend highlights SD- plates"
+  description: "Signadot trial: frontend highlights SD- plates"
   labels:
     feature: hotrod-plates@{suffix}
   forks:

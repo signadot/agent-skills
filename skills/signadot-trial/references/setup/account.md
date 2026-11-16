@@ -2,8 +2,14 @@
 
 ## 1. Account (`account`) ★
 
-About 3–4 minutes, mostly the user. Skip to §2 if the user already has an account they want to use; they pick the
-org, and every org-scoped name gets the run suffix (see SKILL.md).
+About 3–4 minutes, mostly the user. Start by asking, in one message:
+
+- how they'd like to sign up: with an email address, with Google or GitHub, or by signing in to an org they already
+  have (if preflight shows `signadot_login: <org>`, offer that org by name);
+- for a new account: the organization name, and their first and last name.
+
+If they use an org they already have, skip to §2. Tell them in one line that the trial's names get a short suffix
+(SKILL.md, "Existing org") and that teammates can see the trial's sandboxes in the dashboard.
 
 **If you can drive a browser the user can see and type into:**
 
@@ -28,7 +34,7 @@ org, and every org-scoped name gets the run suffix (see SKILL.md).
 Done when the dashboard's Overview page loads. Record the step, and under User actions: "Typed the signup password
 and clicked the verification link".
 
-Keep this browser session open: the CLI login (§2) is confirmed in it, and C2's preview URL opens in it.
+Keep this browser session open: the CLI login (§2) is confirmed in it, and the preview URL (multi-service-preview) opens in it.
 
 ## 2. CLI login (`login`)
 
@@ -36,16 +42,16 @@ About 30 seconds. Skip it only if `$T/bin/sd auth status` shows `Authenticated` 
 trial). An expired login still shows the org, with an `Expired:` line instead of `Authenticated`: log in again.
 
 The login prints a URL and a code and tries to open a browser. Catch the URL instead, so it opens in the signed-in
-session from §1. Add `--insecure-storage` when the trial isolates its config (`isolated: yes`): the credentials then
-go to a file under `$T/home` rather than the system keychain.
+session from §1. `--insecure-storage` keeps the credentials in a file under `$T/home` rather than the system
+keychain, so the login stays inside the trial folder and never touches the user's own.
 
 ```bash
-T="${SIGNADOT_TRIAL_HOME:-$HOME/.signadot-trial}"
+T="<trial_dir>"   # the absolute path preflight printed
 mkdir -p "$T/shim" "$T/logs" && : > "$T/logs/login-url"
 for b in open xdg-open; do
   printf '#!/bin/sh\necho "$@" >> "%s/logs/login-url"\n' "$T" > "$T/shim/$b"; chmod 755 "$T/shim/$b"
 done
-PATH="$T/shim:$PATH" nohup "$T/bin/sd" auth login --insecure-storage > "$T/logs/login.log" 2>&1 &   # drop --insecure-storage when not isolated
+PATH="$T/shim:$PATH" nohup "$T/bin/sd" auth login --insecure-storage > "$T/logs/login.log" 2>&1 &
 sleep 3; cat "$T/logs/login-url"; grep -iE 'code|https://' "$T/logs/login.log"
 ```
 

@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-# Runs the connection-config snippet from cluster.md §4 and the removal snippet from teardown.md against a sample
-# config: the trial's local: block replaces any old one, names the trial's kubeconfig, keeps every other key, and
-# teardown removes it only when it's the trial's.
+# Runs the connection-config snippet from cluster.md §4 against a sample config (the trial's own, in $T/home): the
+# trial's local: block replaces any old one, names the trial's kubeconfig and cluster, and keeps every other key.
 set -u
 ROOT=$(cd "$(dirname "$0")/../.." && pwd); S=$ROOT/skills/signadot-trial; fail=0
 bad() { echo "FAIL $*"; fail=1; }
@@ -24,14 +23,4 @@ echo "$c" | grep -q "^    kubeConfig: $T/kubeconfig$" || bad "the block doesn't 
 echo "$c" | grep -q '^    kubeContext: kind-signadot-trial$' || bad "the block doesn't name the trial's kube context"
 echo "$c" | grep -q '^  - cluster: signadot-trial-abcd$' || bad "the block doesn't name the trial's cluster"
 
-remove=$(block "$S/references/finish/teardown.md" 'local_config' | sed "s|^ *CFG=.*|CFG=\"$X/config.yaml\"|; s|<suffix>|-abcd|g")
-[ -n "$remove" ] || bad "teardown.md: no bash block that removes the trial's local: block"
-cp "$X/config.yaml" "$X/before.yaml"
-( T=$T; eval "$remove" ) || true
-c=$(cat "$X/config.yaml")
-echo "$c" | grep -q '^local:' && bad "teardown left the trial's local: block"
-echo "$c" | grep -q '^org: acme$' || bad "teardown removed other keys"
-printf 'org: acme\nlocal:\n  connections:\n  - cluster: theirs\n' > "$X/config.yaml"
-( T=$T; eval "$remove" ) || true
-grep -q 'cluster: theirs' "$X/config.yaml" || bad "teardown removed a local: block that isn't the trial's"
 [ $fail = 0 ] && echo "config blocks OK"; exit $fail

@@ -37,8 +37,10 @@ you ask for teardown.
 
     npx skills add signadot/agent-skills --skill signadot-trial
 
-Then ask your agent to "try Signadot". Needs Docker with about 4 GB of memory
-for the core tutorial, plus curl; kubectl, kind, helm and git are installed
+Run it in an empty folder, then start your agent there and ask it to "try
+Signadot". The trial keeps everything it creates in a `.signadot-trial` folder
+inside it, so the agent needs no access elsewhere. Needs Docker with
+about 4 GB of memory, plus curl; kubectl, kind, helm and git are installed
 with your consent if missing. No sudo is needed by default.
 
 ### [`signadot-validate`](skills/signadot-validate/)

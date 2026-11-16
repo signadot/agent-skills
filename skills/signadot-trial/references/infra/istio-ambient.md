@@ -14,7 +14,7 @@ the routing key, to HotROD's VirtualServices; the waypoint applies them.
 **On an existing cluster, check first** whether Istio is already installed:
 
 ```bash
-helm status istiod -n istio-system --kubeconfig "$T/kubeconfig"
+"$T/bin/hm" status istiod -n istio-system
 ```
 
 If it succeeds, use the mesh that's there (it must run in ambient mode): skip this install, don't record `mesh` or
@@ -22,23 +22,24 @@ If it succeeds, use the mesh that's there (it must run in ambient mode): skip th
 `hotrod` namespace as below.
 
 Run this after the kind cluster is up (`references/setup/cluster.md` §1) and before HotROD (§2). Waypoints are
-Gateway API resources, so the Gateway API CRDs come first. Helm only, with the chart repository given per command.
+Gateway API resources, so the Gateway API CRDs come first. Charts go through `$T/bin/hm`, with the repository given
+per command.
 
 ```bash
 "$T/bin/kc" get crd gateways.gateway.networking.k8s.io >/dev/null 2>&1 \
   || "$T/bin/kc" apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.5.1/standard-install.yaml > "$T/logs/istio.log"
 R=https://istio-release.storage.googleapis.com/charts
-helm upgrade --install istio-base base --repo $R --version 1.30.8 -n istio-system --create-namespace \
-  --kubeconfig "$T/kubeconfig" --wait >> "$T/logs/istio.log" 2>&1
-helm upgrade --install istiod istiod --repo $R --version 1.30.8 -n istio-system --set profile=ambient \
+"$T/bin/hm" upgrade --install istio-base base --repo $R --version 1.30.8 -n istio-system --create-namespace \
+  --wait >> "$T/logs/istio.log" 2>&1
+"$T/bin/hm" upgrade --install istiod istiod --repo $R --version 1.30.8 -n istio-system --set profile=ambient \
   --set pilot.resources.requests.memory=256Mi --set pilot.resources.requests.cpu=100m \
   --set global.proxy.resources.requests.memory=64Mi --set global.proxy.resources.requests.cpu=10m \
-  --kubeconfig "$T/kubeconfig" --wait >> "$T/logs/istio.log" 2>&1
-helm upgrade --install istio-cni cni --repo $R --version 1.30.8 -n istio-system --set profile=ambient \
-  --kubeconfig "$T/kubeconfig" --wait >> "$T/logs/istio.log" 2>&1
-helm upgrade --install ztunnel ztunnel --repo $R --version 1.30.8 -n istio-system \
+  --wait >> "$T/logs/istio.log" 2>&1
+"$T/bin/hm" upgrade --install istio-cni cni --repo $R --version 1.30.8 -n istio-system --set profile=ambient \
+  --wait >> "$T/logs/istio.log" 2>&1
+"$T/bin/hm" upgrade --install ztunnel ztunnel --repo $R --version 1.30.8 -n istio-system \
   --set resources.requests.memory=128Mi --set resources.requests.cpu=50m \
-  --kubeconfig "$T/kubeconfig" --wait >> "$T/logs/istio.log" 2>&1
+  --wait >> "$T/logs/istio.log" 2>&1
 "$T/bin/kc" create namespace hotrod --dry-run=client -o yaml | "$T/bin/kc" apply -f -
 "$T/bin/kc" label namespace hotrod istio.io/dataplane-mode=ambient istio.io/use-waypoint=waypoint --overwrite
 "$T/bin/kc" -n istio-system get pods
@@ -72,14 +73,14 @@ The memory flags keep istiod, ztunnel and the waypoint small enough for a single
 ```
 
 Done when the namespace has both labels, the waypoint Gateway is programmed, and its pod is running; HotROD's own pods
-have a single container (no sidecar). C1–C3 then prove routing through the waypoint.
+have a single container (no sidecar). The basics then prove routing through the waypoint.
 
 ## Tear down
 
 Deleting the kind cluster removes Istio. On an existing cluster, after the operator:
 
 ```bash
-helm uninstall ztunnel istio-cni istiod istio-base -n istio-system --kubeconfig "$T/kubeconfig"
+"$T/bin/hm" uninstall ztunnel istio-cni istiod istio-base -n istio-system
 "$T/bin/kc" delete namespace istio-system
 ```
 

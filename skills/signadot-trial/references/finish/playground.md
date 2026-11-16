@@ -12,7 +12,7 @@ Build the list from the trial log's `## Resources` and check each item is still 
 "$T/bin/sd" routegroup list
 "$T/bin/sd" local status
 "$T/bin/kc" get namespaces
-lsof -nP -iTCP:8083 -sTCP:LISTEN          # C3's route service on this computer, if C3 ran
+lsof -nP -iTCP:8083 -sTCP:LISTEN          # local-development's route service on this computer, if local-development ran
 ```
 
 What keeps running, and what doesn't:
@@ -22,7 +22,7 @@ What keeps running, and what doesn't:
 | kind cluster, HotROD, demo apps, operator | Yes, while Docker runs | Start Docker again; the cluster comes back |
 | Sandboxes, route group, plugin, runner group, plan tag | Yes (stored in Signadot) | — |
 | Local connection | Yes (a background daemon), until reboot | `<T>/bin/sd local connect --unprivileged` |
-| C3's route process, Redis port-forward, a local proxy | Usually; they're background processes this session started | the start commands in `references/core/local-development.md` "Run", or below |
+| local-development's route process, Redis port-forward, a local proxy | Usually; they're background processes this session started | the start commands in `references/core/local-development.md` "Run", or below |
 
 If the proxy address changed after a reconnect, read it again with the command in `references/setup/cluster.md` §4
 (the `portforward` section's `localAddress`).
@@ -40,14 +40,14 @@ Include what applies, with real values:
   ```
 
   Then open http://localhost:18080 and book a ride: the plate starts with `SD-`. Use `--sandbox local-route<suffix>`
-  for C3 (ETAs in seconds) or `--routegroup hotrod-plates<suffix>` for C2. Record `process <pid> local proxy` under
+  for local-development (ETAs in seconds) or `--routegroup hotrod-plates<suffix>` for multi-service-preview. Record `process <pid> local proxy` under
   Resources. One proxy at a time on this port; stop it before starting another:
 
   ```bash
   p=$(cat "$T/local-proxy.pid" 2>/dev/null) && ps -p "$p" -o args= 2>/dev/null | grep -qF 'local proxy' && kill "$p"
   ```
 
-- **The preview URL from C2:** opens in a browser signed in to the org, with no setup.
+- **The preview URL** (multi-service-preview): opens in a browser signed in to the org, with no setup.
 - **Any request through the connection:**
   `curl --proxy socks5h://<address> -H "baggage: sd-routing-key=<key>" http://frontend.hotrod.svc:8080/`.
 - **The trial's CLI and cluster:** `<T>/bin/sd` (the trial org) and `<T>/bin/kc`, or
@@ -59,8 +59,8 @@ Include what applies, with real values:
   `npx skills add signadot/agent-skills --skill signadot-validate` (and `--skill signadot-plan` to author Plans).
   See https://www.signadot.com/docs/integrations/coding-agents/agent-skills. To install the operator on their own
   cluster: https://www.signadot.com/docs/installation/signadot-operator.
-- **Connect a coding agent:** the Signadot MCP server, `<T>/bin/sd mcp` when the trial isolated its config or the CLI
-  isn't on the user's PATH, otherwise `signadot mcp`; it uses the same org. Per-client setup:
+- **Connect a coding agent:** the Signadot MCP server. `<T>/bin/sd mcp` uses the trial's login and org while the
+  trial folder exists; once their own CLI is logged in (`signadot auth login`), it's `signadot mcp`. Per-client setup:
   https://www.signadot.com/docs/integrations/mcp.
 
 ## 3. Offer teardown, don't do it
@@ -70,6 +70,7 @@ When you're done, ask me to tear down the Signadot trial and I'll remove it all,
 for you to do." Then stop. Run `references/finish/teardown.md` only when the user asks.
 
 **Closing message,** after the hand-off: one line per scenario result, the report path, the preview URL, what's
-running, and the teardown offer. If the user has no `signadot` on their PATH, say where the CLI is
-(`cli_path` in the trial log) and offer to link it into a folder on their PATH, with their OK. Don't put `<T>/bin` itself on
-PATH: its `sd` wrapper would shadow the `sd` find-and-replace tool some people use.
+running, and the teardown offer. To keep using Signadot from their own terminal,
+they install the CLI (https://www.signadot.com/docs/getting-started/installation/signadot-cli) and run
+`signadot auth login`; the trial's login stays inside the trial folder. Don't change their PATH or shell profile, and
+don't suggest putting `<T>/bin` on PATH: its `sd` wrapper would shadow the `sd` find-and-replace tool some people use.

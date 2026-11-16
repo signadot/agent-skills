@@ -1,7 +1,7 @@
 name: hotrod-plates@{suffix}
 spec:
   cluster: "@{cluster}"
-  description: "Signadot trial C2: frontend and driver sandboxes tested together"
+  description: "Signadot trial: frontend and driver sandboxes tested together"
   match:
     any:
     - label:

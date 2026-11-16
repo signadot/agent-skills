@@ -1,6 +1,6 @@
 # Run the suite as a Plan, and catch a regression
 
-`<cluster>` and `<suffix>` as in SKILL.md. Needs C1's `driver-plates<suffix>`; the last step also needs C3's
+`<cluster>` and `<suffix>` as in SKILL.md. Needs isolated-change's `driver-plates<suffix>`; the last step also needs local-development's
 `local-route<suffix>`.
 
 ## What it shows
@@ -8,7 +8,7 @@
 - **Problem:** test automation that a person or agent can rerun on demand, against any change, usually means
   maintaining CI glue for every environment.
 - **What Signadot does:** a Plan is a reusable, parameterized test run that Signadot executes in the cluster on a
-  managed runner. The trial wraps HotROD's Playwright suite in a one-step Plan, tags it, runs it against the C1
+  managed runner. The trial wraps HotROD's Playwright suite in a one-step Plan, tags it, runs it against the isolated-change
   sandbox, then against a sandbox with a deliberate bug, and sees the Plan catch it. A coding agent can author and
   run Plans like this with the `signadot-plan` and `signadot-validate` skills.
 - **Why it matters:** the same tagged Plan validates any sandbox, including one running on a developer's computer,
@@ -20,8 +20,9 @@ About 4 minutes. No extra memory beyond a short-lived runner pod. Changes two or
 
 ## Before you start
 
-Plans need two org settings that only an org admin can change, in the dashboard. Ask the user for an explicit yes
-first, then change them in a browser you drive (signed in to the trial org), or give the user these steps:
+Plans need two org settings that only an org admin can change, in the dashboard. The confirmation lists them, and its
+OK is the yes; if it didn't list them (the user added automated tests later), ask first. Then change them in a browser
+you drive (signed in to the trial org), or give the user these steps:
 
 1. **A plan runner on the trial cluster:** https://app.signadot.com → Platform → Managed Runners → click
    `<cluster>` → under Plan Runners, press + once (it saves at once and shows "Provisioning"). Done when the cluster's
@@ -56,7 +57,7 @@ Resources.
 
 ## Run
 
-Against C1's sandbox:
+Against isolated-change's sandbox:
 
 ```bash
 "$T/bin/sd" plan run --tag hotrod-e2e<suffix> --param sandbox=driver-plates<suffix> --timeout 10m -o json > "$T/logs/plan-driver.json"
@@ -70,7 +71,7 @@ fail, so `plan run` exits non-zero; that's the regression being caught, not a pr
 "$T/bin/sd" plan run --tag hotrod-e2e<suffix> --param sandbox=broken-route<suffix> --timeout 10m -o json > "$T/logs/plan-broken.json"
 ```
 
-Record `sandbox broken-route<suffix>` under Resources. If C3 ran, also run it against the service on this computer:
+Record `sandbox broken-route<suffix>` under Resources. If local-development ran, also run it against the service on this computer:
 
 ```bash
 "$T/bin/sd" plan run --tag hotrod-e2e<suffix> --param sandbox=local-route<suffix> --timeout 10m -o json > "$T/logs/plan-local.json"

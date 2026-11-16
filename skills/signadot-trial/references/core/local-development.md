@@ -1,4 +1,4 @@
-# C3 · Run a service on this computer against the cluster
+# Run a service on this computer against the cluster
 
 Runs by default. About 3 minutes, most of it the first build. Needs Go 1.27.1+ or Docker, and port 8083 free.
 `<cluster>`, `<suffix>` and `<proxy>` as in SKILL.md.
@@ -25,11 +25,12 @@ git fetch -q --depth 1 origin b16178651580a8ba3ceb45ac7c59f4579611b0b3 && git ch
 git apply --reverse --check "$S/assets/patches/route-eta.patch" 2>/dev/null || git apply "$S/assets/patches/route-eta.patch"
 ```
 
-Build with Go if preflight shows 1.27.1 or newer (HotROD's `go.mod` asks for 1.27.1; an older Go would download a
-newer toolchain into `~/go` on its own, outside the trial folder):
+Build with Go if preflight shows 1.27.1 or newer (HotROD's `go.mod` asks for 1.27.1). The variables keep Go's module
+and build caches in the trial folder, writable so teardown can delete them:
 
 ```bash
-cd "$T/hotrod" && go build -o "$T/bin/hotrod" ./cmd/hotrod
+cd "$T/hotrod" && GOPATH="$T/go" GOCACHE="$T/go/cache" GOFLAGS=-modcacherw GOTOOLCHAIN=local \
+  go build -o "$T/bin/hotrod" ./cmd/hotrod
 ```
 
 Otherwise build in a container as the user, with a module cache so rebuilds take about a second. `<os>` is
@@ -37,7 +38,7 @@ Otherwise build in a container as the user, with a module cache so rebuilds take
 
 ```bash
 cd "$T/hotrod" && docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/src" -w /src -e CGO_ENABLED=0 \
-  -e GOCACHE=/src/.trial-cache/build -e GOMODCACHE=/src/.trial-cache/mod -e GOOS=<os> -e GOARCH=<arch> \
+  -e GOCACHE=/src/.trial-cache/build -e GOMODCACHE=/src/.trial-cache/mod -e GOFLAGS=-modcacherw -e GOOS=<os> -e GOARCH=<arch> \
   golang:1.27.1 go build -o /src/.trial-bin/hotrod ./cmd/hotrod && cp .trial-bin/hotrod "$T/bin/hotrod"
 ```
 
@@ -69,7 +70,7 @@ new shell):
   nohup "$T/bin/hotrod" route > "$T/logs/route-local.log" 2>&1 & echo $! > "$T/route-local.pid" )
 ```
 
-Record `sandbox local-route<suffix>`, `process <pid> hotrod route (C3)` and `portforward <pid> redis <port>:6379`
+Record `sandbox local-route<suffix>`, `process <pid> hotrod route (local-development)` and `portforward <pid> redis <port>:6379`
 under Resources. Done when `lsof -nP -iTCP:8083 -sTCP:LISTEN` shows the process.
 
 To stop the local processes (for the edit loop below, or at teardown), kill them only if their recorded PIDs still
@@ -98,7 +99,7 @@ just its `route-local` PID), start it again with the start command, and time it.
 ## Record
 
 ```markdown
-## Scenario C3
+## Scenario local-development
 status: passed
 seconds: <apply to proof>
 baseline: ETA <minutes>

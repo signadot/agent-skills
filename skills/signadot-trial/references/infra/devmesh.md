@@ -24,7 +24,7 @@ container. To see it yourself:
 "$T/bin/kc" -n hotrod get pods -o jsonpath='{range .items[*]}{.metadata.name}{"  "}{.spec.containers[*].name}{"\n"}{end}'
 ```
 
-C1–C3 then prove routing on DevMesh.
+The basics then prove routing on DevMesh.
 
 ## Tear down
 

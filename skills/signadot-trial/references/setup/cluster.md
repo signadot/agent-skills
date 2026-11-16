@@ -14,7 +14,7 @@ First check `kind get clusters`. If a cluster named `signadot-trial` is already 
 mention it, ask the user before reusing it: it may be someone else's.
 
 ```bash
-T="${SIGNADOT_TRIAL_HOME:-$HOME/.signadot-trial}"
+T="<trial_dir>"   # the absolute path preflight printed
 if kind get clusters 2>/dev/null | grep -qx signadot-trial; then
   kind export kubeconfig --name signadot-trial --kubeconfig "$T/kubeconfig"
 else
@@ -31,7 +31,7 @@ Then run the chosen infra file's "Install before HotROD" (nothing for DevMesh).
 
 ### Using an existing local cluster instead
 
-Only if the user picked one in the briefing:
+Only if the user picked one in the confirmation:
 
 1. Refuse it if its context or server looks like a cloud cluster: `arn:aws:eks`, `eks.amazonaws.com`, `gke_`,
    `container.googleapis.com`, `azmk8s.io`.
@@ -78,7 +78,7 @@ The first start pulls about 3.5 GB of images; Kafka is the slowest. Every 30–6
 pending (`"$T/bin/kc" -n hotrod get pods`). Done when every deployment is available and both statefulsets are
 rolled out. Record `namespace hotrod` under Resources.
 
-This is also when to start each chosen async demo app's deploy, so its images pull while you do the core tutorial.
+This is also when to start each chosen async demo app's deploy, so its images pull while you do the basics.
 Temporal, RabbitMQ and Redis Streams come from `signadot/examples` at a pinned commit; fetch it once for all of
 them, then run each chosen file's "Set up":
 
@@ -112,13 +112,12 @@ the routing proxy too, or its sandbox stays Not Ready with `RoutingNotReady`:
 
 ## 4. Connection (`connect`)
 
-The connection lets this computer reach services in the cluster. Write it into the CLI config the trial uses:
-`$T/home/.signadot/config.yaml` when isolated, otherwise `~/.signadot/config.yaml` (which the trial created at
-login, since it only skips isolation when there was no config). Replace any existing `local:` block and keep the
-other keys:
+The connection lets this computer reach services in the cluster. Write it into the trial's own CLI config,
+`$T/home/.signadot/config.yaml` (the user's `~/.signadot` is never used). Replace any existing `local:` block and
+keep the other keys:
 
 ```bash
-CFG="$T/home/.signadot/config.yaml"   # or ~/.signadot/config.yaml when not isolated
+CFG="$T/home/.signadot/config.yaml"
 mkdir -p "$(dirname "$CFG")" && touch "$CFG"
 awk '/^local:/ {skip=1; next} skip && /^[^ \t-]/ {skip=0} !skip' "$CFG" > "$CFG.new"
 cat >> "$CFG.new" <<EOF
@@ -135,8 +134,7 @@ mv "$CFG.new" "$CFG"
 ```
 
 The last command prints the address of a local SOCKS proxy, e.g. `127.0.0.1:60123`. Record
-`proxy: socks5h://<address>` and `connect_mode: unprivileged` under Run, and `local_config <the CFG path>` under
-Resources, so teardown removes the block. Every request to a cluster service goes
+`proxy: socks5h://<address>` and `connect_mode: unprivileged` under Run. Every request to a cluster service goes
 through it (`curl --proxy socks5h://<address> …`, `ride.sh --proxy …`). Check:
 
 ```bash

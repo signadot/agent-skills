@@ -15,7 +15,7 @@
 ## Costs
 
 About 6 minutes, including two local image builds (about 1 minute) and the Temporal server's start. About 1 GB of
-memory: the Temporal server with Postgres and Elasticsearch is the heaviest variation. Namespace `temporal`.
+memory: the Temporal server with Postgres and Elasticsearch is the heaviest add-on. Namespace `temporal`.
 
 ## Before you start
 

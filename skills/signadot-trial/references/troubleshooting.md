@@ -14,13 +14,13 @@ state:
 ## Setup
 
 **Docker isn't running, or has too little memory.** Preflight shows `docker: stopped` or a small `docker_mem_gb`.
-Ask the user to start Docker or raise its memory (`references/setup/prerequisites.md`), or drop variations.
+Ask the user to start Docker or raise its memory (`references/setup/prerequisites.md`), or drop add-ons.
 
 **Image pulls are slow.** HotROD's first start pulls about 3.5 GB (Kafka is the largest); the Playwright runner about
 2 GB. Keep narrating what's pending (`get pods`) rather than failing; the waits allow 10 minutes.
 
 **Pods stay `Pending`, or restart with `OOMKilled`.** The node is out of memory: `describe pod` shows "Insufficient
-memory" or the last state `OOMKilled`. Remove a variation you've finished with (its "Tear down"), or ask the user to
+memory" or the last state `OOMKilled`. Remove an add-on you've finished with (its "Tear down"), or ask the user to
 raise Docker's memory.
 
 **`install-operator.sh` shows fewer sidecars than workloads.** Pods get the proxy only when they restart after the
@@ -32,8 +32,8 @@ a day later; `auth status` shows `Expired:`). Run the login again (`references/s
 
 **The login shows the wrong account, or never finishes.** The confirmation page uses whichever Signadot account the
 browser is signed in to. Use the browser from signup; if it's another account, sign out there and start the login
-again. When the trial isolates its config, the login uses `--insecure-storage`, so no keychain dialog should appear;
-if one does, cancel it and start the login again with that flag.
+again. The trial's login uses `--insecure-storage`, so no keychain dialog should appear; if one does, cancel it and
+start the login again with that flag.
 
 **Another local connection is running.** Only one can run per computer, across orgs and CLI installs. If preflight
 doesn't mark it `(trial)`, the user disconnects it with their own CLI (`signadot local disconnect`; if their login
@@ -68,13 +68,13 @@ behave differently in bash and zsh). Right after a sandbox becomes ready, give r
 **A sandboxed consumer or worker doesn't take its message.** Async consumers refresh their routing rules on a timer:
 about 10 seconds in the trial's demo apps. Wait, then send the message again.
 
-**C3: port 8083 is busy.** `lsof -nP -iTCP:8083 -sTCP:LISTEN` shows what holds it. Stop the trial's own process
+**local-development: port 8083 is busy.** `lsof -nP -iTCP:8083 -sTCP:LISTEN` shows what holds it. Stop the trial's own process
 (the guarded stop command in `references/core/local-development.md`), or ask the user about another one.
 
-**C3: the build fails.** Without Go 1.27.1+, the build runs in Docker (`golang:1.27.1`); make sure Docker is running.
+**local-development: the build fails.** Without Go 1.27.1+, the build runs in Docker (`golang:1.27.1`); make sure Docker is running.
 The first container build downloads modules (about a minute); later ones take seconds.
 
-**C3: keyed rides stop at "Resolving routes".** The local route service can't reach Redis. With the no-sudo
+**local-development: keyed rides stop at "Resolving routes".** The local route service can't reach Redis. With the no-sudo
 connection it needs the Redis port-forward and `REDIS_ADDR=localhost:<port>`; check `$T/logs/redis-pf.log` and
 `$T/logs/route-local.log`. Lines about exporting traces to `jaeger.hotrod` are harmless.
 

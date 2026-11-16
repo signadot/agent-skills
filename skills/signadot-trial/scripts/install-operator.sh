@@ -24,7 +24,9 @@ while [ $# -gt 0 ]; do
 done
 if [ -z "$T" ] || [ -z "$CLUSTER" ]; then usage >&2; exit 2; fi
 SD="$T/bin/sd" KC="$T/bin/kc" KCFG="$T/kubeconfig"
-mkdir -p "$T/logs"
+mkdir -p "$T/logs" "$T/tmp"
+# Keep helm's cache and config in the trial folder, as $T/bin/hm does.
+export HELM_CACHE_HOME="$T/helm/cache" HELM_CONFIG_HOME="$T/helm/config" HELM_DATA_HOME="$T/helm/data"
 
 # 1. Register the cluster (once).
 # `cluster add` prints a token (on stderr in CLI 1.9.1). Capture both streams in memory, keep the token for helm
@@ -48,7 +50,7 @@ token_source=none
 if helm status signadot-operator -n signadot --kubeconfig "$KCFG" >/dev/null 2>&1; then
   operator=already-installed
 else
-  umask 077; tok=$(mktemp); trap 'rm -f "$tok"' EXIT
+  umask 077; tok=$(mktemp "$T/tmp/values.XXXXXX"); trap 'rm -f "$tok"' EXIT
   token=$addtok token_source=cluster-add
   if [ -z "$token" ]; then
     token=$("$SD" cluster token create --cluster "$CLUSTER" -o json | sed -n 's/.*"token": *"\([^"]*\)".*/\1/p')

@@ -7,11 +7,11 @@ or `.github/`.
 ## How it's built
 
 - `SKILL.md`: the interaction model (when to ask, defaults, prerequisites, guardrails), the flow, the menu and
-  briefing, and an index that links every reference file.
+  the confirmation, and an index that links every reference file.
 - `references/`: one file per step or variation. Agents read only what the user chose.
 - `scripts/`: four bash 3.2 scripts for steps that run on every trial (preflight, CLI install, operator install,
   booking a ride). No jq, python or node.
-- `assets/`: Signadot specs (`@{suffix}` and `@{cluster}` are filled with `--set`), the C3 patch and the report
+- `assets/`: Signadot specs (`@{suffix}` and `@{cluster}` are filled with `--set`), the local-development patch and the report
   template.
 - `tests/signadot-trial/`: this file and the checks (below).
 
@@ -20,9 +20,12 @@ other top-level file.
 
 Design rules: the skill works with any coding agent, so it never names one agent's tools; every variation runs on
 open-source software only, with no cloud account; each demo app gets its own namespace; nothing expires, and
-teardown runs only when the user asks.
+teardown runs only when the user asks. Everything the trial creates stays in its folder (`.signadot-trial` in the
+agent's working folder): the CLI's config and login, the kubeconfig, tool caches, builds and the report, so the
+agent needs no access outside it and `~/.signadot` is never touched. The user sees the menu's words (the basics,
+add-ons), never file names, step IDs or section numbers.
 
-## Adding a variation
+## Adding an add-on
 
 1. Copy the closest file in `references/<category>/`. Variation files have these sections, in order:
    1. **What it shows:** the card copy: problem, what Signadot does, why it matters.
@@ -39,7 +42,9 @@ teardown runs only when the user asks.
 
    Infra files instead have: What it shows · Install before HotROD · Overlay and operator values · Mesh check ·
    Tear down · Docs.
-2. Add a row to the SKILL.md index (the minutes must match Costs; a check compares them) and a line to the menu.
+2. Add a row to the SKILL.md index (the minutes must match Costs), a numbered line to the menu that says in plain
+   words what Signadot does in it (for someone new to Signadot), and its number in the menu-to-file list. The
+   confirmation draws on its "What it shows".
 3. Put specs in `assets/specs/<category>/`, named `<name>@{suffix}` (30 characters or fewer with a suffix), with no
    TTL.
 4. Run it live on kind by following the file literally, then run the checks.
@@ -99,9 +104,9 @@ tests/signadot-trial/check-drift.sh    # fails when a newer CLI or operator char
 
 | Check | Guards against |
 |---|---|
-| `check-static.sh` | Unlinked or missing files, pins that disagree across files, invalid YAML or shell, bash features macOS lacks, missing report slots, zsh-unsafe snippets, and an edit dropping a safety command (teardown retiring the log, existing-cluster and existing-mesh checks, the plugin guard, no `plan delete`) |
+| `check-static.sh` | Unlinked or missing files, pins that disagree across files, invalid YAML or shell, bash features macOS lacks, missing report slots, zsh-unsafe snippets, files or caches landing outside the trial folder (it runs preflight and `install-cli.sh` with a stub CLI and an empty HOME), and an edit dropping a safety command (teardown retiring the log, existing-cluster and existing-mesh checks, the plugin guard, no `plan delete`) |
 | `test-token-not-logged.sh` | The cluster token reaching a log or the output. The stub mirrors CLI 1.9.1, which prints the token on stderr; check `internal/command/cluster/add.go` when the CLI pin moves |
-| `test-config-blocks.sh` | The snippets that edit the user's Signadot config losing other keys, or teardown removing a block that isn't the trial's |
+| `test-config-blocks.sh` | The connection snippet losing other keys in the trial's CLI config, or not naming the trial's kubeconfig, context and cluster |
 | `test-stale-pid.sh` | Stopping a recorded PID that now belongs to another process |
 | `check-external.sh` | Moved docs pages, and pinned commits, images, releases, charts or downloads that no longer exist |
 | `check-drift.sh` | Newer Signadot releases than the skill was verified with |
@@ -115,14 +120,16 @@ checklist.
 
 ## Live checklist
 
-Run it before a release and after bumping a pin, on a clean machine (or with `SIGNADOT_TRIAL_HOME` pointing to an
-empty folder), with a coding agent following the skill literally. Use a test org.
+Run it before a release and after bumping a pin, on a clean machine or at least with the agent started in an empty
+folder, with a coding agent following the skill literally. Use a test org.
 
-1. **Default path:** "try Signadot", default choices, a new org. Core passes; report opens; hand-off lists what's
-   running; the local proxy URL shows `SD-` plates in a browser.
-2. **Existing user:** with a `~/.signadot` config and login present. The trial isolates its config; checksum
+1. **Default path:** "try Signadot", default choices, a new org. The first message is only the menu, the second the
+   confirmation, and progress lines show no file names or step IDs. The basics pass; the report opens; the hand-off
+   lists what's running; the local proxy URL shows `SD-` plates in a browser. The agent never asks for access
+   outside its working folder, and afterwards the only new thing there is `.signadot-trial`.
+2. **Existing user:** with a `~/.signadot` config and login present. The trial uses its own login in the trial folder; checksum
    `~/.signadot` before and after (`find ~/.signadot -type f -exec shasum {} + | sort | shasum`): unchanged.
-3. **Every variation:** each infra option on a fresh cluster with C1–C3; then data, Kafka, Temporal, RabbitMQ,
+3. **Every variation:** each infra option on a fresh cluster with the basics; then data, Kafka, Temporal, RabbitMQ,
    Redis Streams, Jobs and Plans (Plans needs the two org settings in `references/testing/plans.md`).
 4. **Resume and retry:** stop mid-run and resume; rerun a variation's Set up (it must succeed twice).
 5. **Teardown:** org lists are clean, the kind cluster is gone, `~/.kube/config` and the kube context are unchanged,

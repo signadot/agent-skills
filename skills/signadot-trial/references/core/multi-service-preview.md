@@ -1,6 +1,6 @@
-# C2 · Test a feature across two services, with a shareable preview
+# Test a feature across two services, with a shareable preview
 
-Runs by default. About 2 minutes. Needs C1's sandbox. `<cluster>`, `<suffix>` and `<proxy>` as in SKILL.md.
+Runs by default. About 2 minutes. Needs isolated-change's sandbox. `<cluster>`, `<suffix>` and `<proxy>` as in SKILL.md.
 
 ## What it shows
 
@@ -8,7 +8,7 @@ Runs by default. About 2 minutes. Needs C1's sandbox. `<cluster>`, `<suffix>` an
   merged and deployed together.
 - **What Signadot does:** a route group joins the sandboxes that share a label (`feature: hotrod-plates<suffix>`)
   under one routing key, and its endpoint gives a preview URL. Here the frontend sandbox highlights `SD-` plates,
-  and the driver sandbox from C1 produces them.
+  and the driver sandbox from isolated-change produces them.
 - **Why it matters:** reviewers, designers and PMs open one URL and see the whole feature before anything merges.
 
 ## Run
@@ -47,7 +47,7 @@ It needs no header or proxy.
 ## Record
 
 ```markdown
-## Scenario C2
+## Scenario multi-service-preview
 status: passed
 seconds: <apply to proof>
 baseline: bundle <baseline bundle>, plate <plate>
@@ -57,13 +57,13 @@ hops-sandbox: frontend(frontend-highlight<suffix>) → <hops line from the keyed
 proof: one routing key reached both sandboxes; preview <preview URL>
 commands: sd sandbox apply -f assets/specs/core/frontend-highlight.yaml …; sd routegroup apply -f assets/specs/core/hotrod-plates-routegroup.yaml …
 specs: assets/specs/core/frontend-highlight.yaml, assets/specs/core/hotrod-plates-routegroup.yaml
-screenshot: screens/C2.png (only if you took one)
+screenshot: screens/multi-service-preview.png (only if you took one)
 links: https://www.signadot.com/docs/tutorials/multi-pr-feature-testing, <preview URL>
 try: open the preview URL and book a ride
 ```
 
 **Screenshot (optional):** open the preview URL in the browser session from signup, book a ride, and save
-`$T/report/screens/C2.png` once the highlighted `SD-` plate shows.
+`$T/report/screens/multi-service-preview.png` once the highlighted `SD-` plate shows.
 
 ## Try it yourself
 

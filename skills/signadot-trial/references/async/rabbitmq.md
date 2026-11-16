@@ -23,7 +23,7 @@ The demo comes from `signadot/examples` in `$T/examples`, fetched at a pinned co
 
 ## Set up
 
-Start this as soon as the cluster is up, so the images pull while you do the core tutorial.
+Start this as soon as the cluster is up, so the images pull while you do the basics.
 
 ```bash
 cd "$T/examples/rabbitmq-signadot-demo"
