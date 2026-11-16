@@ -85,6 +85,8 @@ grep -rnE '\$\{[A-Za-z_]+:\+' "$S/SKILL.md" "$S/references" && bad "a snippet us
 # 8. Safety commands an edit must not drop.
 has references/finish/teardown.md 'trial-log.torn-down-' "teardown must retire the log, or the next trial resumes this one"
 has references/finish/teardown.md 'delete namespace signadot' "teardown must remove the operator's namespace on an existing cluster"
+has references/setup/account.md 'Always give the user the link and the code in chat' "the CLI login must show the user its sign-in link and code"
+has references/setup/account.md 'end your turn' "the CLI login must wait for the user's reply, not poll before they've seen the link"
 has references/setup/cluster.md 'kind export kubeconfig' "reusing a kind cluster must export its kubeconfig"
 has references/setup/cluster.md 'get namespace <ns>' "an existing cluster's namespaces must be checked before use"
 has references/infra/istio.md 'hm" status istiod -n istio-system' "an existing Istio must be detected, not reinstalled"

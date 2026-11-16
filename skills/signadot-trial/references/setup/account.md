@@ -41,8 +41,9 @@ Keep this browser session open: the CLI login (§2) is confirmed in it, and the 
 About 30 seconds. Skip it only if `$T/bin/sd auth status` shows `Authenticated` and the org the user wants (a resumed
 trial). An expired login still shows the org, with an `Expired:` line instead of `Authenticated`: log in again.
 
-The login prints a URL and a code and tries to open a browser. Catch the URL instead, so it opens in the signed-in
-session from §1. `--insecure-storage` keeps the credentials in a file under `$T/home` rather than the system
+The login prints a sign-in link and a code, then waits until someone confirms that code in a browser signed in to
+the org. The shims below catch the link instead of letting the CLI open a browser on its own (it could open one that
+isn't signed in). `--insecure-storage` keeps the credentials in a file under `$T/home` rather than the system
 keychain, so the login stays inside the trial folder and never touches the user's own.
 
 ```bash
@@ -55,15 +56,40 @@ PATH="$T/shim:$PATH" nohup "$T/bin/sd" auth login --insecure-storage > "$T/logs/
 sleep 3; cat "$T/logs/login-url"; grep -iE 'code|https://' "$T/logs/login.log"
 ```
 
-Open the URL in the signed-in browser, check that the code on the page matches the one in `login.log`, and click
-Confirm. If you can't drive a browser, give the user the URL and the code and ask them to confirm it in the browser
-where they signed up. If that browser shows a different Signadot account, stop and tell the user.
+The link is the `https://` URL in `login-url`, or in `login.log` if the CLI didn't try to open a browser; the code is
+on the line that mentions it in `login.log`. If neither has appeared yet, wait a few seconds and read them again.
 
-Then wait for the login to finish:
+**Always give the user the link and the code in chat, as soon as you have them,** even when you'll confirm it
+yourself. Someone new to Signadot must never be left waiting without knowing what is happening or what to do. Show
+the full link as text, never only a "click here".
+
+- **If you can drive the browser from §1:** say so in the same message ("I'm confirming it in the browser you signed
+  up in; you don't need to do anything unless it asks you to sign in"). Open the link there, check that the page
+  shows the same code, and click Confirm. If that browser shows a different Signadot account, stop and tell the
+  user.
+- **If you can't:** also open the link with the system's own `open` (macOS) or `xdg-open` (Linux), not the shims;
+  it usually lands in the browser they signed up in, and it does nothing harmful when there's no desktop. Send the
+  message below and end your turn. Check the login only after the user says they've confirmed: some agents show a
+  message only when the turn ends, so never wait or poll before the user has seen the link.
+
+```markdown
+**One step for you: connect the trial to your Signadot account.** Open this link in the browser where you signed
+up, check that the page shows the code **WXYZ-1234**, and click **Confirm**:
+
+https://app.signadot.com/…
+
+This lets the trial's own copy of the Signadot CLI work in your new org; nothing on your computer outside the trial
+folder changes. If the page asks you to sign in, use the account you just created. Tell me when you've confirmed.
+```
+
+Then check that the login finished:
 
 ```bash
-"$T/bin/sd" auth status | grep -E "^(Status|Organization)"   # repeat every few seconds for up to 2 minutes
+"$T/bin/sd" auth status | grep -E "^(Status|Organization)"   # repeat every few seconds for up to a minute
 ```
+
+If it isn't `Authenticated` after the user confirmed, look at `login.log`: if the login stopped (the code expired,
+or it was confirmed in the wrong account), run the login commands again and send the new link and code the same way.
 
 Done when it shows `Authenticated` and `Organization: <org>`. Signadot derives the org's short name from the name
 typed, for example "Acme Trial" becomes `acmetrial`; use the short name from here on. Record the step with the org.
