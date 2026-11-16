@@ -4,17 +4,20 @@
 
 ## What it shows
 
-- **The demo app** (not HotROD): a small money-transfer app built on Temporal. A web page starts each transfer as
-  a Temporal workflow: withdraw from one account, then deposit into another. The Temporal server keeps the work on
-  one task queue, `money-transfer`, and a worker runs each step. The Temporal UI shows every transfer and, for each
-  step, which worker ran it. Explain this first on the page: the user has only seen HotROD so far.
-- **Problem:** Temporal workers poll a shared task queue, so a worker under test picks up other people's workflows,
-  and a separate Temporal server or task queue per change is heavy.
-- **What Signadot does:** a money-transfer app runs workflows on one task queue (`money-transfer`). A sandboxed
-  worker joins the same queue. The routing key travels from the HTTP request into the workflow's headers, and each
-  worker runs only the tasks that are its own; the others it hands back.
-- **Why it matters:** workflow and activity changes are tested against the real Temporal server and queue, without
-  duplicating either.
+The page's four sections come from these (`references/finish/report.md`, "Writing a scenario page"):
+
+- **The demo app** (not HotROD; the user has only seen HotROD): a small money-transfer app built on Temporal. Steps
+  for the diagram: (1) the transfer app's page starts a transfer as a Temporal workflow; (2) the Temporal server
+  puts its steps (withdraw, then deposit) on one task queue, `money-transfer`; (3) a worker takes each step and runs
+  it; (4) the Temporal UI shows every transfer and, for each step, which worker ran it.
+- **The change:** the sandbox's worker is a new version of the worker. In the trial it runs the same code, so what
+  the page shows is which worker runs which transfer; with your own services it would run the worker image built
+  from the pull request.
+- **The sandbox:** a copy of `temporal-worker` on the same server and task queue. Also created: nothing else; no
+  second Temporal server or task queue.
+- **Routing:** the sandbox's preview link adds its key to the transfer app's requests; OpenTelemetry carries it
+  into the workflow's headers. No sidecar routes tasks: each worker reads the key on every task, runs its own and
+  hands the others back.
 
 ## Costs
 
@@ -122,19 +125,17 @@ try: start a transfer from each link, then open it in the Temporal UI and see wh
 
 ## Try it yourself
 
-The links lead the page (`references/finish/report.md`, "App links"). Two of them are cluster addresses, so they
-open only once the laptop has Signadot's connection with sudo; when `connect_mode` is `unprivileged`, the reconnect
-goes first in the link box, and you ask for it in chat when you show the page, then check the links
-(`references/finish/report.md`, "After each scenario").
+The transfer app's baseline and the Temporal UI are cluster addresses: they open only with the sudo connection
+(`references/finish/report.md`, "Try it": the reconnect goes first in the steps, and you ask for it in chat when
+you show the page, then check the links, "After each scenario").
 
-- Start a transfer from the transfer app at its cluster address, http://temporal-py-client-ui.temporal.svc:8080: no
-  routing key is added, so the page shows "Routing Key: undefined" and the normal worker runs it.
-- Start one from the sandbox's preview link: the page shows the sandbox's routing key, and the sandbox's worker runs
-  it.
-- Open the Temporal UI, http://temporal-ui-service.temporal.svc: both transfers are on the one `money-transfer`
-  task queue. Open each one: its completed steps list the worker that ran them (Identity). A "Workflow Task
-  Failed … cannot handle routing key" event is the other worker handing the step back.
-- Follow the normal worker's log while you start transfers:
+- **Baseline:** start a transfer from the transfer app at its cluster address,
+  http://temporal-py-client-ui.temporal.svc:8080: no key is added, so the page shows "Routing Key: undefined".
+- **Sandbox:** start a transfer from the sandbox's preview link: the page shows the sandbox's routing key.
+- **Check:** open the Temporal UI, http://temporal-ui-service.temporal.svc: both transfers are on the one
+  `money-transfer` task queue. Open each; its completed steps list the worker that ran them (Identity): the normal
+  worker for the first, the sandbox's (`…temporal-worker<suffix>-dep-temporal-worker-…`) for the second. A
+  "Workflow Task Failed … cannot handle routing key" event is the other worker handing a step back. In a terminal:
   `kubectl --kubeconfig <T>/kubeconfig -n temporal logs -f deploy/temporal-worker -c temporal-worker | grep 'routing key'`.
 
 ## Tear down

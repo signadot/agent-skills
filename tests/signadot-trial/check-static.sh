@@ -68,8 +68,22 @@ R=$S/assets/report
 for k in title summary urls scenarios; do
   grep -q "<!-- FILL:$k" "$R/index.html" || bad "overview template: no FILL:$k slot"
 done
-for k in title status headline urls app change sandbox routing works; do
+for k in title status headline app change sandbox routing tryit; do
   grep -q "<!-- FILL:$k" "$R/scenario.html" || bad "scenario template: no FILL:$k slot"
+done
+# Every scenario page has the same four sections, in order.
+[ "$(grep -oE '<section id="[a-z]+"' "$R/scenario.html" | tr '\n' ' ')" = '<section id="app" <section id="change" <section id="sandbox" <section id="test" ' ] \
+  || bad "scenario template: the sections must be app, change, sandbox, test, in that order"
+# Each scenario file feeds those sections and a try-it list with a check of which version handled each flow.
+for f in core/isolated-change core/multi-service-preview core/local-development data/sandbox-database async/kafka \
+         async/temporal async/rabbitmq async/redis-streams testing/jobs testing/plans; do
+  w=$(sed -n '/^## What it shows/,/^## /p' "$S/references/$f.md")
+  for b in 'The demo app' 'The change' 'The sandbox' 'Routing'; do
+    echo "$w" | grep -q "^- \*\*$b" || bad "$f.md: What it shows has no '$b' part"
+  done
+  t=$(sed -n '/^## Try it yourself/,/^## /p' "$S/references/$f.md")
+  echo "$t" | grep -q '^- \*\*Sandbox:' || bad "$f.md: Try it yourself has no Sandbox step"
+  echo "$t" | grep -q '^- \*\*Check:' || bad "$f.md: Try it yourself has no Check step"
 done
 for f in "$R/index.html" "$R/scenario.html"; do
   grep -q '<link rel="stylesheet" href="report.css">' "$f" || bad "${f#"$S"/}: must use report.css next to it"

@@ -20,7 +20,7 @@ mkdir -p "$T/report/screens" && cp "$S/assets/report/report.css" "$S/assets/repo
    so it's always current (see "The overview page").
 4. **Open the scenario page** with `open` (macOS) or `xdg-open` (Linux), or give the user its path. Then show the
    result in chat and ask before the next scenario (SKILL.md, "After each scenario").
-5. **Make its cluster links work.** When the page's link box has a cluster address (one ending in `.svc`: the
+5. **Make its cluster links work.** When the page's steps open a cluster address (one ending in `.svc`: the
    Temporal UI and transfer app, the Redis Streams producer, RabbitMQ's management UI) and the trial's connection is
    `connect_mode: unprivileged`, that link won't open in the user's browser yet: cluster names resolve on the laptop
    only with the sudo connection. Don't leave it to the page: in the result message, before the question about the
@@ -41,26 +41,29 @@ template block behind.
 
 ## Writing a scenario page
 
-Write for someone who is new to Signadot and didn't watch the run. The page explains how it works, not why to buy
-it: no sales lines, no "usual way vs Signadot" comparisons, no adoption checklist. Plain words; define a Signadot
-term the first time it appears; no file names, step IDs or placeholders. Use the scenario file's "What it shows"
-for the story and its trial-log entry for every value.
+Write for someone who is new to Signadot and didn't watch the run. Be brief: a sentence or two, then the picture,
+the facts or the commands. The page explains how it works, not why to buy it: no sales lines, no "usual way vs
+Signadot" comparisons. Plain words; define a Signadot term the first time it appears; no file names, step IDs or
+placeholders. Take the content from the scenario file's "What it shows" and "Try it yourself", and every value from
+its trial-log entry.
 
-Every page tells the same story, top to bottom. For a demo app other than HotROD (Temporal, RabbitMQ, Redis
-Streams), it starts with the app itself: the user has only seen HotROD.
+**Every page has the same four sections, in this order,** whatever the scenario. Don't add, drop or reorder them:
 
-1. **The change** someone wants to check end to end.
-2. **The sandbox** that runs it: the spec, applied with the CLI, a second copy of only what changed, and its
-   routing key.
-3. **Requests with and without the routing key:** one diagram of both, with the results in it.
-4. **What makes the routing work:** the key is set where the request starts, each service passes it along, and
-   Signadot routes by it.
+1. **The demo app:** what it does, a diagram of its parts and how a request flows through them, and which part
+   this scenario changes.
+2. **The change:** the code or configuration change, in which service.
+3. **The sandbox:** how the change is deployed as a sandbox: what it runs, what stays shared, its routing key and
+   preview link, and anything created with it (a database from a resource plugin, a queue, a route group).
+4. **Test it yourself:** the routing diagram (requests with and without the key), how the key is set, passed along
+   and routed, then numbered steps the user runs: the baseline flow, the sandbox flow, and how to check which
+   version handled each one (logs, the app's page, a UI such as the Temporal UI or RabbitMQ's management UI).
 
 **Commands on the pages.** Each command the user might run goes in its own `<div class="cmd">` block (a one-line
 explanation, then `<pre><code>`), so it gets a Copy button; specs go in one too. Make it paste-ready: full paths,
-the real sandbox names, suffix and routing key, no `$T`, `<…>` or other placeholders. Use
-`kubectl --kubeconfig <trial folder>/kubeconfig …` and `<trial folder>/bin/sd …`. Never show `ride.sh`, `--proxy`
-or the trial's local proxy: the preview links, and the sudo connection for curl, replace them.
+the real sandbox names, pod and deployment names, suffix and routing key, no `$T`, `<…>` or other placeholders.
+Say what it prints. Use `kubectl --kubeconfig <trial folder>/kubeconfig …` and `<trial folder>/bin/sd …`. Never
+show `ride.sh`, `--proxy` or the trial's local proxy: the preview links, and the sudo connection for cluster
+addresses, replace them. Link docs pages as HTML (drop `.md`).
 
 ### The slots
 
@@ -68,33 +71,37 @@ or the trial's local proxy: the preview links, and the sudo connection for curl,
 - **status:** the pill (`passed` or `failed`), "Scenario n" (its place in run order), the time from the scenario's
   first command to its proof, the cluster and the date.
 - **headline:** one or two sentences that say what was proven, with the proving values.
-- **urls:** the box with the demo app's links (see "App links"): the baseline, and the sandbox with a line saying
-  that Signadot adds the sandbox's routing key to every request made through it, so it reaches the changed version.
-  Add the tool that shows the scenario best (the Temporal UI, RabbitMQ's management UI). Say what to look for in each. When a link
-  is a cluster address (it ends in `.svc`) and the trial's connection is `connect_mode: unprivileged`, put the
-  reconnect command block from "Setting the key yourself" first in the box, marked **First, once:**, saying those
-  links open only after it.
-- **app:** only for a demo app other than HotROD; leave the whole section out for HotROD. What the app does, in two
-  sentences, then its parts in a short list (what each does, and which one is the scenario's changed part), ending
-  with the UI that shows the scenario best. From the scenario file's "The demo app".
-- **change:** two or three sentences: what changed, in which service, and what the developer wants to check end to
-  end. Show the change itself when it's small (a code line, a setting, a patch), and say in one muted line how it
-  maps to real use (the image CI builds from the pull request, or the code on the developer's computer).
-- **sandbox:** what was created and what stays shared, the routing key, then the spec (cluster and suffix filled in,
-  comments kept) and a short list of what its parts mean. Whenever the spec has `defaultRouteGroup`, explain it as
-  where the sandbox link at the top comes from, then the `linkmap` line (the real preview link → "Signadot adds the
-  routing key" → `target`) and the sentence saying both addresses are the same app: the link from any signed-in
-  browser, `target` from inside the cluster or a connected laptop. Readers otherwise see two URLs and can't tell
-  why. Then command blocks: the command that created it, and the file's "Try it yourself" commands (see the pods,
-  see the sandbox and its key).
-- **routing:** one sentence on the app's path, the diagram (see "The diagram"), its legend, a **Proof:** sentence
-  from the trial log, and the screenshot if there is one.
-- **works:** three numbered cards. *1, the key is set where the request starts:* how this scenario's requests got
-  the key (the preview link, a job or plan runner, a producer), the other ways to send it (the Chrome extension, a
-  header in any HTTP client), and for HotROD the curl commands in "Setting the key yourself". *2, each service passes
-  it along:* how the key travels in this app (OpenTelemetry `baggage` over HTTP, message or workflow headers). *3,
-  Signadot routes by it:* where the decision is made in this scenario (table below). Link each card to its docs page.
-  End with the scenario's tutorial, from the file's Docs, linked as the HTML page (drop `.md`).
+- **app:** one or two sentences on what the app does, its diagram, and a numbered list of the steps a request
+  takes, matching the diagram's numbers. For HotROD, the template's example as it is, with the scenario's changed
+  services drawn as `box changed` and tagged "changed in this scenario" (several: tag each). For another demo app
+  (Temporal, RabbitMQ, Redis Streams), draw its parts in the same style from the scenario file's "The demo app":
+  services as `box`, queues, topics and streams as `bus`, databases as `store`, numbered `circle.n` steps on the
+  arrows, and the UI that shows the scenario best as a box too. Keep every label inside the picture (end-anchor a
+  tag near the right edge).
+- **change:** two or three sentences: what changed, in which service, and what the developer wants to check. Show
+  the change itself when it's small (a code line, a setting, a patch), and say in one muted line how it maps to real
+  use (the image CI builds from the pull request, or the code on the developer's computer).
+- **sandbox:** one sentence on how it was deployed, then the `facts` list: **Runs** (the copies and their pods),
+  **Shared** (everything else), **Routing key**, **Preview link** (or "none" when the spec has no endpoint), and
+  **Also created** (the database from the resource plugin, the consumer's own queue or consumer group, the route
+  group, the local process; "nothing else" when there is none). Then the spec (cluster and suffix filled in,
+  comments kept), a short list of what its parts mean, and, when the spec has `defaultRouteGroup`, the `linkmap`
+  line (the real preview link → "Signadot adds the routing key" → `target`). Then command blocks: the command that
+  created it, see its pods, see the sandbox and its key. End with the docs link for what it uses (the sandbox spec,
+  resource plugins, route groups, local sandboxes).
+- **routing:** one sentence, the diagram (see "The diagram") and its legend; then the `how` strip, three short
+  cards: *1, set where the request starts* (how this scenario's requests got the key: the preview link, a job or
+  plan runner, a header; and the Chrome extension or any HTTP client), *2, passed along* (how the key travels in
+  this app: OpenTelemetry `baggage` over HTTP, message, entry or workflow headers), *3, routed* (where the decision
+  is made: the table below), each linked to its docs page; then **What the trial saw:** one sentence from the trial
+  log, and the screenshot if there is one.
+- **tryit:** the numbered steps from the scenario file's "Try it yourself", always in this order: first, only when a
+  step uses a cluster address and the connection is `connect_mode: unprivileged`, **Before you start**: the
+  reconnect and its check (see "Try it"); then the baseline flow; the sandbox flow; checking which version handled
+  each; then the optional extras. A live view the user should watch while running the flows (RabbitMQ's consumer
+  logs) goes before the flows. Jobs and Plans test with runs instead of links: their flows are runs against
+  different sandboxes. Each step: a short title (`<h4>`), the link or the command blocks, and what the
+  user sees. End with the docs links: the scenario's tutorial, from the file's Docs, and any page a step relies on.
 
 If the scenario failed, say plainly what was seen and what was tried in the headline and under the diagram, and draw
 what you know.
@@ -142,7 +149,7 @@ The template's diagram is the finished one for isolated-change. Keep its layout 
 - the results in the boxes where they appear (an ETA, a plate, a processed message), so the picture carries the
   result. Update the `aria-label` to describe the picture.
 
-| Scenario | Copies below the row | Where the decision is made (card 3) |
+| Scenario | Copies below the row | Where the decision is made (the `how` strip's third card) |
 |---|---|---|
 | isolated-change | route | the sidecar in the normal route's pod forwards calls with the key to the copy |
 | multi-service-preview | frontend and driver, one outline per sandbox, under the route group's name | the sidecar in the normal frontend's pod (the link's requests arrive there); driver's copy takes only the Kafka messages that carry the key, and the normal driver skips them |
@@ -150,36 +157,47 @@ The template's diagram is the finished one for isolated-change. Keep its layout 
 | sandbox-database | location, with its own database (a `store` inside the outline) | the sidecar in the normal location's pod; the resource plugin created the database with the sandbox and removes it with it |
 | kafka | driver | no router: both messages go into the one topic; each driver reads the key on every message and processes only its own |
 | temporal, rabbitmq, redis-streams | the worker or consumer | no router: each worker or consumer reads the key on every task, message or entry and handles only its own (from the file's "What Signadot does") |
-| jobs | driver (the Job tests the driver sandbox) | the job runner sets the sandbox's key on the test traffic (card 1); then as in multi-service-preview |
-| plans | the driver sandbox and broken-route, the broken one's result marked failed | the plan runner sets the key of the sandbox it's given (card 1); then the sidecars, as in isolated-change |
+| jobs | driver (the Job tests the driver sandbox) | the job runner sets the sandbox's key on the test traffic (first card); then as in multi-service-preview |
+| plans | the driver sandbox and broken-route, the broken one's result marked failed | the plan runner sets the key of the sandbox it's given (first card); then the sidecars, as in isolated-change |
 | istio, istio-ambient, linkerd | route | Istio: the Envoy sidecar in driver's pod, the caller (source side); ambient: the waypoint in front of route; Linkerd: Signadot's sidecar in the normal route's pod, next to Linkerd's proxy (destination side) |
 
 For Temporal, RabbitMQ and Redis Streams, draw their own apps the same way, with their services from the file.
 
-### Setting the key yourself
+### Try it
 
-For HotROD scenarios, card 1 shows how to send the key with curl from the user's laptop. Signadot's local
-connection makes every address inside the cluster reachable from the laptop, so the commands use the real
-in-cluster address, the one in the spec's `target`:
+The steps come from the scenario file's "Try it yourself", which lists them as **Baseline**, **Sandbox**, **Check**
+and **More**. Write each as one step of the `try` list, with this run's links, names and key.
 
-1. Only when the trial's connection is `connect_mode: unprivileged` (the default), first: a command block marked
-   **First, once:** that reconnects with sudo, `<trial folder>/bin/sd local disconnect && <trial folder>/bin/sd local connect`,
-   saying it asks for their password and that they should tell the agent if it's still running scenarios. Then a
-   check, `curl -sS -o /dev/null -w '%{http_code}\n' http://frontend.hotrod.svc:8080/`, which prints `200`, and
-   "Could not resolve host" until the reconnect is done. Without the reconnect, cluster names don't resolve and the
-   commands below print nothing useful. With `connect_mode: privileged`, leave both out: cluster addresses already
-   work.
-2. Book a ride with the key (prints `{}`):
+**Before you start.** Signadot's local connection makes every cluster address (one ending in `.svc`) work on the
+user's laptop, in a terminal and in a browser, but only with sudo. When a step uses a cluster address and the
+trial's connection is `connect_mode: unprivileged` (the default), the list starts with this step: a command block
+that reconnects with sudo, `<trial folder>/bin/sd local disconnect && <trial folder>/bin/sd local connect`, saying
+it asks for their password and to tell the agent if it's still running scenarios; then a check,
+`curl -sS -o /dev/null -w '%{http_code}\n' <the step's cluster address>`, which prints `200` once it works and
+"Could not resolve host" until then. When only an optional step needs it (the HotROD curl below), put both inside
+that step instead, as the template does. With `connect_mode: privileged`, leave them out.
+
+**Checking which version handled a request.** Name the real pods: the sandbox's deployment is
+`<sandbox name>-dep-<workload>-<hash>`; read it with
+`"$T/bin/kc" -n <namespace> get deploy -o name | grep <sandbox name>`. Give the normal one and the sandbox's in two
+blocks, with `logs -f … | grep --line-buffered '<line>'`, and say which requests appear in which. HotROD's
+containers are named `hotrod`, and each service logs one line per request: route `Finding route`, location
+`Loading location`, driver `Dispatch successful`, frontend `Dispatching driver`.
+
+**Sending the key yourself (HotROD).** An optional last step: curl to the frontend's cluster address with the
+key, as in the template:
+
+1. Request a ride with the key (prints `{}`):
    `curl -sS -X POST http://frontend.hotrod.svc:8080/dispatch -H 'baggage: sd-routing-key=<key>' -H 'Content-Type: application/json' -d '{"SessionID":4242,"RequestID":1,"PickupLocationID":1,"DropoffLocationID":123}'`
-3. Read the ride's notifications a few seconds later (prints `Driver <plate> arriving in <ETA>`; run it again if
-   it prints nothing): `curl -sS 'http://frontend.hotrod.svc:8080/notifications?sessionID=4242&cursor=0' | grep -o 'Driver [^"]*'`
+2. Read the ride's messages a few seconds later (prints `Driver <plate> arriving in <ETA>`; run it again if it
+   prints nothing): `curl -sS 'http://frontend.hotrod.svc:8080/notifications?sessionID=4242&cursor=0' | grep -o 'Driver [^"]*'`
    (escape `&` as `&amp;` in the page).
 
-Use `curl -sS`, never `-s` alone: `-s` hides errors such as "Could not resolve host", and the user sees a blank
-line instead. Say what each command prints.
-
 Say what it prints with the key, and that the same request without the header (and another `SessionID`) reaches
-the baseline. For multi-service-preview, use the route group's key; the changed frontend answers too.
+the baseline. For multi-service-preview, use the route group's key.
+
+Use `curl -sS`, never `-s` alone: `-s` hides errors such as "Could not resolve host", and the user sees a blank
+line instead.
 
 **App links.** Preview links open the app in any browser signed in to the user's Signadot org; Signadot adds the
 routing key of the sandbox or route group to every request made through them. That includes a baseline link: it

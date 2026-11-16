@@ -4,17 +4,17 @@ Always runs. About 1 minute. `<cluster>`, `<suffix>` and `<proxy>` as in SKILL.m
 
 ## What it shows
 
-- **The change:** a developer changed the route service, which computes each driver's ETA, and wants to check it
-  end to end, against the real frontend, Kafka, driver and Redis, before merging. In the trial the change is one
-  setting route already has, `FAST_ROUTE`: every ETA comes back as 1 second instead of minutes, so no image needs
-  building. In a team's CI the sandbox would run the image built from the pull request.
-- **What Signadot does:** a sandbox starts a second copy of only `route`, with the change, next to the normal one.
-  Every other service is shared with the baseline. The sandbox gets a routing key; requests that carry it reach the
-  new route, and all others reach the normal one.
-- **How the key gets there:** the sandbox's preview link adds it to every request. HotROD passes it along with
-  OpenTelemetry, from frontend through the Kafka message to driver, and on driver's call to route. Signadot routes
-  where the call arrives: the DevMesh sidecar in the normal route's pod reads the key and forwards those calls to
-  the sandbox's route.
+The page's four sections come from these (`references/finish/report.md`, "Writing a scenario page"):
+
+- **The demo app:** HotROD, as in the template; route is the changed service.
+- **The change:** route works out each driver's ETA. With `FAST_ROUTE` set, a setting route already has, every ETA
+  comes back as 1 second instead of minutes, so no image needs building. In a team's CI the sandbox would run the
+  image built from the pull request.
+- **The sandbox:** a copy of only `route`, with `FAST_ROUTE=1`, next to the normal one. Frontend, Kafka, driver,
+  location, Redis and MySQL stay shared. Nothing else is created.
+- **Routing:** the sandbox's preview link adds its key. HotROD passes it along with OpenTelemetry, from frontend
+  through the Kafka message to driver, and on driver's call to route. The DevMesh sidecar in the normal route's pod
+  reads it and forwards those calls to the sandbox's route.
 
 Introduce the terms in one line each: a **sandbox** runs only the services you changed, next to the shared
 **baseline**; a **routing key** sent with a request (`baggage: sd-routing-key=<key>`) sends it to the sandbox.
@@ -64,13 +64,12 @@ book a ride, and save `$T/report/screens/isolated-change.png` once the ETA shows
 
 ## Try it yourself
 
-- Open the baseline and sandbox links (`references/finish/report.md`, "App links") and book a ride in each: only
-  rides through the sandbox's link arrive in 1 second.
-- See the sandbox's route pod next to the normal one: `kubectl --kubeconfig <T>/kubeconfig -n hotrod get pods`.
-- See the sandbox, its routing key and its link: `<T>/bin/sd sandbox get fast-route<suffix>`.
-- Send the routing key yourself, with curl to the frontend's in-cluster address once the laptop has the sudo
-  connection (the page shows the commands; see `references/finish/report.md`, "Setting the key yourself").
-- See it in the dashboard: https://app.signadot.com/sandboxes.
+- **Baseline:** request a ride on the baseline link: ETAs in minutes.
+- **Sandbox:** request a ride on the sandbox's link: every ETA is 1 second.
+- **Check:** follow `Finding route` in the normal route (`deploy/route`) and in the sandbox's
+  (`fast-route<suffix>-dep-route-…`): baseline rides appear only in the first, sandbox rides only in the second.
+- **More:** send the key yourself with curl to the frontend's cluster address (`references/finish/report.md`, "Try
+  it"); see the sandbox in the dashboard, https://app.signadot.com/sandboxes.
 
 ## Tear down
 

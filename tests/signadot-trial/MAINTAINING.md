@@ -137,8 +137,9 @@ pin one commit instead, use a tree URL with the full 40-character SHA (a short S
 
 1. **Default path:** "try Signadot", default choices, a new org. The first message is the plan (the three basics),
    the basics run one by one with a menu of more after them, and progress lines show no file names or step IDs. The basics pass; each scenario's page opens after it and the trial waits before the next one; the hand-off
-   lists what's running; the first sandbox's preview link gives 1s ETAs and the baseline link doesn't; each page reads
-   in order (change, sandbox, diagram, how routing works), and command blocks copy. After the page's sudo reconnect,
+   lists what's running; the first sandbox's preview link gives 1s ETAs and the baseline link doesn't; every page has the
+   same four sections (the demo app, the change, the sandbox, test it yourself), every try-it step works as written
+   (baseline flow, sandbox flow, the check shows which version handled each), and command blocks copy. After the page's sudo reconnect,
    its curl to `frontend.hotrod.svc` prints a 1s ETA with the key and minutes without, and the agent's next scenario
    still works (it notices the reconnect and drops its proxy). The agent never asks for access
    outside its working folder, and afterwards the only new thing there is `.signadot-trial`.

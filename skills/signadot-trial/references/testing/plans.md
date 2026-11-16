@@ -6,14 +6,16 @@
 
 ## What it shows
 
-- **Problem:** test automation that a person or agent can rerun on demand, against any change, usually means
-  maintaining CI glue for every environment.
-- **What Signadot does:** a Plan is a reusable, parameterized test run that Signadot executes in the cluster on a
-  managed runner. The trial wraps HotROD's Playwright suite in a one-step Plan, tags it, runs it against the driver
-  sandbox, then against a sandbox with a deliberate bug, and sees the Plan catch it. A coding agent can author and
-  run Plans like this with the `signadot-plan` and `signadot-validate` skills.
-- **Why it matters:** the same tagged Plan validates any sandbox, including one running on a developer's computer,
-  so regressions are caught before merge.
+The page's four sections come from these (`references/finish/report.md`, "Writing a scenario page"):
+
+- **The demo app:** HotROD; route (the broken sandbox) and driver are the changed services.
+- **The change:** a deliberate bug in route: `broken-route<suffix>` points route at a Redis address that doesn't
+  exist, a simulated regression. The driver change from the two-service scenario is the good one.
+- **The sandbox:** `broken-route<suffix>`, a copy of route with that address, and `driver-plates<suffix>`. Also
+  created: a Plan, tagged `hotrod-e2e<suffix>`, that runs HotROD's Playwright suite on Signadot's managed runner in
+  the cluster.
+- **Routing:** the plan runner sets the key of the sandbox passed as `sandbox`; then the sidecars route as in the
+  first scenario.
 
 ## Costs
 
@@ -124,8 +126,15 @@ are reusable, parameterized runs on a managed runner that people and coding agen
 
 ## Try it yourself
 
-- Run the tagged Plan against any sandbox: `<T>/bin/sd plan run --tag hotrod-e2e<suffix> --param sandbox=<name>`.
-- Install the agent skills that author and run Plans for your own services:
+Jobs and Plans test with runs, not links: the steps are runs against different sandboxes.
+
+- **Sandbox:** run the tagged Plan against the driver sandbox:
+  `<T>/bin/sd plan run --tag hotrod-e2e<suffix> --param sandbox=driver-plates<suffix>`: completed, exit code `0`.
+- **Broken sandbox:** run it against `broken-route<suffix>`: failed; "check route resolve routes" fails, and the ride
+  never gets past "Resolving routes".
+- **Check:** `<T>/bin/sd plan execution get <execution id>` and `… plan execution logs <execution id> e2e`, or the
+  runs in the dashboard.
+- **More:** install the agent skills that author and run Plans for your own services:
   `npx skills add signadot/agent-skills --skill signadot-plan` and `--skill signadot-validate`.
 
 ## Tear down

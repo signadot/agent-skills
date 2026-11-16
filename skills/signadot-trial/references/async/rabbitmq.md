@@ -4,24 +4,28 @@
 
 ## What it shows
 
-- **The demo app** (not HotROD): a small order app. A publisher service takes each order over HTTP (`POST /publish`)
-  and publishes it to one RabbitMQ topic exchange, `orders_exchange`; a consumer service processes the orders. Every
-  consumer version declares its own queue and binds it to the exchange with `#`, so every queue gets a copy of every
-  order. The app has no page of its own; RabbitMQ's management UI is the place to watch it (the queues, and the
-  exchange's bindings). Explain this first on the page: the user has only seen HotROD so far.
-- **Problem:** RabbitMQ gives each message in a queue to only one of its consumers, so a consumer under test on the
-  shared queue would take some of everyone else's orders. Without Signadot, it needs its own broker.
-- **What Signadot does:** the sandbox's consumer gets its own queue (`QUEUE_NAME` in the spec) on the same exchange,
-  so both consumers see every order. OpenTelemetry carries the routing key from the HTTP request into the message's
-  headers. Each consumer reads the key on every message: the sandbox's consumer processes only messages with its
-  sandbox's key; the baseline consumer processes everything else (no key, or a key no consumer sandbox claims) and
-  skips messages with the sandbox's key. Every 10 seconds each consumer asks Signadot's route server which keys
-  belong to sandboxes of the consumer. Both acknowledge every message, processed or skipped, so nothing piles up.
+The page's four sections come from these (`references/finish/report.md`, "Writing a scenario page"):
+
+- **The demo app** (not HotROD; the user has only seen HotROD): a small order app with no page of its own. Steps for
+  the diagram: (1) a client sends an order to the publisher (`POST /publish`); (2) the publisher publishes it to one
+  RabbitMQ topic exchange, `orders_exchange`; (3) the exchange copies it to every queue bound with `#`, one queue per
+  consumer version; (4) each consumer takes it from its queue. RabbitMQ's management UI shows the exchange, the
+  queues and their message rates, and can publish a message itself: it's the app's UI for this scenario.
+- **The change:** the sandbox's consumer is a new version of the consumer. In the trial it runs the same code, so
+  what the page shows is which consumer processes which order; with your own services it would run the image built
+  from the pull request.
+- **The sandbox:** a copy of `consumer`. Also created: its own temporary queue, `consumer-trial<suffix>`
+  (`QUEUE_NAME` in the spec), bound to the same exchange; RabbitMQ deletes it when the sandbox goes. No second
+  broker. Without its own queue the copy would compete with the baseline for the same messages.
+- **Routing:** the key comes with the order: a `baggage` header on the request to the publisher (OpenTelemetry
+  copies it into the message's headers), or on a message published from the management UI. No sidecar routes
+  messages: both consumers get every order, and each reads the key. The sandbox's consumer processes only orders
+  with its sandbox's key; the baseline consumer processes everything else (no key, or a key no consumer sandbox
+  claims) and skips the sandbox's. Every 10 seconds each consumer asks Signadot's route server which keys belong to
+  sandboxes of the consumer. Both acknowledge every message, processed or skipped, so nothing piles up.
 - **Two kinds of routing key** (say so on the page; the management UI shows the other one): RabbitMQ's own routing
   key is what the exchange matches against bindings, always `orders` here, and `#` matches it. Signadot's routing
   key identifies a sandbox and travels as `sd-routing-key` in the OpenTelemetry `baggage` header.
-- **Why it matters:** a consumer change is tested end to end on the shared broker, with no second broker; the
-  sandbox adds only a temporary queue, which RabbitMQ deletes when the sandbox goes.
 
 ## Costs
 
@@ -106,22 +110,32 @@ try: publish more orders with and without the key and watch both consumer logs
 
 ## Try it yourself
 
-The link box leads the page with RabbitMQ's management UI (`references/finish/report.md`, "App links"). It's a
-cluster address, so it opens in the user's browser only once the laptop has Signadot's connection with sudo. When
-`connect_mode` is `unprivileged`, the reconnect goes first in the link box, and you ask for it in chat when you show
-the page, then check the link (`references/finish/report.md`, "After each scenario"):
+The management UI and the publisher are cluster addresses: they open only with the sudo connection
+(`references/finish/report.md`, "Try it": the reconnect goes first in the steps, and you ask for it in chat when you
+show the page, then check the link, "After each scenario"):
 `curl -sS -o /dev/null -w '%{http_code}\n' http://rabbitmq.rabbitmq-demo.svc:15672/` prints `200`.
 
-- Open RabbitMQ's management UI, http://rabbitmq.rabbitmq-demo.svc:15672, and sign in with the demo's default user,
-  `guest` / `guest`. Under Queues there are two: `consumer-baseline` (the normal consumer's, durable) and
-  `consumer-trial<suffix>` (the sandbox's, deleted with it). Under Exchanges, `orders_exchange` shows both bound
-  with `#`, so every order reaches both; each consumer then processes only its own.
-- Publish orders yourself, with and without the key, to the publisher's cluster address (the commands from "Run",
-  without `--proxy`, using `-sS`), and watch each queue's message rate move for every order.
-- Follow both consumers' logs:
-  `kubectl --kubeconfig <T>/kubeconfig -n rabbitmq-demo logs -f deploy/consumer -c consumer | grep -E 'PROCESSING|SKIP|ACCEPT'`,
-  and `… logs -f <sandbox consumer pod> -c consumer | grep -E 'PROCESSING|process='` for the sandbox's.
-- The docs page also forks the publisher and joins both in a route group; its sandbox specs are in
+Put the live view first on the page, so the user watches the consumers while publishing:
+
+- **Watch both consumers,** in two terminals:
+  `kubectl --kubeconfig <T>/kubeconfig -n rabbitmq-demo logs -f deploy/consumer -c consumer | grep --line-buffered -E 'PROCESSING|SKIP|ACCEPT'`
+  and the same for the sandbox's, `deploy/rabbitmq-consumer<suffix>-dep-consumer-…`, with
+  `grep --line-buffered -E 'PROCESSING|process='`.
+- **Open the management UI,** http://rabbitmq.rabbitmq-demo.svc:15672, and sign in with the demo's default user,
+  `guest` / `guest`. Under Queues: `consumer-baseline` (the normal consumer's) and `consumer-trial<suffix>` (the
+  sandbox's). Under Exchanges, `orders_exchange` shows both bound with `#`.
+- **Baseline:** in the UI, open Exchanges → `orders_exchange` → Publish message; Routing key `orders`, Payload
+  `{"order_id":"ui-1","amount":10}`, no headers; Publish. Or, in a terminal,
+  `curl -sS -X POST http://publisher.rabbitmq-demo.svc:8080/publish -H 'Content-Type: application/json' -d '{"order_id":"cli-1","amount":10}'`.
+  The baseline consumer logs `ACCEPT (no routing key)` and `PROCESSING ORDER ui-1`; the sandbox's logs
+  `process=False`.
+- **Sandbox:** the same, with one header: name `baggage`, value `sd-routing-key=<key>`, and Payload
+  `{"order_id":"ui-2","amount":20}`. Or the curl with `-H 'baggage: sd-routing-key=<key>'` and another order ID. The
+  sandbox's consumer logs `process=True` and `PROCESSING ORDER ui-2`; the baseline logs
+  `SKIP (active sandbox key '<key>')`.
+- **Check:** in the UI, Queues: both queues' message rates moved for both orders. Every order reached both queues;
+  each consumer chose which to process.
+- **More:** the docs page also forks the publisher and joins both in a route group; its sandbox specs are in
   `<T>/examples/rabbitmq-signadot-demo/signadot/`.
 
 ## Tear down

@@ -5,13 +5,18 @@ two-service scenario.
 
 ## What it shows
 
-- **Problem:** with a shared message broker, a consumer under test either steals messages meant for everyone else,
-  or needs its own broker and topics, which is slow and expensive.
-- **What Signadot does:** HotROD's frontend publishes every ride request to one Kafka topic, and both drivers (the
-  baseline and the sandbox `driver-plates<suffix>`) consume it. Each request carries its routing key; each consumer
-  processes only the messages that are its own and skips the rest.
-- **Why it matters:** async flows are tested end to end on the shared broker, without copying Kafka or topics, and
-  without interfering with anyone else.
+The page's four sections come from these (`references/finish/report.md`, "Writing a scenario page"):
+
+- **The demo app:** HotROD; driver is the changed service. Point out step 3 to 4: frontend puts each ride request on
+  Kafka's `dispatch` topic, and driver consumes it.
+- **The change:** driver gives every driver's licence plate an `SD-` prefix (a prebuilt image; in a team, the image
+  CI builds from the pull request).
+- **The sandbox:** `driver-plates<suffix>`, a copy of driver (from the two-service scenario, or created here). Also
+  created: nothing in Kafka. The copy reads the same topic in its own consumer group (the normal group's name plus
+  `-<routing key>`), so it gets a copy of every message.
+- **Routing:** the sandbox's link adds its key; OpenTelemetry carries it from frontend into the Kafka message's
+  headers. No sidecar routes messages: each driver reads the key on every message, the copy processes only
+  messages with its sandbox's key, and the normal driver skips those.
 
 ## Costs
 
@@ -81,8 +86,12 @@ try: book rides on the baseline and sandbox links and watch both driver logs
 
 ## Try it yourself
 
-- Follow both driver logs while you book rides on the baseline and sandbox links:
-  `kubectl --kubeconfig <T>/kubeconfig -n hotrod logs -f <pod> -c hotrod | grep Dispatch`, once for each driver pod.
+- **Baseline:** request a ride on the baseline link: plates like `T757183C`.
+- **Sandbox:** request a ride on the sandbox's link: plates start with `SD-`.
+- **Check:** follow `Dispatch successful` in the normal driver (`deploy/driver`) and in
+  `driver-plates<suffix>-dep-driver-…`: each ride appears in only one, the sandbox's with an `SD-` plate, though
+  both drivers received both messages.
+- **More:** send the key yourself with curl (`references/finish/report.md`, "Try it").
 
 ## Tear down
 

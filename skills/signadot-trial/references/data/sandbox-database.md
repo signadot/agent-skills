@@ -4,13 +4,17 @@
 
 ## What it shows
 
-- **Problem:** a change that writes data, or needs different test data, can't safely share one database with
-  everyone else, and copying the database for every pull request is slow.
-- **What Signadot does:** a resource plugin creates a database for each sandbox and removes it when the sandbox is
-  deleted. Here it creates `location_<routing key>` on HotROD's MariaDB, seeded with different locations, and points
-  a fork of `location` (same image as the baseline) at it through an environment variable.
-- **Why it matters:** each change tests against its own data, and nothing it writes leaks into the shared
-  environment.
+The page's four sections come from these (`references/finish/report.md`, "Writing a scenario page"):
+
+- **The demo app:** HotROD; location is the changed service, and its database matters here.
+- **The change:** location reads the pickup and drop-off locations from MySQL (MariaDB). The change is the data:
+  the sandbox's location, the same image, reads a database seeded with other locations, as a change that adds or
+  rewrites data would need.
+- **The sandbox:** a copy of `location` whose `MYSQL_DBNAME` comes from the resource. Also created: the database
+  `location_<routing key>` on HotROD's MariaDB, made by the resource plugin `hotrod-trial-db<suffix>` when the
+  sandbox is created, seeded with other locations, and dropped when the sandbox is deleted.
+- **Routing:** the sandbox's preview link adds its key; the sidecar in the normal location's pod forwards frontend's
+  calls with the key to the sandbox's location, which uses its own database.
 
 ## Costs
 
@@ -94,12 +98,17 @@ try: book rides on both links; delete the sandbox and watch location_<key> disap
 
 ## Try it yourself
 
-- Book rides on the baseline and sandbox links: the sandbox's pickup and drop-off locations come from its own
+- **Baseline:** open the baseline link: the pickup and drop-off lists show HotROD's usual locations, like "My Home".
+- **Sandbox:** open the sandbox's link: the lists show the sandbox's own, "Sandbox HQ", "Test Kitchen", "Staging
+  Cafe"….
+- **Check:** follow `Loading location` in the normal location (`deploy/location`) and in
+  `location-db<suffix>-dep-location-…`: sandbox requests appear only in the second. List the sandbox's database:
+  `kubectl --kubeconfig <T>/kubeconfig -n hotrod exec mysql-0 -c mysql -- mariadb -uroot -pabc -N -e "SHOW DATABASES LIKE 'location\_%'"`
+  prints `location_<key>`.
+- **More:** write a location with the key and see it only with the key (the curl commands under Prove it, to the
+  cluster addresses, after the reconnect); delete the sandbox (`<T>/bin/sd sandbox delete location-db<suffix>`) and
+  list the databases again: the plugin drops `location_<key>` within a minute. Apply the sandbox again for a fresh
   database.
-- See the sandbox's database next to the shared one:
-  `kubectl --kubeconfig <T>/kubeconfig -n hotrod exec mysql-0 -c mysql -- mariadb -uroot -pabc -N -e "SHOW DATABASES LIKE 'location\_%'"`.
-- Delete the sandbox (`<T>/bin/sd sandbox delete location-db<suffix>`) and run that command again: the plugin drops
-  `location_<key>` within a minute. Apply the sandbox again to get a fresh database.
 
 ## Tear down
 

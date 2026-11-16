@@ -5,13 +5,16 @@ scenario.
 
 ## What it shows
 
-- **Problem:** end-to-end suites usually run against a shared staging environment after merge, so a broken change
-  is found late and blocks everyone.
-- **What Signadot does:** a job runner group keeps a pool of test pods in the cluster; a Job runs HotROD's existing
-  Playwright suite in one of them, against a sandbox. Signadot adds the sandbox's routing key to the test traffic, so
-  the unchanged tests exercise the sandboxed service. Nothing in the tests changes.
-- **Why it matters:** every pull request can run the team's existing end-to-end suite against its own sandbox
-  before merge, in the cluster, with the results and artifacts kept in Signadot.
+The page's four sections come from these (`references/finish/report.md`, "Writing a scenario page"):
+
+- **The demo app:** HotROD; driver is the changed service (the sandbox under test).
+- **The change:** none of its own: the Job tests the driver change from the two-service scenario (`SD-` plates)
+  with HotROD's existing Playwright suite, unchanged.
+- **The sandbox:** `driver-plates<suffix>` (created here if it's missing). Also created: a job runner group,
+  `hotrod-playwright<suffix>`, a pool of test pods in the cluster; and the Job, whose report Signadot keeps as an
+  artifact.
+- **Routing:** the Job's routing context sets the sandbox's key on all of the suite's traffic; from there it routes
+  as in the two-service scenario. Nothing in the tests changes.
 
 ## Costs
 
@@ -87,10 +90,14 @@ try: run the same job against another sandbox, e.g. --set sandbox=frontend-highl
 
 ## Try it yourself
 
-- Run the same job against another sandbox: `--set sandbox=frontend-highlight<suffix>` or `local-route<suffix>`
-  (the suite then exercises the route service on this computer).
-- Open the HTML report: `<T>/artifacts/job/playwright-report/index.html`.
-- See the job and its artifacts in the dashboard: https://app.signadot.com/testing/jobs.
+Jobs and Plans test with runs, not links: the steps are runs against different sandboxes.
+
+- **Sandbox:** run the Job against the driver sandbox (the command under Run): it passes, and the plates in its
+  traces all start with `SD-`.
+- **Another sandbox:** run it again with `--set sandbox=frontend-highlight<suffix>` or `local-route<suffix>` (the
+  suite then exercises the route service on this computer).
+- **Check:** open the HTML report, `<T>/artifacts/job/playwright-report/index.html`, and the job in the dashboard,
+  https://app.signadot.com/testing/jobs.
 
 ## Tear down
 

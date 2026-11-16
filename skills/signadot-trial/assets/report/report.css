@@ -90,11 +90,37 @@ ul.parts { margin: 2px 0 8px; }
 .linkmap code { color: var(--text); overflow-wrap: anywhere; }
 .linkmap .arrow { color: var(--sbx); font-weight: 700; }
 
-/* What makes the routing work: three numbered cards, one under the other. */
-.works { display: grid; gap: 12px; }
-.works h3 { display: flex; align-items: center; margin: 0 0 8px; }
-.works .box p + p, .works .box .cmd + p { margin-top: 10px; }
-.works .cmd { margin: 10px 0 0; }
+/* Scenario pages: four numbered sections, the same on every page. */
+.sections { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 12px 0 0; font-size: 14px; }
+.sections a { display: inline-flex; align-items: center; text-decoration: none; color: var(--text); }
+.sections a:hover { color: var(--accent); }
+h2 { display: flex; align-items: center; }
+.diagram svg circle.n { fill: var(--surface); stroke: var(--muted); stroke-width: 1.2; }
+.diagram svg text.n { font-size: 11px; }
+ol.flow { margin: 4px 0 0; padding-left: 22px; }
+ol.flow li { margin: 2px 0; }
+dl.facts { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 0 0 14px;
+  padding: 12px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+dl.facts dt { color: var(--muted); font-size: 13px; font-weight: 600; padding-top: 1px; }
+dl.facts dd { margin: 0; overflow-wrap: anywhere; }
+.how { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 14px 0 10px; }
+.how p { display: flex; align-items: flex-start; margin: 0; padding: 12px 14px; font-size: 14px; max-width: none;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.how p > span:last-child { display: block; }
+.how strong { display: block; }
+.try-title { font-size: 17px; margin: 26px 0 10px; }
+ol.try { list-style: none; counter-reset: try; margin: 0; padding: 0; display: grid; gap: 12px; }
+ol.try > li { counter-increment: try; position: relative; padding: 14px 16px 14px 50px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--radius); }
+ol.try > li::before { content: counter(try); position: absolute; left: 16px; top: 14px; width: 22px; height: 22px;
+  border-radius: 50%; background: var(--sbx-bg); color: var(--sbx); font-size: 12px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; }
+ol.try h4 { font-size: 15px; text-transform: none; letter-spacing: 0; color: var(--text); margin: 1px 0 6px; }
+ol.try p { margin: 0 0 8px; }
+ol.try .link { font: 600 14px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+ol.try .cmd { margin: 8px 0 0; }
+@media (max-width: 680px) { .how { grid-template-columns: 1fr; } dl.facts { grid-template-columns: 1fr; gap: 0 0; }
+  dl.facts dd { margin-bottom: 6px; } ol.try > li { padding-left: 44px; } ol.try > li::before { left: 12px; } }
 
 .proof { margin: 8px 0; }
 .proof strong { color: var(--text); }

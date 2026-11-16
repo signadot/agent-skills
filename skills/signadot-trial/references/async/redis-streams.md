@@ -4,18 +4,19 @@
 
 ## What it shows
 
-- **The demo app** (not HotROD): a page where you publish a message. The producer adds it to one Redis stream,
-  `demo:messages`; a consumer processes it (processor v1 keeps the text as it is, v2 makes it upper case) and a
-  notifier sends the result. The producer's page shows each message's trail: which service handled each step, and
-  whether it was the baseline or a sandbox. Explain this first on the page: the user has only seen HotROD so far.
-- **Problem:** consumers of a shared Redis stream share a consumer group, so a consumer under test would take
-  entries meant for the baseline.
-- **What Signadot does:** a producer, consumer and notifier share one stream (`demo:messages`). The sandboxed
-  consumer (running "processor v2", which uppercases messages) reads the stream through its own consumer group. The
-  routing key travels in each entry's fields; every consumer acknowledges every entry and processes only the ones
-  that are its own.
-- **Why it matters:** stream-processing changes are tested on the real stream, with no copy of Redis and no lost or
-  duplicated entries.
+The page's four sections come from these (`references/finish/report.md`, "Writing a scenario page"):
+
+- **The demo app** (not HotROD; the user has only seen HotROD): a page where you publish a message. Steps for the
+  diagram: (1) the producer's page takes a message and adds it to one Redis stream, `demo:messages`; (2) a consumer
+  reads it from the stream and processes it (processor v1 keeps the text as it is, v2 makes it upper case); (3) a
+  notifier sends the result; (4) the producer's page shows each message's trail: which service handled each step,
+  and whether it was the baseline or a sandbox.
+- **The change:** the consumer's processor v2, which upper-cases messages (`PROCESSOR_VERSION=v2` in the spec).
+- **The sandbox:** a copy of `consumer` running v2. Also created: its own consumer group on the stream, so it reads
+  every entry without taking any from the baseline's group.
+- **Routing:** the sandbox's preview link adds its key to the producer's requests, and the producer writes it into
+  each entry's fields. No sidecar routes entries: every consumer acknowledges every entry and processes only the
+  ones that are its own.
 
 ## Costs
 
@@ -98,18 +99,18 @@ try: publish a message from each link and compare the trails; look at the consum
 
 ## Try it yourself
 
-The links lead the page (`references/finish/report.md`, "App links"). The baseline is the producer's cluster
-address, so it opens only once the laptop has Signadot's connection with sudo; when `connect_mode` is
-`unprivileged`, the reconnect goes first in the link box, and you ask for it in chat when you show the page, then
-check the link (`references/finish/report.md`, "After each scenario").
+The producer's baseline is a cluster address: it opens only with the sudo connection
+(`references/finish/report.md`, "Try it": the reconnect goes first in the steps, and you ask for it in chat when
+you show the page, then check the link, "After each scenario").
 
-- Publish a message from the producer's cluster address, http://producer.redis-streams-demo.svc:4000: no routing
-  key is added (the trail shows `routingKey: ""`), and `consumer (baseline)` processes it with processor v1.
-- Publish one from the sandbox's preview link: the trail shows the sandbox's routing key, and
+- **Baseline:** publish a message from the producer's cluster address, http://producer.redis-streams-demo.svc:4000:
+  the trail shows `routingKey: ""`, and `consumer (baseline)` processes it with processor v1.
+- **Sandbox:** publish one from the sandbox's preview link: the trail shows the sandbox's routing key, and
   `consumer (sandbox=redis-streams-consumer<suffix>)` processes it with processor v2, in upper case.
-- See the consumer groups on the stream:
+- **Check:** the trail on the page shows which consumer processed each message. See both consumer groups on the
+  stream:
   `kubectl --kubeconfig <T>/kubeconfig -n redis-streams-demo exec deploy/redis -- redis-cli XINFO GROUPS demo:messages`.
-- The docs page also forks the producer and the notifier; their specs are in
+- **More:** the docs page also forks the producer and the notifier; their specs are in
   `<T>/examples/selective-consumption-with-redis-streams/python/signadot/`.
 
 ## Tear down

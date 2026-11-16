@@ -4,15 +4,18 @@ Runs by default. About 2 minutes. `<cluster>`, `<suffix>` and `<proxy>` as in SK
 
 ## What it shows
 
-- **Problem:** a feature often spans several services and pull requests, and can only be tested once everything is
-  merged and deployed together.
-- **The change:** one feature in two services. The driver service gives every driver's licence plate an `SD-`
-  prefix, and the frontend highlights those plates. Each service gets its own sandbox, from a prebuilt image.
-- **What Signadot does:** a route group joins the sandboxes that share a label (`feature: hotrod-plates<suffix>`)
-  under one routing key, and its endpoint gives a preview URL. A request with that key reaches both new versions.
-  Driver gets its work from Kafka, so the driver sandbox picks up only the dispatch messages that carry the key and
-  the normal driver skips them; the Kafka scenario shows that part in detail.
-- **Why it matters:** reviewers, designers and PMs open one URL and see the whole feature before anything merges.
+The page's four sections come from these (`references/finish/report.md`, "Writing a scenario page"):
+
+- **The demo app:** HotROD; driver and frontend are the changed services.
+- **The change:** one feature across two services, as two pull requests would bring it: driver gives every
+  driver's licence plate an `SD-` prefix, and frontend highlights those plates. Each runs from a prebuilt image (in
+  a team, the images CI builds from the two pull requests).
+- **The sandbox:** two sandboxes, `driver-plates<suffix>` and `frontend-highlight<suffix>`, each a copy of one
+  service. Also created: a route group, `hotrod-plates<suffix>`, which joins them by their label
+  (`feature: hotrod-plates<suffix>`) under one routing key and gives one preview link.
+- **Routing:** the route group's link adds its key. The sidecar in the normal frontend's pod sends the page's
+  requests to the new frontend. Driver gets its work from Kafka, so the new driver processes only the dispatch
+  messages that carry the key and the normal driver skips them (the Kafka scenario shows that part).
 
 ## Run
 
@@ -72,9 +75,14 @@ try: open the preview URL and book a ride
 
 ## Try it yourself
 
-- Open the preview URL and book a ride: the plate is highlighted.
-- Share it with a teammate in the same org.
-- See the route group in the dashboard: https://app.signadot.com/routegroups.
+- **Baseline:** request a ride on the baseline link: plates like `T757183C`, not highlighted.
+- **Sandbox:** request a ride on the route group's link: plates start with `SD-` and are highlighted. Anyone in the
+  org can open it; share it with a teammate.
+- **Check:** follow `Dispatch successful` in the normal driver (`deploy/driver`) and in
+  `driver-plates<suffix>-dep-driver-…`: rides through the route group's link appear only in the second, with `SD-`
+  plates.
+- **More:** send the route group's key yourself with curl (`references/finish/report.md`, "Try it"); see the route
+  group in the dashboard, https://app.signadot.com/routegroups.
 
 ## Tear down
 

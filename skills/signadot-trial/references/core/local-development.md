@@ -5,13 +5,17 @@ Runs by default. About 3 minutes, most of it the first build. Needs Go 1.27.1+ o
 
 ## What it shows
 
-- **Problem:** to test a change end to end, developers either run the whole stack locally or wait for an image
-  build and deploy on every edit.
-- **What Signadot does:** a local sandbox maps a cluster workload (`route`) to a process on this computer. Requests
-  with its routing key reach the local process, which calls the real services in the cluster.
-- **Why it matters:** edit, rebuild and restart in seconds against real dependencies, with no image build or
-  deploy. A coding agent can use the same loop to validate its own changes: the `signadot-validate` agent skill runs it
-  for the user's own services.
+The page's four sections come from these (`references/finish/report.md`, "Writing a scenario page"):
+
+- **The demo app:** HotROD; route is the changed service, and it runs on this computer.
+- **The change:** one line in route's code (`services/route/server.go`, the trial's patch) makes ETAs seconds
+  instead of minutes. Route is built and run on this computer; nothing is built into an image or deployed.
+- **The sandbox:** a local sandbox: no pod in the cluster. It maps the cluster's route to the route process on this
+  computer (port 8083), which uses the cluster's Redis. Also created: that local process and, with the no-sudo
+  connection, a port-forward to Redis.
+- **Routing:** the sandbox's preview link adds its key; OpenTelemetry carries it to driver's call to route; the
+  sidecar in the normal route's pod forwards calls with the key through Signadot's connection to the process on this
+  computer.
 
 ## Set up: fetch, patch and build
 
@@ -115,11 +119,14 @@ try: edit <T>/hotrod/services/route/server.go, rebuild, restart, and book a ride
 
 ## Try it yourself
 
-- Book a ride on the sandbox's link: the ETA comes from the route service on this computer, in seconds.
-- Change the ETA again in `<T>/hotrod/services/route/server.go`, rebuild, restart the process (the commands under
-  Set up and Run), and book another ride on the sandbox's link.
-- The local process and the Redis port-forward run in the background; if they stopped (for example after a reboot),
-  start them again with the commands under Run.
+- **Baseline:** request a ride on the baseline link: ETAs in minutes.
+- **Sandbox:** request a ride on the sandbox's link: ETAs in seconds, from route on this computer.
+- **Check:** follow `Finding route` in the local process's log, `tail -f <T>/logs/route-local.log | grep --line-buffered 'Finding route'`,
+  and in the normal route (`deploy/route`): sandbox rides appear only in the local log.
+- **More:** change the ETA again in `<T>/hotrod/services/route/server.go`, rebuild and restart the process (the
+  commands under Set up and Run), and request another ride on the sandbox's link. The `signadot-validate` agent
+  skill runs the same loop for your own services. If the process or the Redis port-forward stopped (after a
+  reboot), start them again with the commands under Run.
 
 ## Tear down
 
