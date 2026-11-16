@@ -12,13 +12,18 @@ echo "$fm" | grep -q '^name: signadot-trial$' || bad "frontmatter: name must mat
 desc=$(echo "$fm" | awk '/^description:/ {f=1; next} f && /^[a-z]+:/ {f=0} f' | tr -s ' \n' ' ')
 [ ${#desc} -gt 0 ] && [ ${#desc} -le 1024 ] || bad "frontmatter: description is empty or over 1024 characters"
 
-# 2. Every reference file is linked from SKILL.md, every path the files mention exists, and MAINTAINING.md stays
-#    unlinked so agents don't load it.
+# 2. Every reference file is linked from SKILL.md, every path the files mention exists, and the skill folder holds
+#    only what agents need (everything in it is installed for every user).
 for f in $(cd "$S" && find references -name '*.md' | sort); do grep -q "($f)" "$S/SKILL.md" || bad "SKILL.md doesn't link $f"; done
 for p in $(cd "$S" && grep -rhoE '(references|assets|scripts)/[A-Za-z0-9_./-]+\.(md|sh|yaml|html|patch)' SKILL.md references | sort -u); do
   [ -e "$S/$p" ] || bad "a file mentions $p, which doesn't exist"
 done
-grep -q 'MAINTAINING' "$S/SKILL.md" && bad "SKILL.md links MAINTAINING.md"
+extra=""
+for f in "$S"/* "$S"/.[!.]*; do
+  [ -e "$f" ] || continue
+  case "${f##*/}" in SKILL.md|references|scripts|assets) ;; *) extra="$extra ${f##*/}" ;; esac
+done
+[ -z "$extra" ] || bad "skill folder has files users don't need (they belong in tests/signadot-trial): $extra"
 
 # 3. Pins agree across files.
 cli=$(sed -n 's/^VERSION=\([0-9.]*\).*/\1/p' "$S/scripts/install-cli.sh")

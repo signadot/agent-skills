@@ -3,7 +3,7 @@
 # so they get their routing proxy. The cluster token goes from the CLI to helm through a private temp file
 # (mode 600, deleted on exit); it is never printed or passed on a command line. Safe to re-run.
 set -eu
-OPERATOR_VERSION=1.4.0   # the operator chart version the skill was verified with; see MAINTAINING.md
+OPERATOR_VERSION=1.4.0   # the chart version the skill was verified with (see tests/signadot-trial/MAINTAINING.md in signadot/agent-skills)
 
 usage() {
   echo "Usage: install-operator.sh --trial-dir <dir> --cluster <name> [--values <file>] [--namespace hotrod]"

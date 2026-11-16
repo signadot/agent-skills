@@ -62,6 +62,11 @@ compose params and steps, run plans, and inspect outputs and logs.
 - For `signadot-validate` and `signadot-plan`: the Signadot CLI, configured
   against your cluster. `signadot-trial` installs what it needs (see above).
 
+## Contributing
+
+Changing `signadot-trial`? Read [tests/signadot-trial/MAINTAINING.md](tests/signadot-trial/MAINTAINING.md) for its
+pinned versions, checks and live checklist.
+
 ## License
 
 Apache 2.0 — see [LICENSE](LICENSE).

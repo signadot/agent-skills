@@ -1,7 +1,8 @@
 # Maintaining the signadot-trial skill
 
-For people who change this skill. Agents don't read this file: SKILL.md doesn't link it, and a check keeps it that
-way.
+For people who change `skills/signadot-trial`. This file lives next to the checks, outside the skill folder, so it
+isn't installed with the skill. Paths below are relative to `skills/signadot-trial/` unless they start with `tests/`
+or `.github/`.
 
 ## How it's built
 
@@ -12,7 +13,10 @@ way.
   booking a ride). No jq, python or node.
 - `assets/`: Signadot specs (`@{suffix}` and `@{cluster}` are filled with `--set`), the C3 patch and the report
   template.
-- `../../tests/signadot-trial/`: the checks (below).
+- `tests/signadot-trial/`: this file and the checks (below).
+
+Nothing else belongs in the skill folder: everything there is installed for every user, and a check fails on any
+other top-level file.
 
 Design rules: the skill works with any coding agent, so it never names one agent's tools; every variation runs on
 open-source software only, with no cloud account; each demo app gets its own namespace; nothing expires, and

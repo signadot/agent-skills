@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Needs the network. Fails when Signadot has shipped something newer than the skill pins, so a scheduled CI run
-# tells maintainers to bump the pin and run the live acceptance checklist in MAINTAINING.md.
+# tells maintainers to bump the pin and run the live checklist in tests/signadot-trial/MAINTAINING.md.
 set -u
 ROOT=$(cd "$(dirname "$0")/../.." && pwd); S=$ROOT/skills/signadot-trial; fail=0
 newer() { [ "$1" != "$2" ] && [ "$(printf '%s\n%s\n' "$1" "$2" | sort -t. -k1,1n -k2,2n -k3,3n | tail -1)" = "$2" ]; }
