@@ -49,8 +49,8 @@ the ride's notifications.</p>
     <p>Signadot adds the sandbox's routing key to every request made through this link, so the route step reaches
     the new version. Every ETA is 1 second.</p></div>
 </div>
-<p class="note">Both are Signadot preview links: they go through Signadot's servers to the app in your cluster, and
-work for anyone signed in to your Signadot org.</p>
+<p class="note">Both are Signadot preview links, made from the sandbox spec below: they go through Signadot's servers
+to the app in your cluster, and work for anyone signed in to your Signadot org.</p>
 </section>
 -->
 
@@ -93,9 +93,9 @@ spec:
       env:
       - name: FAST_ROUTE
         value: "1"
-  # The sandbox's preview link: a *.preview.signadot.com URL that opens the app with this sandbox's
-  # routing key added to every request. `target` is where the link leads inside the cluster, not a
-  # URL to open.
+  # The sandbox's preview link. Signadot turns each endpoint into
+  # https://<name>--<sandbox name>.preview.signadot.com, which forwards every request to `target`,
+  # the service's address inside the cluster, with this sandbox's routing key added.
   defaultRouteGroup:
     endpoints:
     - name: frontend
@@ -103,9 +103,15 @@ spec:
 <ul class="plain parts">
 <li><code>forks</code>: the workload to copy (the route Deployment) and what is different in the copy
 (<code>FAST_ROUTE=1</code>).</li>
-<li><code>defaultRouteGroup</code>: gives the sandbox its preview link, the sandbox link at the top of this page.
-Its <code>target</code> is where the link leads inside the cluster, HotROD's frontend.</li>
+<li><code>defaultRouteGroup</code>: where the sandbox link at the top of this page comes from. Signadot turned the
+<code>frontend</code> endpoint into that link; requests to it go through Signadot to <code>target</code>, the
+frontend's address inside the cluster, with the routing key added:</li>
 </ul>
+<p class="linkmap"><code>https://frontend--fast-route.preview.signadot.com</code><span class="arrow">→</span>
+<span>Signadot adds the routing key</span><span class="arrow">→</span><code>http://frontend.hotrod.svc:8080</code></p>
+<p class="muted">So the two addresses are the same app: the preview link works from any browser signed in to your
+org; the address inside the cluster works from the cluster, or from your laptop once it's connected (see "What makes
+the routing work").</p>
 <div class="cmd"><p>Create the sandbox (safe to run again; it's already running):</p>
 <pre><code>/Users/me/project/.signadot-trial/bin/sd sandbox apply -f /Users/me/project/.agents/skills/signadot-trial/assets/specs/core/fast-route.yaml --set cluster=signadot-trial --set suffix=</code></pre></div>
 <div class="cmd"><p>See the sandbox's pod, <code>fast-route-dep-route-…</code>, next to the normal route pod:</p>
@@ -174,14 +180,17 @@ the normal route and arrived in 23m14s. Both used the same frontend, Kafka, driv
 <div class="box"><h3><span class="step-n">1</span>The routing key is set where the request starts</h3>
 <p>The sandbox link does it for you: Signadot adds <code>baggage: sd-routing-key=7g2k9xq4m1ab</code> to every
 request made through it. The <a href="https://chromewebstore.google.com/detail/signadot/aigejiccjejdeiikegdjlofgcjhhnkim">Signadot
-Chrome extension</a> does the same for any page you open, and any HTTP client can send the header itself. Try it
-with curl:</p>
-<div class="cmd"><p>Forward HotROD's frontend to port 18080 on this computer, and leave it running:</p>
-<pre><code>kubectl --kubeconfig /Users/me/project/.signadot-trial/kubeconfig -n hotrod port-forward svc/frontend 18080:8080</code></pre></div>
-<div class="cmd"><p>In another terminal, book a ride with the routing key:</p>
-<pre><code>curl -s -X POST localhost:18080/dispatch -H 'baggage: sd-routing-key=7g2k9xq4m1ab' -H 'Content-Type: application/json' -d '{"SessionID":4242,"RequestID":1,"PickupLocationID":1,"DropoffLocationID":123}'</code></pre></div>
+Chrome extension</a> does the same for any page you open, and any HTTP client can send the header itself.</p>
+<p>To try that from your laptop, use Signadot's local connection: it makes every address inside the cluster, like
+<code>http://frontend.hotrod.svc:8080</code>, reachable from your laptop. The trial connected without sudo, so
+those names only work through the trial's own proxy for now.</p>
+<div class="cmd"><p>Reconnect so cluster addresses work in any terminal and browser. It asks for your password once,
+for sudo. If your agent is still running scenarios, tell it you reconnected.</p>
+<pre><code>/Users/me/project/.signadot-trial/bin/sd local disconnect && /Users/me/project/.signadot-trial/bin/sd local connect</code></pre></div>
+<div class="cmd"><p>Book a ride with the routing key:</p>
+<pre><code>curl -s -X POST http://frontend.hotrod.svc:8080/dispatch -H 'baggage: sd-routing-key=7g2k9xq4m1ab' -H 'Content-Type: application/json' -d '{"SessionID":4242,"RequestID":1,"PickupLocationID":1,"DropoffLocationID":123}'</code></pre></div>
 <div class="cmd"><p>A few seconds later, read the ride's notifications (run it again if nothing prints yet):</p>
-<pre><code>curl -s 'localhost:18080/notifications?sessionID=4242&amp;cursor=0' | grep -o 'Driver [^"]*'</code></pre></div>
+<pre><code>curl -s 'http://frontend.hotrod.svc:8080/notifications?sessionID=4242&amp;cursor=0' | grep -o 'Driver [^"]*'</code></pre></div>
 <p>It prints a driver arriving in 1s. Book again without the <code>baggage</code> header and with another
 <code>SessionID</code>, and the ETA is back in minutes.
 <a href="https://www.signadot.com/docs/guides/developer-environments/access-sandboxes">Ways to reach a sandbox</a></p></div>

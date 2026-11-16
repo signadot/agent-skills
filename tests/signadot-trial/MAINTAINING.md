@@ -127,8 +127,9 @@ folder, with a coding agent following the skill literally. Use a test org.
 1. **Default path:** "try Signadot", default choices, a new org. The first message is the plan (the three basics),
    the basics run one by one with a menu of more after them, and progress lines show no file names or step IDs. The basics pass; each scenario's page opens after it and the trial waits before the next one; the hand-off
    lists what's running; the first sandbox's preview link gives 1s ETAs and the baseline link doesn't; each page reads
-   in order (change, sandbox, diagram, how routing works), and command blocks copy. The curl through the port-forward
-   on the first page prints a 1s ETA with the key and minutes without. The agent never asks for access
+   in order (change, sandbox, diagram, how routing works), and command blocks copy. After the page's sudo reconnect,
+   its curl to `frontend.hotrod.svc` prints a 1s ETA with the key and minutes without, and the agent's next scenario
+   still works (it notices the reconnect and drops its proxy). The agent never asks for access
    outside its working folder, and afterwards the only new thing there is `.signadot-trial`.
 2. **Existing user:** with a `~/.signadot` config and login present. The trial uses its own login in the trial folder; checksum
    `~/.signadot` before and after (`find ~/.signadot -type f -exec shasum {} + | sort | shasum`): unchanged.

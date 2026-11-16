@@ -13,9 +13,9 @@ spec:
       images:
       - image: signadot/hotrod:f788b05bca80429425b814da62b2f17c3c564089-linux-amd64
         container: hotrod
-  # The sandbox's preview link: a *.preview.signadot.com URL that opens the app with this sandbox's
-  # routing key added to every request. `target` is where the link leads inside the cluster, not a
-  # URL to open.
+  # The sandbox's preview link. Signadot turns each endpoint into
+  # https://<name>--<sandbox name>.preview.signadot.com, which forwards every request to `target`,
+  # the service's address inside the cluster, with this sandbox's routing key added.
   defaultRouteGroup:
     endpoints:
     - name: frontend

@@ -17,9 +17,9 @@ spec:
           resource:
             name: locationdb
             outputKey: provision.dbname
-  # The sandbox's preview link: a *.preview.signadot.com URL that opens the app with this sandbox's
-  # routing key added to every request. `target` is where the link leads inside the cluster, not a
-  # URL to open.
+  # The sandbox's preview link. Signadot turns each endpoint into
+  # https://<name>--<sandbox name>.preview.signadot.com, which forwards every request to `target`,
+  # the service's address inside the cluster, with this sandbox's routing key added.
   defaultRouteGroup:
     endpoints:
     - name: frontend

@@ -83,7 +83,11 @@ p { margin: 0 0 10px; max-width: 75ch; }
 .sw.key { border-color: var(--sbx); }
 .sw.new { height: 12px; border: 2px solid var(--sbx); background: var(--sbx-bg); border-radius: 3px; }
 pre.code { margin: 6px 0 10px; }
-ul.parts { margin: 2px 0 16px; }
+ul.parts { margin: 2px 0 8px; }
+.linkmap { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin: 0 0 8px 18px; font-size: 13px;
+  color: var(--muted); max-width: none; }
+.linkmap code { color: var(--text); overflow-wrap: anywhere; }
+.linkmap .arrow { color: var(--sbx); font-weight: 700; }
 
 /* What makes the routing work: three numbered cards, one under the other. */
 .works { display: grid; gap: 12px; }

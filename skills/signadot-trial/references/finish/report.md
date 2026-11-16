@@ -44,7 +44,7 @@ Every page tells the same story, top to bottom:
 explanation, then `<pre><code>`), so it gets a Copy button; specs go in one too. Make it paste-ready: full paths,
 the real sandbox names, suffix and routing key, no `$T`, `<…>` or other placeholders. Use
 `kubectl --kubeconfig <trial folder>/kubeconfig …` and `<trial folder>/bin/sd …`. Never show `ride.sh`, `--proxy`
-or the trial's local proxy: the preview links, and a `kubectl port-forward` for curl, replace them.
+or the trial's local proxy: the preview links, and the sudo connection for curl, replace them.
 
 ### The slots
 
@@ -59,10 +59,12 @@ or the trial's local proxy: the preview links, and a `kubectl port-forward` for 
   end. Show the change itself when it's small (a code line, a setting, a patch), and say in one muted line how it
   maps to real use (the image CI builds from the pull request, or the code on the developer's computer).
 - **sandbox:** what was created and what stays shared, the routing key, then the spec (cluster and suffix filled in,
-  comments kept) and a short list of what its parts mean. Explain `defaultRouteGroup` as the sandbox's preview link
-  whenever it's in the spec: its `target` is where the link leads inside the cluster, not an address to open. Then
-  command blocks: the command that created it, and the file's "Try it yourself" commands (see the pods, see the
-  sandbox and its key).
+  comments kept) and a short list of what its parts mean. Whenever the spec has `defaultRouteGroup`, explain it as
+  where the sandbox link at the top comes from, then the `linkmap` line (the real preview link → "Signadot adds the
+  routing key" → `target`) and the sentence saying both addresses are the same app: the link from any signed-in
+  browser, `target` from inside the cluster or a connected laptop. Readers otherwise see two URLs and can't tell
+  why. Then command blocks: the command that created it, and the file's "Try it yourself" commands (see the pods,
+  see the sandbox and its key).
 - **routing:** one sentence on the app's path, the diagram (see "The diagram"), its legend, a **Proof:** sentence
   from the trial log, and the screenshot if there is one.
 - **works:** three numbered cards. *1, the key is set where the request starts:* how this scenario's requests got
@@ -111,17 +113,21 @@ For Temporal, RabbitMQ and Redis Streams, draw their own apps the same way, with
 
 ### Setting the key yourself
 
-For HotROD scenarios whose copies are reached through a sidecar or mesh (not multi-service-preview, whose changed
-frontend is the first stop), card 1 shows how to send the key with curl, through a port-forward:
+For HotROD scenarios, card 1 shows how to send the key with curl from the user's laptop. Signadot's local
+connection makes every address inside the cluster reachable from the laptop, so the commands use the real
+in-cluster address, the one in the spec's `target`:
 
-1. `kubectl --kubeconfig <trial folder>/kubeconfig -n hotrod port-forward svc/frontend 18080:8080`, left running.
-2. In another terminal, book a ride with the key:
-   `curl -s -X POST localhost:18080/dispatch -H 'baggage: sd-routing-key=<key>' -H 'Content-Type: application/json' -d '{"SessionID":4242,"RequestID":1,"PickupLocationID":1,"DropoffLocationID":123}'`
-3. Read the ride's notifications: `curl -s 'localhost:18080/notifications?sessionID=4242&cursor=0' | grep -o 'Driver [^"]*'`
+1. Only when the trial's connection is `connect_mode: unprivileged` (the default): a command block that reconnects
+   with sudo, `<trial folder>/bin/sd local disconnect && <trial folder>/bin/sd local connect`, saying it asks for
+   their password once and that they should tell the agent if it's still running scenarios. With
+   `connect_mode: privileged`, leave it out: cluster addresses already work.
+2. Book a ride with the key:
+   `curl -s -X POST http://frontend.hotrod.svc:8080/dispatch -H 'baggage: sd-routing-key=<key>' -H 'Content-Type: application/json' -d '{"SessionID":4242,"RequestID":1,"PickupLocationID":1,"DropoffLocationID":123}'`
+3. Read the ride's notifications: `curl -s 'http://frontend.hotrod.svc:8080/notifications?sessionID=4242&cursor=0' | grep -o 'Driver [^"]*'`
    (escape `&` as `&amp;` in the page).
 
 Say what it prints with the key, and that the same request without the header (and another `SessionID`) reaches
-the baseline.
+the baseline. For multi-service-preview, use the route group's key; the changed frontend answers too.
 
 **App links.** Preview links open the app in any browser signed in to the user's Signadot org; Signadot adds the
 routing key of the sandbox or route group to every request made through them. Read a link with

@@ -147,6 +147,12 @@ Done when it prints `200`.
 `"$T/bin/sd" local connect` in their own terminal; it asks for their sudo password once. Never type it yourself.
 Then there's no proxy: drop `--proxy` everywhere and record `connect_mode: privileged`.
 
+The user may also switch to the privileged connection later, from a report page, while scenarios are still to run.
+If they say so, or a request through the proxy fails, check the direct path:
+`curl -s -o /dev/null -w '%{http_code}\n' http://frontend.hotrod.svc:8080/`. If it prints `200`, record
+`connect_mode: privileged` and drop `--proxy` from then on. A running local-development route process keeps
+working; if its sandbox link stops answering, start the process again with the commands in that file's Run.
+
 `PortForward` is the direct path on a local cluster. `kubeContext` and `kubeConfig` point the CLI at the trial
 cluster whatever the user's current context is, including when they reconnect with their own CLI or with sudo.
 Connection settings: https://www.signadot.com/docs/getting-started/installation/signadot-cli.md (Connection

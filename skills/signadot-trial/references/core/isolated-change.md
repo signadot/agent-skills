@@ -67,8 +67,8 @@ book a ride, and save `$T/report/screens/isolated-change.png` once the ETA shows
   rides through the sandbox's link arrive in 1 second.
 - See the sandbox's route pod next to the normal one: `kubectl --kubeconfig <T>/kubeconfig -n hotrod get pods`.
 - See the sandbox, its routing key and its link: `<T>/bin/sd sandbox get fast-route<suffix>`.
-- Send the routing key yourself, with curl through a port-forward (the page shows the commands; see
-  `references/finish/report.md`, "Setting the key yourself").
+- Send the routing key yourself, with curl to the frontend's in-cluster address once the laptop has the sudo
+  connection (the page shows the commands; see `references/finish/report.md`, "Setting the key yourself").
 - See it in the dashboard: https://app.signadot.com/sandboxes.
 
 ## Tear down
