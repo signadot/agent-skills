@@ -7,8 +7,9 @@
 <!--
   One page per scenario: copy to <trial folder>/report/<scenario id>.html (see references/finish/report.md).
   - Replace SCENARIO in the title with the scenario's menu name.
-  - The page tells one story, top to bottom: the change, the sandbox that runs it, what happened to requests with
-    and without the routing key, and what makes that routing work. Keep that order for every scenario.
+  - The page tells one story, top to bottom: the demo app (only when it isn't HotROD), the change, the sandbox that
+    runs it, what happened to requests with and without the routing key, and what makes that routing work. Keep that
+    order for every scenario.
   - Each slot is one comment that starts with FILL and a name. Its example is a complete page for "Test one change
     in isolation": write every scenario to the same depth, with this run's real values, in plain words for someone
     new to Signadot. Replace the whole comment with real content in the same shape.
@@ -34,7 +35,7 @@ booked through the sandbox's link reached it and arrived in 1 second; every othe
 -->
 </header>
 
-<!-- FILL:urls  (the demo app's two links; leave the section out only when the demo app has no web page)
+<!-- FILL:urls  (the demo app's links, see references/finish/report.md "App links"; leave the section out only when the demo app has no web page)
 <section class="urls">
 <h2>Open the demo app</h2>
 <p>Open both links in the browser where you're signed in to Signadot, book a ride in each, and compare the ETA in
@@ -42,8 +43,8 @@ the ride's notifications.</p>
 <div class="url-pair">
   <div class="url base"><h4>Baseline: the normal app</h4>
     <p class="link"><a href="https://frontend--hotrod-baseline.preview.signadot.com">https://frontend--hotrod-baseline.preview.signadot.com</a></p>
-    <p>No routing key is added, so every request uses the shared, unchanged services. ETAs are in minutes, like
-    23m14s.</p></div>
+    <p>The routing key this link adds belongs to no sandbox, so every request uses the shared, unchanged services.
+    ETAs are in minutes, like 23m14s.</p></div>
   <div class="url sbx"><h4>Your sandbox</h4>
     <p class="link"><a href="https://frontend--fast-route.preview.signadot.com">https://frontend--fast-route.preview.signadot.com</a></p>
     <p>Signadot adds the sandbox's routing key to every request made through this link, so the route step reaches
@@ -55,6 +56,23 @@ to the app in your cluster, and work for anyone signed in to your Signadot org.<
 -->
 
 <main>
+<section id="app">
+<h2>The demo app</h2>
+<!-- FILL:app  (only when the scenario's demo app isn't HotROD: leave this whole section out for HotROD. The example is Temporal's.)
+<p>This scenario uses a different demo app from HotROD: a small money-transfer app built on Temporal, a workflow
+engine. Each transfer runs as a workflow with two steps: withdraw from one account, then deposit into another.</p>
+<ul class="plain parts">
+<li><strong>The transfer app:</strong> a web page that starts transfers and shows the routing key each one
+carried.</li>
+<li><strong>The Temporal server:</strong> keeps every transfer's steps on one task queue,
+<code>money-transfer</code>.</li>
+<li><strong>The worker:</strong> takes steps from the queue and runs them.</li>
+<li><strong>The Temporal UI:</strong> lists every transfer and, for each step, which worker ran it. It's the best
+place to watch this scenario.</li>
+</ul>
+-->
+</section>
+
 <section id="change">
 <h2>The change</h2>
 <!-- FILL:change

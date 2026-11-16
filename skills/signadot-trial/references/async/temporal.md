@@ -4,6 +4,10 @@
 
 ## What it shows
 
+- **The demo app** (not HotROD): a small money-transfer app built on Temporal. A web page starts each transfer as
+  a Temporal workflow: withdraw from one account, then deposit into another. The Temporal server keeps the work on
+  one task queue, `money-transfer`, and a worker runs each step. The Temporal UI shows every transfer and, for each
+  step, which worker ran it. Explain this first on the page: the user has only seen HotROD so far.
 - **Problem:** Temporal workers poll a shared task queue, so a worker under test picks up other people's workflows,
   and a separate Temporal server or task queue per change is heavy.
 - **What Signadot does:** a money-transfer app runs workflows on one task queue (`money-transfer`). A sandboxed
@@ -43,16 +47,6 @@ The worker restarts a few times until the Temporal server is up; that's expected
 `temporal` is available. If you deployed it before the operator, restart it as
 `references/setup/cluster.md` §3 says, or the worker sandbox stays Not Ready. Record `namespace temporal` under Resources.
 
-Once the operator is installed, create the baseline link for the report (a route group that matches no sandbox, so
-its preview link always opens the unchanged Temporal demo app's page; see `references/setup/cluster.md` §5):
-
-```bash
-"$T/bin/sd" routegroup apply -f "$S/assets/specs/async/temporal-baseline.yaml" --set cluster=<cluster> --set suffix=<suffix>
-"$T/bin/sd" routegroup get temporal-baseline<suffix> -o json | grep -oE '"url": *"https://[^"]+"' | head -1
-```
-
-Record `routegroup temporal-baseline<suffix>` under Resources.
-
 ## Run
 
 ```bash
@@ -83,6 +77,24 @@ Each call prints the workflow ID and the routing key it carried.
 Done when the baseline worker logged tasks only with routing key `''` and the sandbox worker only with `<key>`.
 Both workflows ran on the same server and task queue.
 
+Then read, for each workflow ID the start calls printed, which worker completed its steps, as the Temporal UI
+shows it:
+
+```bash
+curl -s --proxy <proxy> http://temporal-ui-service.temporal.svc/api/v1/namespaces/default/workflows/<workflow id>/history \
+  | tr -d '\n ' | grep -oE '"workflowTaskCompletedEventAttributes":\{[^{}]*"identity":"[^"]*"' | grep -oE '"identity":"[^"]*"' | sort -u
+```
+
+The transfer without the key prints only the normal worker (`1@temporal-worker-<hash>`); the one with the key only
+the sandbox's (`1@temporal-worker<suffix>-dep-temporal-worker-…`). Put both on the page: they're what the user will
+see in the Temporal UI.
+
+Explain the hand-back on the page too, because the user will see it: either worker may pick up a step first. A
+worker that picks up a step that isn't its own hands it back, which the Temporal UI shows as a **Workflow Task
+Failed** event with "Workflow/Worker cannot handle routing key", and the right worker then runs the step. So the
+sandbox's worker can appear once in a transfer without the key (as that failed task), and the normal worker in one
+with the key. The steps that completed show who really ran it.
+
 For the page's diagram: `client → temporal:money-transfer → worker(baseline: no key) ·
 worker(temporal-worker<suffix>: <key>)`.
 
@@ -99,21 +111,34 @@ hops-sandbox: client → temporal:money-transfer → worker(temporal-worker<suff
 proof: one Temporal server and task queue; each worker ran only the tasks carrying its routing key
 commands: docker build + kind load; kubectl apply -n temporal …; sd sandbox apply -f assets/specs/async/temporal-worker.yaml …; curl …/api/start-workflow
 specs: assets/specs/async/temporal-worker.yaml
+identity-baseline: <the normal worker's identity>
+identity-sandbox: <the sandbox worker's identity>
 links: https://www.signadot.com/docs/tutorials/testing-temporal-workers
-try: start transfers from both links; open the Temporal UI and see the workflows on the one task queue
+link-baseline: http://temporal-py-client-ui.temporal.svc:8080 (no routing key; needs the laptop's connection)
+link-sandbox: <the sandbox's preview link>
+link-temporal-ui: http://temporal-ui-service.temporal.svc (needs the laptop's connection)
+try: start a transfer from each link, then open it in the Temporal UI and see which worker ran each step
 ```
 
 ## Try it yourself
 
-- Start transfers from the baseline and sandbox links, and follow the baseline worker's log:
+The links lead the page (`references/finish/report.md`, "App links"). Two of them are cluster addresses, so they
+open only once the laptop has Signadot's connection with sudo; when `connect_mode` is `unprivileged`, the reconnect
+goes first in the link box.
+
+- Start a transfer from the transfer app at its cluster address, http://temporal-py-client-ui.temporal.svc:8080: no
+  routing key is added, so the page shows "Routing Key: undefined" and the normal worker runs it.
+- Start one from the sandbox's preview link: the page shows the sandbox's routing key, and the sandbox's worker runs
+  it.
+- Open the Temporal UI, http://temporal-ui-service.temporal.svc: both transfers are on the one `money-transfer`
+  task queue. Open each one: its completed steps list the worker that ran them (Identity). A "Workflow Task
+  Failed … cannot handle routing key" event is the other worker handing the step back.
+- Follow the normal worker's log while you start transfers:
   `kubectl --kubeconfig <T>/kubeconfig -n temporal logs -f deploy/temporal-worker -c temporal-worker | grep 'routing key'`.
-- Open the Temporal UI: `kubectl --kubeconfig <T>/kubeconfig -n temporal port-forward svc/temporal-ui-service 8233:80`, then
-  http://localhost:8233. All the workflows are there, on the same task queue.
 
 ## Tear down
 
 ```bash
-"$T/bin/sd" routegroup delete temporal-baseline<suffix>
 "$T/bin/sd" sandbox delete temporal-worker<suffix>
 "$T/bin/kc" delete namespace temporal
 ```

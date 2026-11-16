@@ -31,7 +31,8 @@ it: no sales lines, no "usual way vs Signadot" comparisons, no adoption checklis
 term the first time it appears; no file names, step IDs or placeholders. Use the scenario file's "What it shows"
 for the story and its trial-log entry for every value.
 
-Every page tells the same story, top to bottom:
+Every page tells the same story, top to bottom. For a demo app other than HotROD (Temporal, RabbitMQ, Redis
+Streams), it starts with the app itself: the user has only seen HotROD.
 
 1. **The change** someone wants to check end to end.
 2. **The sandbox** that runs it: the spec, applied with the CLI, a second copy of only what changed, and its
@@ -52,9 +53,15 @@ or the trial's local proxy: the preview links, and the sudo connection for curl,
 - **status:** the pill (`passed` or `failed`), "Scenario n" (its place in run order), the time from the scenario's
   first command to its proof, the cluster and the date.
 - **headline:** one or two sentences that say what was proven, with the proving values.
-- **urls:** the box with the demo app's two links (see "App links"): the baseline, and the sandbox with a line saying
+- **urls:** the box with the demo app's links (see "App links"): the baseline, and the sandbox with a line saying
   that Signadot adds the sandbox's routing key to every request made through it, so it reaches the changed version.
-  Say what to look for in each. Leave the box out only for a demo app with no web page (RabbitMQ).
+  Add the app's own UI when it shows the scenario best (the Temporal UI). Say what to look for in each. When a link
+  is a cluster address (it ends in `.svc`) and the trial's connection is `connect_mode: unprivileged`, put the
+  reconnect command block from "Setting the key yourself" first in the box, marked **First, once:**, saying those
+  links open only after it. Leave the box out only for a demo app with no web page (RabbitMQ).
+- **app:** only for a demo app other than HotROD; leave the whole section out for HotROD. What the app does, in two
+  sentences, then its parts in a short list (what each does, and which one is the scenario's changed part), ending
+  with the UI that shows the scenario best. From the scenario file's "The demo app".
 - **change:** two or three sentences: what changed, in which service, and what the developer wants to check end to
   end. Show the change itself when it's small (a code line, a setting, a patch), and say in one muted line how it
   maps to real use (the image CI builds from the pull request, or the code on the developer's computer).
@@ -137,7 +144,10 @@ Say what it prints with the key, and that the same request without the header (a
 the baseline. For multi-service-preview, use the route group's key; the changed frontend answers too.
 
 **App links.** Preview links open the app in any browser signed in to the user's Signadot org; Signadot adds the
-routing key of the sandbox or route group to every request made through them. Read a link with
+routing key of the sandbox or route group to every request made through them. That includes a baseline link: it
+adds the key of a route group with no sandbox in it, so no sandbox claims those requests. Say so ("the routing key
+this link adds belongs to no sandbox"); never write that the baseline link adds no key. When the app shows the key
+it received, use the app's cluster address for the baseline instead, which adds none (Temporal). Read a link with
 `"$T/bin/sd" sandbox get <name> -o json | grep -oE '"url": *"https://[^"]+"' | head -1` (or `routegroup get`), and
 record both in the scenario's entry as `link-baseline:` and `link-sandbox:`.
 
@@ -150,7 +160,7 @@ record both in the scenario's entry as `link-baseline:` and `link-sandbox:`.
 | kafka, jobs | `baseline_url` | sandbox `driver-plates<suffix>` | plates start with `SD-` only through the sandbox |
 | plans | `baseline_url` | sandboxes `driver-plates<suffix>` and `broken-route<suffix>` | rides through the broken one don't complete: the regression the plan caught |
 | istio, istio-ambient, linkerd | `baseline_url` | sandbox `fast-route<suffix>` | as isolated-change, on the mesh |
-| temporal | route group `temporal-baseline<suffix>` | sandbox `temporal-worker<suffix>` | start a transfer from each; the worker logs show which worker ran it |
+| temporal | the transfer app's cluster address, `http://temporal-py-client-ui.temporal.svc:8080` (no key; needs the connection) | sandbox `temporal-worker<suffix>`; plus the Temporal UI, `http://temporal-ui-service.temporal.svc` (needs the connection) | the transfer page shows "Routing Key: undefined" on the baseline and the sandbox's key through its link; in the Temporal UI, each transfer's completed steps list the worker that ran them (Identity): `1@temporal-worker-…` or the sandbox's `1@temporal-worker<suffix>-dep-temporal-worker-…`; a "Workflow Task Failed … cannot handle routing key" event is the other worker handing a step back (say so on the page) |
 | redis-streams | route group `redis-streams-baseline<suffix>` | sandbox `redis-streams-consumer<suffix>` | the message trail: only the sandbox's are processed by processor v2, in upper case |
 | rabbitmq | — | — | no web page: leave out the box |
 
