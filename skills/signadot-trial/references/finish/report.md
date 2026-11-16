@@ -147,9 +147,9 @@ the baseline. For multi-service-preview, use the route group's key; the changed 
 routing key of the sandbox or route group to every request made through them. That includes a baseline link: it
 adds the key of a route group with no sandbox in it, so no sandbox claims those requests. Say so ("the routing key
 this link adds belongs to no sandbox"); never write that the baseline link adds no key. When the app shows the key
-it received, use the app's cluster address for the baseline instead, which adds none (Temporal). Read a link with
-`"$T/bin/sd" sandbox get <name> -o json | grep -oE '"url": *"https://[^"]+"' | head -1` (or `routegroup get`), and
-record both in the scenario's entry as `link-baseline:` and `link-sandbox:`.
+it received, use the app's cluster address for the baseline instead, which adds none (Temporal, Redis Streams).
+Read a link with `"$T/bin/sd" sandbox get <name> -o json | grep -oE '"url": *"https://[^"]+"' | head -1` (or
+`routegroup get`), and record both in the scenario's entry as `link-baseline:` and `link-sandbox:`.
 
 | Scenario | Baseline link | Sandbox link | What to look for |
 |---|---|---|---|
@@ -161,7 +161,7 @@ record both in the scenario's entry as `link-baseline:` and `link-sandbox:`.
 | plans | `baseline_url` | sandboxes `driver-plates<suffix>` and `broken-route<suffix>` | rides through the broken one don't complete: the regression the plan caught |
 | istio, istio-ambient, linkerd | `baseline_url` | sandbox `fast-route<suffix>` | as isolated-change, on the mesh |
 | temporal | the transfer app's cluster address, `http://temporal-py-client-ui.temporal.svc:8080` (no key; needs the connection) | sandbox `temporal-worker<suffix>`; plus the Temporal UI, `http://temporal-ui-service.temporal.svc` (needs the connection) | the transfer page shows "Routing Key: undefined" on the baseline and the sandbox's key through its link; in the Temporal UI, each transfer's completed steps list the worker that ran them (Identity): `1@temporal-worker-…` or the sandbox's `1@temporal-worker<suffix>-dep-temporal-worker-…`; a "Workflow Task Failed … cannot handle routing key" event is the other worker handing a step back (say so on the page) |
-| redis-streams | route group `redis-streams-baseline<suffix>` | sandbox `redis-streams-consumer<suffix>` | the message trail: only the sandbox's are processed by processor v2, in upper case |
+| redis-streams | the producer's cluster address, `http://producer.redis-streams-demo.svc:4000` (no key; needs the connection) | sandbox `redis-streams-consumer<suffix>` | each message's trail: `routingKey: ""` and `consumer (baseline)` with processor v1 on the baseline; the sandbox's key and `consumer (sandbox=…)` with processor v2, in upper case, through its link |
 | rabbitmq | — | — | no web page: leave out the box |
 
 ## The overview page

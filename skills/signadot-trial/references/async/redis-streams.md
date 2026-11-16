@@ -4,6 +4,10 @@
 
 ## What it shows
 
+- **The demo app** (not HotROD): a page where you publish a message. The producer adds it to one Redis stream,
+  `demo:messages`; a consumer processes it (processor v1 keeps the text as it is, v2 makes it upper case) and a
+  notifier sends the result. The producer's page shows each message's trail: which service handled each step, and
+  whether it was the baseline or a sandbox. Explain this first on the page: the user has only seen HotROD so far.
 - **Problem:** consumers of a shared Redis stream share a consumer group, so a consumer under test would take
   entries meant for the baseline.
 - **What Signadot does:** a producer, consumer and notifier share one stream (`demo:messages`). The sandboxed
@@ -36,16 +40,6 @@ kind load docker-image redis-streams-demo-python:latest --name signadot-trial
 
 Done when every deployment in `redis-streams-demo` is available. If you deployed it before the operator, restart it
 as `references/setup/cluster.md` §3 says. Record `namespace redis-streams-demo` under Resources.
-
-Once the operator is installed, create the baseline link for the report (a route group that matches no sandbox, so
-its preview link always opens the unchanged producer's page; see `references/setup/cluster.md` §5):
-
-```bash
-"$T/bin/sd" routegroup apply -f "$S/assets/specs/async/redis-streams-baseline.yaml" --set cluster=<cluster> --set suffix=<suffix>
-"$T/bin/sd" routegroup get redis-streams-baseline<suffix> -o json | grep -oE '"url": *"https://[^"]+"' | head -1
-```
-
-Record `routegroup redis-streams-baseline<suffix>` under Resources.
 
 ## Run
 
@@ -97,13 +91,21 @@ proof: one stream; a consumer group per version; each processed only the entries
 commands: docker build + kind load; kubectl apply -f k8s/; sd sandbox apply -f assets/specs/async/redis-streams-consumer.yaml …; curl …/api/publish
 specs: assets/specs/async/redis-streams-consumer.yaml
 links: https://www.signadot.com/docs/tutorials/testing-redis-streams
-try: publish messages from both links and look at the consumer groups with XINFO GROUPS
+link-baseline: http://producer.redis-streams-demo.svc:4000 (no routing key; needs the laptop's connection)
+link-sandbox: <the sandbox's preview link>
+try: publish a message from each link and compare the trails; look at the consumer groups with XINFO GROUPS
 ```
 
 ## Try it yourself
 
-- Publish messages from the baseline and sandbox links (the producer's page shows each message's trail): only
-  the sandbox's are processed by "processor v2", in upper case.
+The links lead the page (`references/finish/report.md`, "App links"). The baseline is the producer's cluster
+address, so it opens only once the laptop has Signadot's connection with sudo; when `connect_mode` is
+`unprivileged`, the reconnect goes first in the link box.
+
+- Publish a message from the producer's cluster address, http://producer.redis-streams-demo.svc:4000: no routing
+  key is added (the trail shows `routingKey: ""`), and `consumer (baseline)` processes it with processor v1.
+- Publish one from the sandbox's preview link: the trail shows the sandbox's routing key, and
+  `consumer (sandbox=redis-streams-consumer<suffix>)` processes it with processor v2, in upper case.
 - See the consumer groups on the stream:
   `kubectl --kubeconfig <T>/kubeconfig -n redis-streams-demo exec deploy/redis -- redis-cli XINFO GROUPS demo:messages`.
 - The docs page also forks the producer and the notifier; their specs are in
@@ -112,7 +114,6 @@ try: publish messages from both links and look at the consumer groups with XINFO
 ## Tear down
 
 ```bash
-"$T/bin/sd" routegroup delete redis-streams-baseline<suffix>
 "$T/bin/sd" sandbox delete redis-streams-consumer<suffix>
 "$T/bin/kc" delete namespace redis-streams-demo
 ```

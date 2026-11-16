@@ -4,6 +4,10 @@
 
 ## What it shows
 
+- **The demo app** (not HotROD): a small order app. A publisher service takes each order over HTTP and publishes it
+  to one RabbitMQ exchange, `orders`; a consumer service processes the orders it receives. It has no web page: the
+  consumers' logs show who processed each order. Explain this first on the page: the user has only seen HotROD so
+  far.
 - **Problem:** consumers on a shared RabbitMQ broker compete for messages, so a consumer under test either steals
   other people's messages or needs its own broker.
 - **What Signadot does:** a small order app publishes to one exchange; the baseline consumer and a sandboxed consumer
