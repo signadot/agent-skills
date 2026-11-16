@@ -11,8 +11,8 @@ or `.github/`.
 - `references/`: one file per step or variation. Agents read only what the user chose.
 - `scripts/`: four bash 3.2 scripts for steps that run on every trial (preflight, CLI install, operator install,
   booking a ride). No jq, python or node.
-- `assets/`: Signadot specs (`@{suffix}` and `@{cluster}` are filled with `--set`), the local-development patch and the report
-  template.
+- `assets/`: Signadot specs (`@{suffix}` and `@{cluster}` are filled with `--set`), the local-development patch,
+  and the report templates in `assets/report/` (the overview page, the scenario page and their shared CSS).
 - `tests/signadot-trial/`: this file and the checks (below).
 
 Nothing else belongs in the skill folder: everything there is installed for every user, and a check fails on any
@@ -104,7 +104,7 @@ tests/signadot-trial/check-drift.sh    # fails when a newer CLI or operator char
 
 | Check | Guards against |
 |---|---|
-| `check-static.sh` | Unlinked or missing files, pins that disagree across files, invalid YAML or shell, bash features macOS lacks, missing report slots, zsh-unsafe snippets, files or caches landing outside the trial folder (it runs preflight and `install-cli.sh` with a stub CLI and an empty HOME), and an edit dropping a safety command (teardown retiring the log, existing-cluster and existing-mesh checks, the plugin guard, no `plan delete`) |
+| `check-static.sh` | Unlinked or missing files, pins that disagree across files, invalid YAML or shell, bash features macOS lacks, missing slots in either report template, zsh-unsafe snippets, files or caches landing outside the trial folder (it runs preflight and `install-cli.sh` with a stub CLI and an empty HOME), and an edit dropping a safety command (teardown retiring the log, existing-cluster and existing-mesh checks, the plugin guard, no `plan delete`) |
 | `test-token-not-logged.sh` | The cluster token reaching a log or the output. The stub mirrors CLI 1.9.1, which prints the token on stderr; check `internal/command/cluster/add.go` when the CLI pin moves |
 | `test-config-blocks.sh` | The connection snippet losing other keys in the trial's CLI config, or not naming the trial's kubeconfig, context and cluster |
 | `test-stale-pid.sh` | Stopping a recorded PID that now belongs to another process |
@@ -124,7 +124,7 @@ Run it before a release and after bumping a pin, on a clean machine or at least 
 folder, with a coding agent following the skill literally. Use a test org.
 
 1. **Default path:** "try Signadot", default choices, a new org. The first message is only the menu, the second the
-   confirmation, and progress lines show no file names or step IDs. The basics pass; the report opens; the hand-off
+   confirmation, and progress lines show no file names or step IDs. The basics pass; each scenario's page opens after it and the trial waits before the next one; the hand-off
    lists what's running; the local proxy URL shows `SD-` plates in a browser. The agent never asks for access
    outside its working folder, and afterwards the only new thing there is `.signadot-trial`.
 2. **Existing user:** with a `~/.signadot` config and login present. The trial uses its own login in the trial folder; checksum

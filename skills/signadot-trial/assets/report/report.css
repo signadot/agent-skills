@@ -1,0 +1,151 @@
+/* Shared by the Signadot trial's overview page (index.html) and its scenario pages. Copied next to them. */
+:root {
+  --bg: #f6f6f3; --surface: #ffffff; --text: #1c1c1e; --muted: #5d6066; --border: #e2e2dd;
+  --accent: #3451d1; --code-bg: #f0f0ec;
+  --ok: #17663f; --ok-bg: #e3f3ea; --fail: #a8261b; --fail-bg: #fbe9e7; --skip: #7a5d00; --skip-bg: #fbf1cf;
+  --base: #5d6066; --base-bg: #f2f2ef; --sbx: #3451d1; --sbx-bg: #eef1fd; --msg: #7a4fc4; --msg-bg: #f3eefc;
+  --radius: 10px; --shadow: 0 1px 2px rgba(0,0,0,.05);
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #131416; --surface: #1c1d20; --text: #ececee; --muted: #a2a5ab; --border: #2e3034;
+    --accent: #8fa2ff; --code-bg: #25272b;
+    --ok: #6fd3a0; --ok-bg: #173527; --fail: #ff9a8f; --fail-bg: #3d1d1a; --skip: #f0cf6b; --skip-bg: #3a3116;
+    --base: #a2a5ab; --base-bg: #232529; --sbx: #9fb0ff; --sbx-bg: #1f2540; --msg: #c7a8ff; --msg-bg: #2a2140;
+    --shadow: none;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text);
+  font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+.wrap { max-width: 920px; margin: 0 auto; padding: 28px 16px 64px; }
+a { color: var(--accent); overflow-wrap: anywhere; }
+code, pre { font: 12.5px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+pre code { background: none; padding: 0; }
+pre { background: var(--code-bg); border-radius: 6px; padding: 10px 12px; overflow-x: auto; white-space: pre-wrap;
+  word-break: break-word; margin: 8px 0; }
+h1 { font-size: 28px; line-height: 1.2; margin: 6px 0 10px; letter-spacing: -0.015em; }
+h2 { font-size: 19px; margin: 40px 0 14px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 16px; margin: 0; }
+h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; margin: 0 0 4px; color: var(--muted); }
+p { margin: 0 0 10px; max-width: 75ch; }
+.eyebrow { margin: 0; color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: .06em; }
+.eyebrow a { color: inherit; }
+.hero, .card, .tile, .box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow); }
+.hero { padding: 22px 22px 18px; }
+.lead { font-size: 17px; line-height: 1.5; margin: 6px 0 4px; }
+.meta { margin: 0 0 4px; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; color: var(--muted);
+  font-size: 14px; }
+.intro, .muted { color: var(--muted); }
+.pill { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 999px;
+  white-space: nowrap; }
+.pill.passed, .pill.ok { color: var(--ok); background: var(--ok-bg); }
+.pill.failed { color: var(--fail); background: var(--fail-bg); }
+.pill.not-run, .pill.skipped, .pill.next { color: var(--skip); background: var(--skip-bg); }
+
+/* "What we tested": three labelled blocks. */
+.tested { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.box { padding: 14px 16px; }
+.box p { margin: 0; }
+.step-n { display: inline-flex; width: 22px; height: 22px; border-radius: 50%; align-items: center;
+  justify-content: center; background: var(--sbx-bg); color: var(--sbx); font-size: 12px; font-weight: 700;
+  margin-right: 6px; }
+
+/* App diagram. */
+.diagram { margin-top: 16px; }
+.diagram svg { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
+.diagram svg .box { fill: var(--surface); stroke: var(--border); stroke-width: 1.5; }
+.diagram svg .box.changed { fill: var(--sbx-bg); stroke: var(--sbx); stroke-width: 2; }
+.diagram svg .store { fill: var(--base-bg); stroke: var(--border); stroke-width: 1.5; }
+.diagram svg .bus { fill: var(--msg-bg); stroke: var(--msg); stroke-width: 1.5; }
+.diagram svg text { fill: var(--text); font: 600 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+.diagram svg text.sub { fill: var(--muted); font-weight: 400; font-size: 11px; }
+.diagram svg .line { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+.diagram svg .head { fill: var(--muted); }
+
+/* Flow diagram: one row per request or message, sandbox hops highlighted. */
+.flows { margin: 12px 0; display: grid; gap: 10px; }
+.flow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.flow .label { width: 120px; flex: none; font-size: 12px; color: var(--muted); text-transform: uppercase;
+  letter-spacing: .04em; }
+.hop { display: inline-flex; flex-direction: column; align-items: center; padding: 4px 10px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--base-bg); font-size: 13px; line-height: 1.25; }
+.hop small { font-size: 11px; color: var(--muted); }
+.hop.sbx { background: var(--sbx-bg); border-color: var(--sbx); color: var(--sbx); font-weight: 600; }
+.hop.sbx small { color: var(--sbx); font-weight: 500; }
+.hop.local { border-style: dashed; }
+.hop.msg { background: var(--msg-bg); border-color: var(--msg); color: var(--msg); }
+.arrow { color: var(--muted); }
+.legend { font-size: 12px; color: var(--muted); display: flex; gap: 14px; flex-wrap: wrap; }
+.legend .hop { padding: 1px 8px; font-size: 11px; }
+
+/* Result: without key vs with key. */
+.compare { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 0 0 12px; }
+.side { border-radius: 8px; padding: 12px 14px; border-left: 3px solid; }
+.side p { margin: 0; overflow-wrap: anywhere; }
+.side .big { font-size: 20px; font-weight: 700; margin: 2px 0 4px; }
+.side.base { background: var(--base-bg); border-color: var(--base); }
+.side.sbx { background: var(--sbx-bg); border-color: var(--sbx); }
+.side.sbx h4, .side.sbx .big { color: var(--sbx); }
+.proof { margin: 8px 0; }
+.proof strong { color: var(--text); }
+figure { margin: 12px 0; }
+figure img { max-width: 100%; border: 1px solid var(--border); border-radius: 6px; display: block; }
+figcaption { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+/* Value: numbers from the run, then without vs with Signadot. */
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 0 0 16px; }
+.stat { padding: 14px 16px; }
+.stat .num { font-size: 26px; font-weight: 700; line-height: 1.1; color: var(--sbx); }
+.stat p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+.vs th:nth-child(2), .vs td:nth-child(2) { color: var(--muted); }
+.vs td:nth-child(3) { font-weight: 500; }
+.why { margin: 14px 0 0; }
+
+/* Tiles, tables, lists. */
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.tile { padding: 14px 16px; }
+.tile h3 { font-size: 14px; margin-bottom: 4px; }
+.tile p { margin: 0; color: var(--muted); font-size: 14px; overflow-wrap: anywhere; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top;
+  font-size: 14px; }
+th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+tr:last-child td { border-bottom: 0; }
+ul.plain { margin: 6px 0 0; padding-left: 18px; }
+ul.plain li { margin: 3px 0; }
+details { margin: 12px 0 0; border-top: 1px solid var(--border); padding-top: 8px; }
+summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+
+/* Overview page: one row per scenario. */
+.scenarios { display: grid; gap: 10px; }
+.row { display: grid; grid-template-columns: 28px 1fr auto; gap: 4px 12px; align-items: start; padding: 14px 16px; }
+.row .n { color: var(--muted); font-variant-numeric: tabular-nums; padding-top: 1px; }
+.row h3 a { text-decoration: none; }
+.row p { margin: 2px 0 0; color: var(--muted); font-size: 14px; }
+.row.not-picked { opacity: .75; padding: 10px 16px; }
+.foot-nav { margin-top: 36px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  font-size: 14px; }
+
+@media (max-width: 680px) {
+  .tested, .stats, .compare { grid-template-columns: 1fr; }
+  .flow .label { width: 100%; }
+  .row { grid-template-columns: 22px 1fr; }
+  .row .pill { grid-column: 2; justify-self: start; }
+  h1 { font-size: 23px; }
+}
+@media print {
+  body { background: #fff; color: #000; font-size: 12px; }
+  .wrap { max-width: none; padding: 0; }
+  .hero, .card, .tile, .box, table { box-shadow: none; border-color: #ccc; }
+  details > summary { display: none; }
+  a { color: #000; }
+  h2 { break-after: avoid; }
+  .box, .stat, .row, .side { break-inside: avoid; }
+}

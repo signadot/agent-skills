@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your Signadot trial</title>
+<!--
+  The overview page: links to one page per scenario (see references/finish/report.md). Rebuild it from this
+  template after each scenario, so it's always current.
+  - Replace TRIAL_FOLDER with the trial folder's full path. If the trial used an existing local cluster, name its
+    context in that section and drop the sentence about kind.
+  - Each slot is one comment that starts with FILL and a name, holding example markup. Replace the whole comment with
+    real content in the same shape.
+  - Copy the ROW block once per chosen scenario, in run order, and the NOT-PICKED block once per menu item the user
+    didn't choose.
+  - Escape <, > and & in anything copied from command output. No scripts, no external requests.
+-->
+<link rel="stylesheet" href="report.css">
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<p class="eyebrow">Signadot trial</p>
+<h1><!-- FILL:title e.g. Your Signadot trial: 3 scenarios proven, 1 to go --></h1>
+<!-- FILL:summary
+  <p class="meta"><span class="pill passed">3 passed</span><span class="pill next">1 to go</span>
+  <span>· org ORG · cluster CLUSTER · DATE</span></p>
+-->
+<p class="intro">Signadot gives every change its own lightweight sandbox inside one shared Kubernetes cluster. A
+sandbox runs only the services you changed. Requests that carry its routing key go to those services, and everything
+else uses the shared baseline, so you test against real dependencies without copying the whole stack. Each scenario
+below has its own page with what was tested, the proof, and what it means for your team.</p>
+</header>
+<main>
+
+<section id="scenarios">
+<h2>Scenarios</h2>
+<div class="scenarios">
+<!-- FILL:scenarios  (one ROW per chosen scenario, in run order; then one NOT-PICKED per menu item not chosen) -->
+
+<!-- ROW
+<article class="row box">
+  <span class="n">1</span>
+  <div><h3><a href="isolated-change.html">Test one change in isolation</a></h3>
+  <p>A new driver version ran in a sandbox; only rides with its routing key reached it. Proven in 48 s.</p></div>
+  <span class="pill passed">passed</span>
+</article>
+  Status pills: "passed", "failed" (say what was seen), or "next" with the text "to go" for a chosen scenario that
+  hasn't run yet (no link until its page exists).
+/ROW -->
+
+<!-- NOT-PICKED
+<article class="row box not-picked">
+  <span class="n">·</span>
+  <div><h3>Kafka</h3><p>WHAT IT SHOWS, IN ONE SENTENCE. Ask your agent to add it.</p></div>
+  <span class="pill not-run">not picked</span>
+</article>
+/NOT-PICKED -->
+</div>
+</section>
+
+<section id="hotrod" class="diagram">
+<h2>The demo app: HotROD</h2>
+<p class="muted">HotROD is a small ride-sharing app made of four services. Booking a ride sends one request through
+all of them, and each step records which version of the service handled it, which is how the scenarios prove where
+a request went.</p>
+<svg viewBox="0 0 760 210" role="img" aria-label="HotROD services: the browser calls frontend; frontend calls location (MySQL) and publishes a dispatch request to Kafka; driver consumes it, reads driver positions from Redis and asks route for an ETA per driver.">
+  <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <rect class="box" x="10" y="80" width="100" height="50" rx="8"/><text x="60" y="102" text-anchor="middle">Browser</text><text class="sub" x="60" y="119" text-anchor="middle">book a ride</text>
+  <rect class="box" x="160" y="80" width="120" height="50" rx="8"/><text x="220" y="102" text-anchor="middle">frontend</text><text class="sub" x="220" y="119" text-anchor="middle">web UI and API</text>
+  <rect class="box" x="330" y="10" width="120" height="50" rx="8"/><text x="390" y="32" text-anchor="middle">location</text><text class="sub" x="390" y="49" text-anchor="middle">pickup and drop-off</text>
+  <rect class="store" x="510" y="10" width="100" height="50" rx="8"/><text x="560" y="40" text-anchor="middle">MySQL</text>
+  <rect class="bus" x="330" y="150" width="120" height="50" rx="8"/><text x="390" y="172" text-anchor="middle">Kafka</text><text class="sub" x="390" y="189" text-anchor="middle">dispatch requests</text>
+  <rect class="box" x="510" y="150" width="100" height="50" rx="8"/><text x="560" y="172" text-anchor="middle">driver</text><text class="sub" x="560" y="189" text-anchor="middle">nearest drivers</text>
+  <rect class="store" x="650" y="80" width="100" height="50" rx="8"/><text x="700" y="110" text-anchor="middle">Redis</text>
+  <rect class="box" x="650" y="150" width="100" height="50" rx="8"/><text x="700" y="172" text-anchor="middle">route</text><text class="sub" x="700" y="189" text-anchor="middle">ETA per driver</text>
+  <path class="line" d="M110,105 H156" marker-end="url(#arr)"/>
+  <path class="line" d="M280,95 L326,45" marker-end="url(#arr)"/>
+  <path class="line" d="M450,35 H506" marker-end="url(#arr)"/>
+  <path class="line" d="M280,115 L326,165" marker-end="url(#arr)"/>
+  <path class="line" d="M450,175 H506" marker-end="url(#arr)"/>
+  <path class="line" d="M610,165 L646,115" marker-end="url(#arr)"/>
+  <path class="line" d="M610,180 H646" marker-end="url(#arr)"/>
+</svg>
+</section>
+
+<section id="running">
+<h2>What's running now</h2>
+<!-- FILL:running
+  <ul class="plain"><li>A local Kubernetes cluster, signadot-trial, with the demo app and Signadot</li>
+  <li>Sandboxes: driver-plates, …</li><li>Preview link: <a href="…">…</a></li>
+  <li>The connection from this computer to the cluster</li></ul>
+  <p class="muted">Nothing expires on its own. Ask your agent to tear the trial down when you're done.</p>
+-->
+</section>
+
+<section id="cluster">
+<h2>Look at the cluster yourself</h2>
+<p>The trial keeps the cluster's credentials in its own kubeconfig, inside the trial folder, so your current kube
+context is unchanged and tools like <code>kubectx</code> don't list the trial's cluster. Point any terminal at it:</p>
+<pre><code>export KUBECONFIG="TRIAL_FOLDER/kubeconfig"
+kubectl config current-context    # kind-signadot-trial
+kubectl -n hotrod get pods        # the demo app, with each sandbox's pod next to the normal ones
+kubectl -n signadot get pods      # Signadot's operator</code></pre>
+<p class="muted">With that variable set, <code>kubectx</code>, k9s, Lens and other Kubernetes tools see the cluster
+too. To add it to your own kubeconfig instead, run <code>kind export kubeconfig --name signadot-trial</code>; note
+that this also switches your current context to <code>kind-signadot-trial</code>.</p>
+<p>Sandboxes, route groups and test runs are also in the Signadot dashboard:
+<a href="https://app.signadot.com">app.signadot.com</a>.</p>
+</section>
+
+<section id="next">
+<h2>Next steps</h2>
+<!-- FILL:next-steps
+  <div class="grid"><div class="tile"><h3>Use Signadot on your own services</h3><p>Install the agent skills: <code>npx skills add signadot/agent-skills</code></p></div>
+  <div class="tile"><h3>Connect your coding agent</h3><p>Signadot MCP server: COMMAND (org ORG)</p></div>
+  <div class="tile"><h3>Install Signadot in your cluster</h3><p><a href="https://www.signadot.com/docs/installation/signadot-operator">Operator install guide</a></p></div></div>
+-->
+</section>
+
+<section id="adoption">
+<h2>What adopting Signadot would take</h2>
+<div class="grid">
+<div class="tile"><h3>Header propagation</h3><p>Services pass the routing key along with each request, usually through
+OpenTelemetry baggage, which many teams already propagate. <a href="https://www.signadot.com/docs/guides/set-up-context-propagation">How</a></p></div>
+<div class="tile"><h3>Request routing</h3><p>Signadot's own lightweight sidecar, Istio or Linkerd sends keyed requests
+to sandboxes. <a href="https://www.signadot.com/docs/guides/request-routing">Options</a></p></div>
+<div class="tile"><h3>Queue consumers</h3><p>Consumers of Kafka, RabbitMQ, Redis Streams, Temporal and similar
+systems check the routing key, so sandboxes and baseline each process only their own messages.
+<a href="https://www.signadot.com/docs/guides/set-up-message-queue-isolation">Patterns</a></p></div>
+<div class="tile"><h3>Database strategy</h3><p>Shared databases, per-sandbox databases from resource plugins, or a
+mix, depending on what each change touches. <a href="https://www.signadot.com/docs/guides/set-up-data-isolation">Strategies</a></p></div>
+<div class="tile"><h3>Operator and CLI</h3><p>One Helm-installed operator per cluster, and the Signadot CLI or a CI
+integration to create sandboxes from pull requests.
+<a href="https://www.signadot.com/docs/installation/signadot-operator">Install</a></p></div>
+</div>
+</section>
+
+<section id="teardown">
+<h2>Teardown</h2>
+<!-- FILL:teardown
+  <p>Ask your agent to "tear down the Signadot trial". It removes, in order: …</p>
+  <h4>Left for you</h4><ul class="plain"><li>Remove the cluster registration in the dashboard (Settings → Clusters).</li><li>…</li></ul>
+-->
+</section>
+
+<section id="setup">
+<h2>Setup and run details</h2>
+<details><summary>What was done on your behalf, and the run's settings</summary>
+<!-- FILL:timeline
+  <div class="table-wrap"><table><thead><tr><th>Step</th><th>Result</th><th>Time</th><th>Detail</th></tr></thead>
+  <tbody><tr><td>Creating a local Kubernetes cluster</td><td><span class="pill ok">ok</span></td><td>95 s</td><td>kind cluster signadot-trial</td></tr></tbody></table></div>
+  <h4>What you did</h4><ul class="plain"><li>…</li></ul>
+  <h4>Fallbacks</h4><ul class="plain"><li>…</li></ul>  (leave out when empty)
+-->
+<!-- FILL:run-details
+  <div class="table-wrap"><table><tbody><tr><th>Org</th><td>…</td></tr><tr><th>Cluster</th><td>…</td></tr>
+  <tr><th>Service mesh</th><td>…</td></tr><tr><th>Connection</th><td>…</td></tr><tr><th>CLI</th><td>…</td></tr>
+  <tr><th>Trial folder</th><td>…</td></tr><tr><th>Started</th><td>…</td></tr></tbody></table></div>
+-->
+</details>
+</section>
+</main>
+</div>
+</body>
+</html>

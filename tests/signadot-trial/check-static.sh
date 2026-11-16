@@ -15,7 +15,7 @@ desc=$(echo "$fm" | awk '/^description:/ {f=1; next} f && /^[a-z]+:/ {f=0} f' | 
 # 2. Every reference file is linked from SKILL.md, every path the files mention exists, and the skill folder holds
 #    only what agents need (everything in it is installed for every user).
 for f in $(cd "$S" && find references -name '*.md' | sort); do grep -q "($f)" "$S/SKILL.md" || bad "SKILL.md doesn't link $f"; done
-for p in $(cd "$S" && grep -rhoE '(references|assets|scripts)/[A-Za-z0-9_./-]+\.(md|sh|yaml|html|patch)' SKILL.md references | sort -u); do
+for p in $(cd "$S" && grep -rhoE '(references|assets|scripts)/[A-Za-z0-9_./-]+\.(md|sh|yaml|html|css|patch)' SKILL.md references | sort -u); do
   [ -e "$S/$p" ] || bad "a file mentions $p, which doesn't exist"
 done
 extra=""
@@ -62,11 +62,19 @@ for k in trial_dir os arch docker docker_mem_gb kubectl kind helm git curl go ls
   echo "$pf" | grep -q "^$k: " || bad "preflight: no key $k"
 done
 
-# 6. Report template: every slot report.md fills, and nothing that runs or loads from the network.
-for k in title summary cards timeline running next-steps teardown run-details; do
-  grep -q "<!-- FILL:$k" "$S/assets/report-template.html" || bad "report template: no FILL:$k slot"
+# 6. Report templates: every slot report.md fills, a stylesheet next to the pages, and nothing that runs or loads
+#    from the network.
+R=$S/assets/report
+for k in title summary scenarios running next-steps teardown timeline run-details; do
+  grep -q "<!-- FILL:$k" "$R/index.html" || bad "overview template: no FILL:$k slot"
 done
-grep -qiE '<script|src="https?://' "$S/assets/report-template.html" && bad "report template runs or loads something"
+for k in title status headline tested app how result value adopt try details; do
+  grep -q "<!-- FILL:$k" "$R/scenario.html" || bad "scenario template: no FILL:$k slot"
+done
+for f in "$R/index.html" "$R/scenario.html"; do
+  grep -q '<link rel="stylesheet" href="report.css">' "$f" || bad "${f#"$S"/}: must use report.css next to it"
+  grep -qiE '<script|(src|href)="https?://[^"]*\.(js|css)|src="https?://' "$f" && bad "${f#"$S"/} runs or loads something"
+done
 
 # 7. Snippets: no ${x:+…}, which zsh and bash expand differently.
 grep -rnE '\$\{[A-Za-z_]+:\+' "$S/SKILL.md" "$S/references" && bad "a snippet uses \${x:+…}"

@@ -1,9 +1,10 @@
 # Hand-off: let the user try it
 
-Right after the report, nothing is removed. Sandboxes carry no expiry, so everything stays as it is until the user
-asks for teardown. Tell the user what's running, how to reach it, and what to try, in one message.
+When every chosen scenario has run, or the user says to stop, nothing is removed. Sandboxes carry no expiry, so
+everything stays as it is until the user asks for teardown. The report pages carry what's running, how to use it and
+what to do next; the chat message only points to them.
 
-## 1. List what's running
+## 1. Check what's running
 
 Build the list from the trial log's `## Resources` and check each item is still up:
 
@@ -12,7 +13,7 @@ Build the list from the trial log's `## Resources` and check each item is still 
 "$T/bin/sd" routegroup list
 "$T/bin/sd" local status
 "$T/bin/kc" get namespaces
-lsof -nP -iTCP:8083 -sTCP:LISTEN          # local-development's route service on this computer, if local-development ran
+lsof -nP -iTCP:8083 -sTCP:LISTEN          # the route service on this computer, if local-development ran
 ```
 
 What keeps running, and what doesn't:
@@ -27,50 +28,55 @@ What keeps running, and what doesn't:
 If the proxy address changed after a reconnect, read it again with the command in `references/setup/cluster.md` §4
 (the `portforward` section's `localAddress`).
 
-## 2. Tell the user how to use it
+## 2. Put it in the overview page
 
-Include what applies, with real values:
+Rebuild `$T/report/index.html` one last time (`references/finish/report.md`, "The overview page"), with real values
+and full paths:
 
-- **See a sandbox in any browser:** a local proxy serves the frontend on a plain localhost URL and adds the
-  sandbox's routing key to every request, so no header extension or proxy setting is needed:
+- **What's running now:** each item above that's still up, with how to restart it if it stops. Include:
+  - **See a sandbox in any browser:** a local proxy serves the frontend on a plain localhost URL and adds the
+    sandbox's routing key to every request, so no header extension or proxy setting is needed. Start and stop
+    commands (one proxy at a time on this port):
 
-  ```bash
-  nohup "$T/bin/sd" local proxy --sandbox driver-plates<suffix> --map http://frontend.hotrod.svc:8080@localhost:18080 \
-    > "$T/logs/local-proxy.log" 2>&1 & echo $! > "$T/local-proxy.pid"
-  ```
+    ```bash
+    nohup "$T/bin/sd" local proxy --sandbox driver-plates<suffix> --map http://frontend.hotrod.svc:8080@localhost:18080 \
+      > "$T/logs/local-proxy.log" 2>&1 & echo $! > "$T/local-proxy.pid"
+    p=$(cat "$T/local-proxy.pid" 2>/dev/null) && ps -p "$p" -o args= 2>/dev/null | grep -qF 'local proxy' && kill "$p"
+    ```
 
-  Then open http://localhost:18080 and book a ride: the plate starts with `SD-`. Use `--sandbox local-route<suffix>`
-  for local-development (ETAs in seconds) or `--routegroup hotrod-plates<suffix>` for multi-service-preview. Record `process <pid> local proxy` under
-  Resources. One proxy at a time on this port; stop it before starting another:
+    Then http://localhost:18080 books rides on the sandbox (plates start with `SD-`). Use `--sandbox
+    local-route<suffix>` for the service on this computer (ETAs in seconds) or `--routegroup hotrod-plates<suffix>`
+    for the two-service change. If you start one yourself, record `process <pid> local proxy` under Resources.
+  - **The preview link** (multi-service-preview): opens in a browser signed in to the org, with no setup.
+  - **Any request through the connection:**
+    `curl --proxy socks5h://<address> -H "baggage: sd-routing-key=<key>" http://frontend.hotrod.svc:8080/`.
+  - **The dashboard:** https://app.signadot.com, with the sandboxes, route group and any jobs or plans.
+- **Look at the cluster yourself:** the template's section, with the trial folder's path (the user won't find the
+  cluster with `kubectx` otherwise, since its credentials are in `$T/kubeconfig`).
+- **Next steps:** the agent skills that run this loop on their own services (`npx skills add signadot/agent-skills
+  --skill signadot-validate`, and `--skill signadot-plan` for Plans;
+  https://www.signadot.com/docs/integrations/coding-agents/agent-skills); the Signadot MCP server (`<T>/bin/sd mcp`
+  uses the trial's login and org while the trial folder exists; `signadot mcp` once their own CLI is logged in;
+  https://www.signadot.com/docs/integrations/mcp); their own CLI (install it from
+  https://www.signadot.com/docs/getting-started/installation/signadot-cli, then `signadot auth login`; the trial's
+  login stays inside the trial folder); the operator on their own cluster
+  (https://www.signadot.com/docs/installation/signadot-operator); add-ons they didn't try.
+- **Teardown:** what it removes and what's left for them (`references/finish/teardown.md`).
 
-  ```bash
-  p=$(cat "$T/local-proxy.pid" 2>/dev/null) && ps -p "$p" -o args= 2>/dev/null | grep -qF 'local proxy' && kill "$p"
-  ```
+Don't change the user's PATH or shell profile, and don't suggest putting `<T>/bin` on PATH: its `sd` wrapper would
+shadow the `sd` find-and-replace tool some people use.
 
-- **The preview URL** (multi-service-preview): opens in a browser signed in to the org, with no setup.
-- **Any request through the connection:**
-  `curl --proxy socks5h://<address> -H "baggage: sd-routing-key=<key>" http://frontend.hotrod.svc:8080/`.
-- **The trial's CLI and cluster:** `<T>/bin/sd` (the trial org) and `<T>/bin/kc`, or
-  `export KUBECONFIG=<T>/kubeconfig` for any kubectl tool. Their own `signadot` and kube context are unchanged.
-- **The dashboard:** https://app.signadot.com, with the sandboxes, route group and any jobs or plans.
-- **Things to try:** the `try:` line of every scenario that ran, from the trial log, plus each file's "Try it
-  yourself" section.
-- **Use it on their own services:** the agent skills that run this loop for any change:
-  `npx skills add signadot/agent-skills --skill signadot-validate` (and `--skill signadot-plan` to author Plans).
-  See https://www.signadot.com/docs/integrations/coding-agents/agent-skills. To install the operator on their own
-  cluster: https://www.signadot.com/docs/installation/signadot-operator.
-- **Connect a coding agent:** the Signadot MCP server. `<T>/bin/sd mcp` uses the trial's login and org while the
-  trial folder exists; once their own CLI is logged in (`signadot auth login`), it's `signadot mcp`. Per-client setup:
-  https://www.signadot.com/docs/integrations/mcp.
+## 3. The closing message
 
-## 3. Offer teardown, don't do it
+Open the overview page (`open` or `xdg-open`), then send a short message: no scenario summaries and no lists of
+things to try, since the pages have them.
 
-End the hand-off with something like: "Everything stays running so you can explore; nothing expires on its own.
-When you're done, ask me to tear down the Signadot trial and I'll remove it all, in order, and tell you what's left
-for you to do." Then stop. Run `references/finish/teardown.md` only when the user asks.
+```markdown
+**Your Signadot trial is done:** 4 of 4 scenarios passed. The report is open in your browser, with a page for each
+scenario: `/Users/me/project/.signadot-trial/report/index.html`
 
-**Closing message,** after the hand-off: one line per scenario result, the report path, the preview URL, what's
-running, and the teardown offer. To keep using Signadot from their own terminal,
-they install the CLI (https://www.signadot.com/docs/getting-started/installation/signadot-cli) and run
-`signadot auth login`; the trial's login stays inside the trial folder. Don't change their PATH or shell profile, and
-don't suggest putting `<T>/bin` on PATH: its `sd` wrapper would shadow the `sd` find-and-replace tool some people use.
+Everything stays running so you can explore. When you're done, ask me to tear down the Signadot trial.
+```
+
+If the user stopped early, say how many of the chosen scenarios ran and that "continue the trial" runs the rest.
+Then stop. Run `references/finish/teardown.md` only when the user asks.

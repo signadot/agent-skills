@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SCENARIO · Signadot trial</title>
+<!--
+  One page per scenario: copy to <trial folder>/report/<scenario id>.html (see references/finish/report.md).
+  - Replace SCENARIO in the title with the scenario's menu name.
+  - Each slot is one comment that starts with FILL and a name. Its example is a complete page for "Test one change
+    in isolation": write every scenario to the same depth, with this run's real values, in plain words for someone
+    new to Signadot. Replace the whole comment with real content in the same shape.
+  - Escape <, > and & in anything copied from command output. No scripts and no external requests; screenshots are
+    in screens/ and linked relatively.
+-->
+<link rel="stylesheet" href="report.css">
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<p class="eyebrow"><a href="index.html">Signadot trial</a></p>
+<h1><!-- FILL:title e.g. Test one change in isolation --></h1>
+<!-- FILL:status
+<p class="meta"><span class="pill passed">passed</span><span>Scenario 1 of 4</span><span>· proven in 48 s</span>
+<span>· cluster signadot-trial · 15 Nov 2026</span></p>
+-->
+<!-- FILL:headline
+<p class="lead">A new version of one service ran in a sandbox next to the normal app. Rides booked with the
+sandbox's routing key got the new version (plates starting with SD-); every other ride used the normal app, untouched.</p>
+-->
+</header>
+<main>
+
+<section id="tested">
+<h2>What we tested</h2>
+<!-- FILL:tested
+<div class="tested">
+<div class="box"><h4><span class="step-n">1</span>The situation</h4><p>A developer changed one microservice, the
+driver service, and wants to test it against the real services around it before merging. Usually that means
+waiting for a shared staging environment, or copying the whole stack for one change.</p></div>
+<div class="box"><h4><span class="step-n">2</span>What we changed</h4><p>A new version of driver with one visible
+change: every driver's licence plate starts with SD-. Nothing else in the app was changed or copied.</p></div>
+<div class="box"><h4><span class="step-n">3</span>What we sent</h4><p>The same ride booking twice: once as a normal
+request, and once carrying the sandbox's routing key.</p></div>
+</div>
+-->
+<div class="diagram">
+<!-- FILL:app  (HotROD scenarios: this diagram, with class "box changed" on each service the scenario changed. Other demo apps: one paragraph on what the app does and how its parts connect.)
+<p class="muted">The demo app, HotROD, books a ride through four services. The highlighted service is the one this
+scenario changed; everything else is the shared, unchanged app.</p>
+<svg viewBox="0 0 760 210" role="img" aria-label="HotROD services: the browser calls frontend; frontend calls location (MySQL) and publishes a dispatch request to Kafka; driver consumes it, reads driver positions from Redis and asks route for an ETA per driver.">
+  <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <rect class="box" x="10" y="80" width="100" height="50" rx="8"/><text x="60" y="102" text-anchor="middle">Browser</text><text class="sub" x="60" y="119" text-anchor="middle">book a ride</text>
+  <rect class="box" x="160" y="80" width="120" height="50" rx="8"/><text x="220" y="102" text-anchor="middle">frontend</text><text class="sub" x="220" y="119" text-anchor="middle">web UI and API</text>
+  <rect class="box" x="330" y="10" width="120" height="50" rx="8"/><text x="390" y="32" text-anchor="middle">location</text><text class="sub" x="390" y="49" text-anchor="middle">pickup and drop-off</text>
+  <rect class="store" x="510" y="10" width="100" height="50" rx="8"/><text x="560" y="40" text-anchor="middle">MySQL</text>
+  <rect class="bus" x="330" y="150" width="120" height="50" rx="8"/><text x="390" y="172" text-anchor="middle">Kafka</text><text class="sub" x="390" y="189" text-anchor="middle">dispatch requests</text>
+  <rect class="box changed" x="510" y="150" width="100" height="50" rx="8"/><text x="560" y="172" text-anchor="middle">driver</text><text class="sub" x="560" y="189" text-anchor="middle">nearest drivers</text>
+  <rect class="store" x="650" y="80" width="100" height="50" rx="8"/><text x="700" y="110" text-anchor="middle">Redis</text>
+  <rect class="box" x="650" y="150" width="100" height="50" rx="8"/><text x="700" y="172" text-anchor="middle">route</text><text class="sub" x="700" y="189" text-anchor="middle">ETA per driver</text>
+  <path class="line" d="M110,105 H156" marker-end="url(#arr)"/>
+  <path class="line" d="M280,95 L326,45" marker-end="url(#arr)"/>
+  <path class="line" d="M450,35 H506" marker-end="url(#arr)"/>
+  <path class="line" d="M280,115 L326,165" marker-end="url(#arr)"/>
+  <path class="line" d="M450,175 H506" marker-end="url(#arr)"/>
+  <path class="line" d="M610,165 L646,115" marker-end="url(#arr)"/>
+  <path class="line" d="M610,180 H646" marker-end="url(#arr)"/>
+</svg>
+-->
+</div>
+</section>
+
+<section id="how">
+<h2>How Signadot handled it</h2>
+<!-- FILL:how
+<p>Signadot created a <strong>sandbox</strong>: one extra pod running the new driver, next to the shared, unchanged
+app (the <strong>baseline</strong>). Nothing else was copied: the frontend, location and route services, Kafka, MySQL
+and Redis were all the shared ones.</p>
+<p>The sandbox has a <strong>routing key</strong>. A request carries it in a standard header
+(<code>baggage: sd-routing-key=…</code>), and each service passes it along on its outgoing calls. When a request
+reaches the driver service, Signadot's routing sends it to the sandbox if it carries the key, and to the baseline
+otherwise.</p>
+<div class="flows">
+  <div class="flow"><span class="label">Without the key</span>
+    <span class="hop">location<small>baseline</small></span><span class="arrow">→</span>
+    <span class="hop">driver<small>baseline</small></span><span class="arrow">→</span>
+    <span class="hop">route<small>baseline</small></span></div>
+  <div class="flow"><span class="label">With the key</span>
+    <span class="hop">location<small>baseline</small></span><span class="arrow">→</span>
+    <span class="hop sbx">driver<small>sandbox driver-plates</small></span><span class="arrow">→</span>
+    <span class="hop">route<small>baseline</small></span></div>
+</div>
+<p class="legend"><span><span class="hop">service<small>baseline</small></span> shared, unchanged</span>
+<span><span class="hop sbx">service<small>sandbox</small></span> the changed version</span></p>
+-->
+</section>
+
+<section id="result">
+<h2>The result</h2>
+<!-- FILL:result
+<div class="compare">
+  <div class="side base"><h4>Without the routing key</h4><p class="big">Plate T751234C</p><p>Served by the baseline
+  driver, like every other user's ride.</p></div>
+  <div class="side sbx"><h4>With the routing key</h4><p class="big">Plate SD-T758011C</p><p>Served by the sandbox
+  driver. Every other step used the shared services.</p></div>
+</div>
+<p class="proof"><strong>Proof:</strong> each ride records which version of each service handled it. The driver step
+was served by sandbox driver-plates only when the routing key was sent; both rides used the same frontend, location
+and route. The digits differ because the driver is picked at random.</p>
+<figure><img src="screens/isolated-change.png" alt="HotROD ride notifications showing a driver plate that starts with SD-">
+<figcaption>A keyed ride in the browser: the driver's plate starts with SD-.</figcaption></figure>
+-->
+</section>
+
+<section id="value">
+<h2>Why this matters for your team</h2>
+<!-- FILL:value
+<div class="stats">
+<div class="stat box"><div class="num">48 s</div><p>from creating the sandbox to the first ride on the new version</p></div>
+<div class="stat box"><div class="num">1 pod</div><p>added for this change; every other service was shared</p></div>
+<div class="stat box"><div class="num">0</div><p>requests without the key that reached the new version</p></div>
+</div>
+<div class="table-wrap"><table class="vs"><thead><tr><th></th><th>The usual way</th><th>With Signadot</th></tr></thead><tbody>
+<tr><td>Where you test</td><td>Shared staging after merging, or a full copy of the stack</td><td>Your own sandbox in the shared cluster, before merging</td></tr>
+<tr><td>Time to test</td><td>Wait for a staging slot or a full environment to deploy</td><td>48 seconds in this run</td></tr>
+<tr><td>What it costs</td><td>A copy of every service and database per environment</td><td>One pod for the one changed service</td></tr>
+<tr><td>Who else is affected</td><td>Everyone sharing staging sees your unfinished change</td><td>Only requests that carry your routing key</td></tr>
+</tbody></table></div>
+<p class="why">Every pull request can get its own environment in seconds and be tested against real dependencies
+before merge, without anyone waiting for staging or paying for full copies of the stack.</p>
+-->
+</section>
+
+<section id="adopt">
+<h2>What it would take on your services</h2>
+<!-- FILL:adopt
+<ul class="plain">
+<li>Your services pass the routing key along with each request, usually through OpenTelemetry baggage, which many
+teams already propagate. <a href="https://www.signadot.com/docs/guides/set-up-context-propagation">How it works</a></li>
+<li>Signadot's routing runs in your cluster: its own lightweight sidecar, or the service mesh you already use.
+<a href="https://www.signadot.com/docs/guides/request-routing">Routing options</a></li>
+<li>Your CI creates a sandbox for each pull request from the image it already builds, and posts the routing key or
+preview link on the pull request.</li>
+</ul>
+<p class="muted">Learn more: <a href="https://www.signadot.com/docs/tutorials/quickstart/first-sandbox">Your first sandbox</a>.</p>
+-->
+</section>
+
+<section id="try">
+<h2>Try it yourself</h2>
+<!-- FILL:try
+<ul class="plain">
+<li>Book rides in your browser through a local URL that adds the routing key for you: ask your agent to start a
+local proxy for this sandbox, then open <code>http://localhost:18080</code>.</li>
+<li>See the sandbox in the dashboard: <a href="https://app.signadot.com/sandboxes">app.signadot.com/sandboxes</a>.</li>
+<li>See its pod next to the normal driver pod:
+<code>KUBECONFIG=/Users/me/project/.signadot-trial/kubeconfig kubectl -n hotrod get pods</code>. The overview page
+explains how to use the trial's cluster from any terminal.</li>
+<li>List the sandboxes from a terminal: <code>/Users/me/project/.signadot-trial/bin/sd sandbox list</code>.</li>
+</ul>
+-->
+</section>
+
+<section id="details">
+<h2>What the trial ran</h2>
+<!-- FILL:details
+<p class="muted">Created for this scenario: sandbox driver-plates, still running. Ask your agent to tear down the
+trial to remove it.</p>
+<details><summary>The sandbox spec (the whole configuration for this change)</summary><pre><code>SPEC, WITH CLUSTER AND SUFFIX FILLED IN</code></pre></details>
+<details><summary>Commands</summary><pre><code>COMMANDS</code></pre></details>
+-->
+</section>
+
+<nav class="foot-nav"><a href="index.html">← All scenarios</a></nav>
+</main>
+</div>
+</body>
+</html>

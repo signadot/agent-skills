@@ -5,7 +5,7 @@ description: >
   sandboxes and ephemeral environments working, including variations such as "try Signadot with Istio ambient",
   "with Temporal", "with Kafka", "with a database per sandbox" or "with Playwright tests". It signs the user up,
   sets up a local kind cluster with the HotROD demo app, proves each capability with and without a routing key,
-  writes an HTML report, and leaves everything running until the user asks for teardown.
+  writes a report page for each scenario, and leaves everything running until the user asks for teardown.
 license: Apache-2.0
 compatibility: >
   Needs macOS or Linux, a shell, Docker with about 4 GB of memory, curl, internet access and a browser for signup.
@@ -55,11 +55,14 @@ ask.
    ([references/setup/account.md](references/setup/account.md)), ticking the Terms box (or an explicit "tick it for
    me"), confirming the CLI login code if you can't drive a browser, and the sudo prompt if they chose the
    privileged connection. Say exactly what to do, where, and what happens next.
-4. **Blocking decisions, only when they come up.** Another `local connect` is running; the cluster doesn't look
+4. **After each scenario:** show its result and its report page, and ask before starting the next one (see "After
+   each scenario"). The user gets value from each scenario as soon as it's proven, instead of waiting for all of
+   them.
+5. **Blocking decisions, only when they come up.** Another `local connect` is running; the cluster doesn't look
    local; Docker doesn't have enough memory for the selection; a fix that has a side effect. Ask one question with
    your recommendation.
-5. **Hand-off.** After the report, say what's running and what to try by hand, and that you'll tear it all down
-   when they say so. Never tear down on your own.
+6. **Hand-off,** when every chosen scenario has run or the user says to stop: a two- or three-line message that points
+   to the report and says everything stays running until they ask for teardown. Never tear down on your own.
 
 Ask in plain chat. If your environment has a structured way to ask questions, you may use it, but don't depend on
 one.
@@ -70,6 +73,7 @@ one.
 |---|---|
 | What to try | the basics (1–3) only |
 | Skipping 2 or 3 | only if the user asks |
+| Between scenarios | pause and ask, unless the user said "run the rest" |
 | Service mesh | none: Signadot's own routing (DevMesh) |
 | Cluster | a new kind cluster named `signadot-trial` |
 | Connection | no sudo: `sd local connect --unprivileged` |
@@ -87,7 +91,7 @@ one.
 | Install with consent | kubectl, kind, helm, git | Show the install command from [references/setup/prerequisites.md](references/setup/prerequisites.md) in the confirmation; its OK covers it. |
 | Installed by the trial | Signadot CLI 1.9.1 or newer, into `$T/bin` | `scripts/install-cli.sh` (covered by the confirmation OK) |
 | Optional | Go 1.27.1 or newer | local-development builds in a `golang` container instead. |
-| Optional | A browser you can drive | The user does the browser steps from your exact instructions; no screenshots; the report still has flow diagrams. |
+| Optional | A browser you can drive | The user does the browser steps from your exact instructions; no screenshots; the report pages still have flow diagrams. |
 
 ## The flow
 
@@ -103,15 +107,15 @@ The "Tell the user" column is how each step appears in your progress lines.
 | 6 | `operator` | Installing Signadot in the cluster | [references/setup/cluster.md](references/setup/cluster.md) §3 (`scripts/install-operator.sh`) | `sidecars` shows all workloads; then, if automated tests were chosen, start the Jobs runner group ([references/testing/jobs.md](references/testing/jobs.md) "Set up") |
 | 7 | `connect` | Connecting this computer to the cluster | [references/setup/cluster.md](references/setup/cluster.md) §4 | the frontend answers 200 through the connection |
 | 8 | `baseline` | Booking a ride on the unchanged app | `bash $S/scripts/ride.sh --proxy <proxy>` | a plate and an ETA, every hop `baseline` |
-| 9 | the basics | each scenario's menu name | [isolated-change.md](references/core/isolated-change.md), [multi-service-preview.md](references/core/multi-service-preview.md), [local-development.md](references/core/local-development.md) | each card proven |
-| 10 | add-ons | each add-on's menu name | one file per choice, in the order under "Combining add-ons" | each card proven |
-| 11 | report | Writing your report | [references/finish/report.md](references/finish/report.md) | `$T/report/index.html` opened |
-| 12 | hand-off | — | [references/finish/playground.md](references/finish/playground.md) | the user knows what's running and how to tear down |
-| 13 | teardown, on request | Removing the trial | [references/finish/teardown.md](references/finish/teardown.md) | everything in the trial log's resources is gone |
+| 9 | each chosen scenario, one at a time, in the order under "Combining add-ons" | its menu name | its file ([isolated-change.md](references/core/isolated-change.md), [multi-service-preview.md](references/core/multi-service-preview.md), [local-development.md](references/core/local-development.md), then the add-ons' files), then [references/finish/report.md](references/finish/report.md) "After each scenario" | proven; its page written and opened; the result shown; the user said to go on |
+| 10 | hand-off | — | [references/finish/playground.md](references/finish/playground.md) | the user knows what's running and how to tear down |
+| 11 | teardown, on request | Removing the trial | [references/finish/teardown.md](references/finish/teardown.md) | everything in the trial log's resources is gone |
 
 Create `$T/trial-log.md` right after the OK and keep it current ([references/trial-log.md](references/trial-log.md)).
 Start step 3 as soon as step 2 is done, so the cluster, image pulls and any demo-app deploys overlap with signup.
-If your shell can't keep a background job running, run it in the foreground and show progress.
+Once setup is done, run the first scenario straight away; pause only after a scenario. Work that later scenarios
+need (demo-app deploys, the Jobs runner group) keeps going in the background while the user reads a result. If your
+shell can't keep a background job running, run it in the foreground and show progress.
 
 **Existing org.** If the user signs in to an org they already have, every org-scoped name gets the suffix
 `-<4 random lowercase letters or digits>` (empty for an org the trial created). Record it as `suffix:` and pass
@@ -202,6 +206,9 @@ don't apply.
 **What I'll need from you:** a few minutes in a browser to create your Signadot account, or to sign in to one you
 already have.
 
+**How it runs:** setup takes about 6 minutes, most of it signup. Then I run one scenario at a time, show you the result
+and a page that explains it, and wait for you before the next one.
+
 Go ahead?
 ```
 
@@ -216,6 +223,27 @@ Go ahead?
   needs a kernel setting first (prerequisites.md).
 - The OK covers everything listed, including the install command shown. Anything else needs its own yes
   ("Side effects and guardrails").
+
+## After each scenario
+
+When a scenario is proven, write its report page ([references/finish/report.md](references/finish/report.md) "After
+each scenario"), open it, and send a short result in chat: one line on what was proven, the page, and the
+question. The page has the rest. Then wait for the user's answer before the next scenario.
+
+```markdown
+**✓ Test one change in isolation** · passed in 48 s. Rides with the routing key got the new driver (plate
+SD-T758011C); rides without it used the normal one (T751234C).
+Write-up, open in your browser: `/Users/me/project/.signadot-trial/report/isolated-change.html`
+
+**Next: Test a change that spans two services** (about 2 min). Go on? Or say "run the rest", or "stop here".
+```
+
+- A failed scenario gets `✗`, what was seen and what was tried, and the same question.
+- "Yes", "go on" or "next": run the next scenario. "Skip": mark the next one `skipped` and ask about the one after.
+  "Run the rest": run the remaining scenarios without pausing, still writing each page. "Stop here": go to the
+  hand-off; the scenarios not run stay listed in the overview as to go, and the user can say "continue the trial"
+  later.
+- After the last scenario, say so and go to the hand-off instead of asking.
 
 ## Add-ons index
 
@@ -305,18 +333,20 @@ The user follows the trial through short progress lines. Keep them plain and eas
 - During waits over 20 s: an update every 30–60 s naming what's pending, in plain words ("downloading the Kafka
   image").
 - After: `✓ <the result, with its proving value>`, or `✗ <what failed> → <what you're trying next>`.
-- Each scenario as a card titled with its menu name: the problem · what Signadot does · what you're doing · proof
-  (without the key vs with it) · why it matters · docs link.
+- Before each scenario: `**<its menu name>** · about <time>`, and one line on what you're about to show. After it,
+  the result in "After each scenario"; the full story goes in its report page, not in chat.
 - Never show internal names: trial-log step IDs (`preflight`, `cli`, `operator`), scenario IDs or file names,
   section numbers or placeholders. Use the menu's words: the basics, add-ons, service mesh.
-- In your messages, quote the proving value, not raw command output.
+- Keep chat messages short: quote the proving value, not raw command output, and leave explanations, things to try
+  and next steps to the report pages.
 - Define each Signadot term the first time you use it, in one line (isolated-change.md has the wording for sandbox,
   routing key and baseline). Assume the user knows Kubernetes, service meshes and message brokers.
 
 ## Report, hand-off, teardown and resume
 
-- **Report:** [references/finish/report.md](references/finish/report.md). Fill `assets/report-template.html` from the
-  trial log into `$T/report/index.html` and open it.
+- **Reports:** [references/finish/report.md](references/finish/report.md). One page per scenario,
+  `$T/report/<scenario id>.html` from `assets/report/scenario.html`, written right after the scenario; and an
+  overview, `$T/report/index.html` from `assets/report/index.html`, that links them, rebuilt after each scenario.
 - **Hand-off:** [references/finish/playground.md](references/finish/playground.md), ending with its closing message.
 - **Teardown:** [references/finish/teardown.md](references/finish/teardown.md), only when the user asks.
 - **Resume:** if preflight shows `trial_log: present`, a trial ran from this folder before: follow "Resume and

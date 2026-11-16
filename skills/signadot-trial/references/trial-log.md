@@ -1,7 +1,7 @@
 # The trial log
 
 `$T/trial-log.md` is the run's memory: resume state, the list of everything teardown removes, and the data for the
-report. Create it right after the user's OK and append to it after every step and scenario, never only at the end.
+reports. Create it right after the user's OK and append to it after every step and scenario, never only at the end.
 Use plain `key: value` lines under these headings. Never write tokens, passwords, credentials or the contents of a
 kubeconfig into it.
 
@@ -87,7 +87,9 @@ try: book a ride with and without the key: scripts/ride.sh --key <key> --proxy <
 ## Resume and retire
 
 - **Resume:** when preflight shows `trial_log: present`, read the log, tell the user what's done, and continue from
-  the first step or scenario that isn't `ok` or `passed`. Keep the recorded suffix, cluster and infra choices.
+  the first step that isn't `ok`, then the chosen scenarios that haven't run (not `passed`, `failed` or `skipped`),
+  pausing after each as usual. The user may also say "continue the trial" after stopping early. Keep the recorded
+  suffix, cluster and infra choices.
 - **Retire:** at the end of teardown, rename the log to `trial-log.torn-down-<date>.md`
   (`references/finish/teardown.md`). Preflight then shows `trial_log: absent`, so a later trial starts fresh instead
   of resuming one whose cluster is gone. The old log stays in `$T` for reference.

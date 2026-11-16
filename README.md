@@ -32,7 +32,8 @@ sending the same request with and without a routing key: one service in
 isolation, a multi-service preview URL, and a service running on your computer.
 Optional variations cover Istio, Istio ambient and Linkerd, a database per
 sandbox, Kafka, Temporal, RabbitMQ and Redis Streams, and test automation with
-Jobs and Plans. It ends with an HTML report and leaves everything running until
+Jobs and Plans. It runs one scenario at a time and writes a page for each that
+explains what was tested and why it matters, then leaves everything running until
 you ask for teardown.
 
     npx skills add signadot/agent-skills --skill signadot-trial
