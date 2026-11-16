@@ -3,9 +3,8 @@
 # The scheduled drift check (check-drift.sh) is separate: it fails when a newer CLI or operator is out.
 set -u
 D=$(cd "$(dirname "$0")" && pwd)
-checks="check-structure check-scripts check-specs check-report check-invariants test-token-not-logged
-test-stale-pid test-config-blocks test-c3-blocks"
-[ "${1:-}" = "--offline" ] || checks="$checks check-links"
+checks="check-static test-token-not-logged test-config-blocks test-stale-pid"
+[ "${1:-}" = "--offline" ] || checks="$checks check-external"
 n=0 p=0 failed=""
 for c in $checks; do
   n=$((n + 1))

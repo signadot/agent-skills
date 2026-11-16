@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Needs the network. Every docs link resolves (markdown copy and web page), and everything the skill pins still
+# Needs the network; run on pull requests and weekly. Every docs link resolves (markdown copy and web page), and everything the skill pins still
 # exists: HotROD and examples commits, sandbox images, CLI release, operator and mesh charts, tool downloads.
 set -u
 ROOT=$(cd "$(dirname "$0")/../.." && pwd); S=$ROOT/skills/signadot-trial; fail=0
 bad() { echo "FAIL $*"; fail=1; }
-code() { curl -sIL -o /dev/null -w '%{http_code}' --max-time 20 "$1"; }
-get() { curl -sL --max-time 30 "$1"; }
+code() { curl -sIL --retry 2 -o /dev/null -w '%{http_code}' --max-time 20 "$1"; }
+get() { curl -sL --retry 2 --max-time 30 "$1"; }
 
 for u in $(grep -rhoE 'https://www\.signadot\.com/docs/[A-Za-z0-9/._#-]+' "$S" | sed 's/[.,;:)]*$//; s/#.*//' | sort -u); do
   case "$u" in

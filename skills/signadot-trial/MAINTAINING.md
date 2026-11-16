@@ -88,17 +88,26 @@ If you change one of these in Signadot, search this skill for it first.
 ## Checks
 
 ```bash
-tests/signadot-trial/run.sh            # everything, including links and pins (needs the network)
-tests/signadot-trial/run.sh --offline  # structure, scripts, specs, report template, rules, behavior tests
+tests/signadot-trial/run.sh            # everything (check-external needs the network)
+tests/signadot-trial/run.sh --offline  # check-static and the three behavior tests
 tests/signadot-trial/check-drift.sh    # fails when a newer CLI or operator chart is out
-RUN_BUILD=1 bash tests/signadot-trial/test-c3-blocks.sh   # also fetches HotROD and builds it (needs Go)
 ```
 
-CI (`.github/workflows/signadot-trial.yml`) runs `run.sh` on every pull request that touches the skill or its tests,
-and weekly runs it with `check-drift.sh`, so a new CLI or operator release, a moved docs page or a deleted image
-shows up as a failed scheduled run.
+| Check | Guards against |
+|---|---|
+| `check-static.sh` | Unlinked or missing files, pins that disagree across files, invalid YAML or shell, bash features macOS lacks, missing report slots, zsh-unsafe snippets, and an edit dropping a safety command (teardown retiring the log, existing-cluster and existing-mesh checks, the plugin guard, no `plan delete`) |
+| `test-token-not-logged.sh` | The cluster token reaching a log or the output. The stub mirrors CLI 1.9.1, which prints the token on stderr; check `internal/command/cluster/add.go` when the CLI pin moves |
+| `test-config-blocks.sh` | The snippets that edit the user's Signadot config losing other keys, or teardown removing a block that isn't the trial's |
+| `test-stale-pid.sh` | Stopping a recorded PID that now belongs to another process |
+| `check-external.sh` | Moved docs pages, and pinned commits, images, releases, charts or downloads that no longer exist |
+| `check-drift.sh` | Newer Signadot releases than the skill was verified with |
 
-The checks are static: they can't prove the trial works end to end. That needs the live checklist.
+The checks look for commands and structure, never wording, so rewriting prose doesn't fail them. Add a check only
+for a failure that would break the trial or touch something of the user's, and that an edit could plausibly cause.
+
+CI (`.github/workflows/signadot-trial.yml`) runs `run.sh` on every pull request that touches the skill or its tests,
+and weekly runs it with `check-drift.sh`. The checks can't prove the trial works end to end; that needs the live
+checklist.
 
 ## Live checklist
 
