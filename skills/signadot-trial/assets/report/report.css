@@ -176,3 +176,5 @@ summary { cursor: pointer; color: var(--muted); font-size: 13px; }
 
 @media (max-width: 680px) { .url-pair { grid-template-columns: 1fr; } }
 @media print { .copy { display: none; } .urls { border-width: 1px; } }
+.foot-note { margin-top: 32px; font-size: 14px; }
+.more { margin: 12px 0 0; }

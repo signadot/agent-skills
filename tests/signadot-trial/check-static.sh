@@ -65,7 +65,7 @@ done
 # 6. Report templates: every slot report.md fills, the stylesheet and copy script next to the pages, and nothing
 #    that loads from the network.
 R=$S/assets/report
-for k in title summary urls scenarios running next-steps teardown timeline run-details; do
+for k in title summary urls scenarios; do
   grep -q "<!-- FILL:$k" "$R/index.html" || bad "overview template: no FILL:$k slot"
 done
 for k in title status headline urls try tested app how result value adopt details; do

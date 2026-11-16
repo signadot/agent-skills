@@ -20,9 +20,9 @@ About 4 minutes. No extra memory beyond a short-lived runner pod. Changes two or
 
 ## Before you start
 
-Plans need two org settings that only an org admin can change, in the dashboard. The confirmation lists them, and its
-OK is the yes; if it didn't list them (the user added automated tests later), ask first. Then change them in a browser
-you drive (signed in to the trial org), or give the user these steps:
+Plans need two org settings that only an org admin can change, in the dashboard. The message before more scenarios
+lists them, and its OK is the yes; if no OK covered them, ask first. Then change them in a browser you drive (signed
+in to the trial org), or give the user these steps:
 
 1. **A plan runner on the trial cluster:** https://app.signadot.com → Platform → Managed Runners → click
    `<cluster>` → under Plan Runners, press + once (it saves at once and shows "Provisioning"). Done when the cluster's

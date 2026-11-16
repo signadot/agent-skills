@@ -1,8 +1,7 @@
 # Hand-off: let the user try it
 
-When every chosen scenario has run, or the user says to stop, nothing is removed. Sandboxes carry no expiry, so
-everything stays as it is until the user asks for teardown. The report pages carry what's running, how to use it and
-what to do next; the chat message only points to them.
+When the user is done, nothing is removed. Sandboxes carry no expiry, so everything stays as it is until the user
+asks for teardown. The report pages carry what was shown and how to try it; the chat message only points to them.
 
 ## 1. Check what's running
 
@@ -28,26 +27,10 @@ What keeps running, and what doesn't:
 If the proxy address changed after a reconnect, read it again with the command in `references/setup/cluster.md` §4
 (the `portforward` section's `localAddress`).
 
-## 2. Put it in the overview page
+## 2. Update the overview page
 
-Rebuild `$T/report/index.html` one last time (`references/finish/report.md`, "The overview page"), with real values
-and full paths:
-
-- **Open the demo app,** at the top: the baseline link and each scenario's sandbox link (`references/finish/report.md`,
-  "App links"). Preview links need no proxy or setup on the user's computer, only a browser signed in to the org.
-- **What's running now:** each item above that's still up, with how to restart it if it stops, and the dashboard
-  (https://app.signadot.com) for the sandboxes, route groups and any jobs or plans.
-- **Look at the cluster yourself:** the template's section, with the trial folder's path (the user won't find the
-  cluster with `kubectx` otherwise, since its credentials are in `$T/kubeconfig`).
-- **Next steps:** the agent skills that run this loop on their own services (`npx skills add signadot/agent-skills
-  --skill signadot-validate`, and `--skill signadot-plan` for Plans;
-  https://www.signadot.com/docs/integrations/coding-agents/agent-skills); the Signadot MCP server (`<T>/bin/sd mcp`
-  uses the trial's login and org while the trial folder exists; `signadot mcp` once their own CLI is logged in;
-  https://www.signadot.com/docs/integrations/mcp); their own CLI (install it from
-  https://www.signadot.com/docs/getting-started/installation/signadot-cli, then `signadot auth login`; the trial's
-  login stays inside the trial folder); the operator on their own cluster
-  (https://www.signadot.com/docs/installation/signadot-operator); add-ons they didn't try.
-- **Teardown:** what it removes and what's left for them (`references/finish/teardown.md`).
+Rebuild `$T/report/index.html` one last time (`references/finish/report.md`, "The overview page"), so its links and
+scenario list are current. Keep it to what that section lists: no next steps, setup details or teardown.
 
 Don't change the user's PATH or shell profile, and don't suggest putting `<T>/bin` on PATH: its `sd` wrapper would
 shadow the `sd` find-and-replace tool some people use.

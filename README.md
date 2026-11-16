@@ -28,13 +28,13 @@ your account and a local cluster, so nothing needs to be set up first.
 
 Try Signadot hands-on, end to end, from your coding agent. It signs you up, sets
 up a local kind cluster with the HotROD demo app, and proves each capability by
-sending the same request with and without a routing key: one service in
-isolation, a multi-service preview URL, and a service running on your computer.
-Optional variations cover Istio, Istio ambient and Linkerd, a database per
-sandbox, Kafka, Temporal, RabbitMQ and Redis Streams, and test automation with
-Jobs and Plans. It runs one scenario at a time and writes a page for each that
-explains what was tested and why it matters, then leaves everything running until
-you ask for teardown.
+sending the same request with and without a routing key. It starts with three
+scenarios, one at a time: one service in isolation, a change across two services
+behind a preview link, and a service running on your computer. Then it offers
+more: Istio, Istio ambient or Linkerd, a database per sandbox, Kafka, Temporal,
+RabbitMQ and Redis Streams, and test automation with Jobs and Plans. Each
+scenario gets a page that explains what was tested and why it matters, and
+everything stays running until you ask for teardown.
 
     npx skills add signadot/agent-skills --skill signadot-trial
 

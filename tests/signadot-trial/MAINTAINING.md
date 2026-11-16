@@ -6,8 +6,8 @@ or `.github/`.
 
 ## How it's built
 
-- `SKILL.md`: the interaction model (when to ask, defaults, prerequisites, guardrails), the flow, the menu and
-  the confirmation, and an index that links every reference file.
+- `SKILL.md`: the interaction model (when to ask, defaults, prerequisites, guardrails), the flow, the plan, the menu of more
+  scenarios, and an index that links every reference file.
 - `references/`: one file per step or variation. Agents read only what the user chose.
 - `scripts/`: four bash 3.2 scripts for steps that run on every trial (preflight, CLI install, operator install,
   booking a ride). No jq, python or node.
@@ -44,7 +44,7 @@ add-ons), never file names, step IDs or section numbers.
    Tear down · Docs.
 2. Add a row to the SKILL.md index (the minutes must match Costs), a numbered line to the menu that says in plain
    words what Signadot does in it (for someone new to Signadot), and its number in the menu-to-file list. The
-   confirmation draws on its "What it shows".
+   message before more scenarios draws on its "What it shows".
 3. Put specs in `assets/specs/<category>/`, named `<name>@{suffix}` (30 characters or fewer with a suffix), with no
    TTL.
 4. Run it live on kind by following the file literally, then run the checks.
@@ -123,8 +123,8 @@ checklist.
 Run it before a release and after bumping a pin, on a clean machine or at least with the agent started in an empty
 folder, with a coding agent following the skill literally. Use a test org.
 
-1. **Default path:** "try Signadot", default choices, a new org. The first message is only the menu, the second the
-   confirmation, and progress lines show no file names or step IDs. The basics pass; each scenario's page opens after it and the trial waits before the next one; the hand-off
+1. **Default path:** "try Signadot", default choices, a new org. The first message is the plan (the three basics),
+   the basics run one by one with a menu of more after them, and progress lines show no file names or step IDs. The basics pass; each scenario's page opens after it and the trial waits before the next one; the hand-off
    lists what's running; the sandbox's preview link shows `SD-` plates and the baseline link doesn't; command blocks copy. The agent never asks for access
    outside its working folder, and afterwards the only new thing there is `.signadot-trial`.
 2. **Existing user:** with a `~/.signadot` config and login present. The trial uses its own login in the trial folder; checksum

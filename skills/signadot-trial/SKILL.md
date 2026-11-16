@@ -47,34 +47,36 @@ recommends for the user's own services afterwards.
 Talk to the user at these moments. In between, work and show short progress lines (see "Showing progress"); don't
 ask.
 
-1. **The menu.** Right after preflight, send only the menu (below): what they can try and how to choose. No setup
-   details, no account questions yet.
-2. **The confirmation.** Once they've chosen, send the confirmation (below) and wait for one OK. If they change the
-   selection, send it again.
-3. **Steps only the user can do,** when you reach them: the signup details and the browser steps
+1. **The plan.** Right after preflight, send the plan (below): the three basics, explained simply, what gets set up,
+   and one OK. Don't list the other scenarios yet; they come after the basics.
+2. **Steps only the user can do,** when you reach them: the signup details and the browser steps
    ([references/setup/account.md](references/setup/account.md)), ticking the Terms box (or an explicit "tick it for
    me"), confirming the CLI login code if you can't drive a browser, and the sudo prompt if they chose the
    privileged connection. Say exactly what to do, where, and what happens next.
-4. **After each scenario:** show its result and its report page, and ask before starting the next one (see "After
-   each scenario"). The user gets value from each scenario as soon as it's proven, instead of waiting for all of
-   them.
+3. **After each scenario:** show its result and its report page, and ask before starting the next one (see "After
+   each scenario"). The user gets value from each scenario as soon as it's proven.
+4. **More scenarios,** once the basics are done: the menu (below). Run what they pick the same way, one at a time.
 5. **Blocking decisions, only when they come up.** Another `local connect` is running; the cluster doesn't look
-   local; Docker doesn't have enough memory for the selection; a fix that has a side effect. Ask one question with
-   your recommendation.
-6. **Hand-off,** when every chosen scenario has run or the user says to stop: a two- or three-line message that points
-   to the report and says everything stays running until they ask for teardown. Never tear down on your own.
+   local; Docker doesn't have enough memory; a fix that has a side effect. Ask one question with your
+   recommendation.
+6. **Hand-off,** when the user is done ("done", "stop here", or the last scenario they picked has run): a two- or
+   three-line message that points to the report and says everything stays running until they ask for teardown.
+   Never tear down on your own.
+
+If the user's first request already names something beyond the basics ("try Signadot with Kafka", "on Istio
+ambient"), say in the plan that you'll do it right after the basics. A service mesh named in the first request is
+installed during setup, so the basics run on it.
 
 Ask in plain chat. If your environment has a structured way to ask questions, you may use it, but don't depend on
 one.
 
-**Defaults** (use them when the user says "default", or doesn't choose):
+**Defaults:**
 
 | Input | Default |
 |---|---|
-| What to try | the basics (1–3) only |
-| Skipping 2 or 3 | only if the user asks |
+| What to run first | the basics, one after the other; then offer more |
 | Between scenarios | pause and ask, unless the user said "run the rest" |
-| Service mesh | none: Signadot's own routing (DevMesh) |
+| Service mesh | none: Signadot's own routing (DevMesh); one named in the first request is installed during setup |
 | Cluster | a new kind cluster named `signadot-trial` |
 | Connection | no sudo: `sd local connect --unprivileged` |
 | Signadot config and login | the trial's own, in `$T/home`; `~/.signadot` is never touched |
@@ -88,8 +90,8 @@ one.
 |---|---|---|
 | Must have | macOS or Linux, a shell, Docker running with enough memory (about 4 GB for the basics, more per add-on), internet access, curl, a browser the user can use for signup | Stop. Say what's missing and how to get it. |
 | Must have for one scenario | lsof (local-development), unzip (jobs); usually preinstalled | The user installs it with their package manager, or skip that scenario. |
-| Install with consent | kubectl, kind, helm, git | Show the install command from [references/setup/prerequisites.md](references/setup/prerequisites.md) in the confirmation; its OK covers it. |
-| Installed by the trial | Signadot CLI 1.9.1 or newer, into `$T/bin` | `scripts/install-cli.sh` (covered by the confirmation OK) |
+| Install with consent | kubectl, kind, helm, git | Show the install command from [references/setup/prerequisites.md](references/setup/prerequisites.md) in the plan; its OK covers it. |
+| Installed by the trial | Signadot CLI 1.9.1 or newer, into `$T/bin` | `scripts/install-cli.sh` (covered by the plan's OK) |
 | Optional | Go 1.27.1 or newer | local-development builds in a `golang` container instead. |
 | Optional | A browser you can drive | The user does the browser steps from your exact instructions; no screenshots; the report pages still have flow diagrams. |
 
@@ -99,23 +101,23 @@ The "Tell the user" column is how each step appears in your progress lines.
 
 | # | Step (trial-log ID) | Tell the user | What you run | Done when |
 |---|---|---|---|---|
-| 1 | `preflight` | Checking your computer | `bash $S/scripts/preflight.sh` | no missing must-haves; menu sent; the user chose; confirmation OK |
-| 2 | `cli` | Installing the Signadot CLI | `bash $S/scripts/install-cli.sh --trial-dir $T [--reuse <their signadot>]` | `sd`, `kc` and `hm` exist; then, unless scenario 3 is skipped, start local-development's "Set up" (fetch, patch, build) in the background |
-| 3 | `cluster` (in the background) | Creating a local Kubernetes cluster with the demo app | [references/setup/cluster.md](references/setup/cluster.md) §1–2, with the infra file's install | HotROD ready |
+| 1 | `preflight` | Checking your computer | `bash $S/scripts/preflight.sh` | no missing must-haves; plan sent; the user said OK |
+| 2 | `cli` | Installing the Signadot CLI | `bash $S/scripts/install-cli.sh --trial-dir $T [--reuse <their signadot>]` | `sd`, `kc` and `hm` exist; then start local-development's "Set up" (fetch, patch, build) in the background |
+| 3 | `cluster` (in the background) | Creating a local Kubernetes cluster with the demo app | [references/setup/cluster.md](references/setup/cluster.md) §1–2, with a mesh file's install if the first request named a mesh | HotROD ready |
 | 4 | `account` ★ | Creating your Signadot account | [references/setup/account.md](references/setup/account.md) §1 | the dashboard loads |
 | 5 | `login` | Logging the trial's CLI in to your org | [references/setup/account.md](references/setup/account.md) §2 | `sd auth status` shows the trial org |
-| 6 | `operator` | Installing Signadot in the cluster | [references/setup/cluster.md](references/setup/cluster.md) §3 (`scripts/install-operator.sh`) | `sidecars` shows all workloads; then, if automated tests were chosen, start the Jobs runner group ([references/testing/jobs.md](references/testing/jobs.md) "Set up") |
+| 6 | `operator` | Installing Signadot in the cluster | [references/setup/cluster.md](references/setup/cluster.md) §3 (`scripts/install-operator.sh`) | `sidecars` shows all workloads |
 | 7 | `connect` | Connecting this computer to the cluster | [references/setup/cluster.md](references/setup/cluster.md) §4 | the frontend answers 200 through the connection |
 | 8 | `baseline` | Booking a ride on the unchanged app | [references/setup/cluster.md](references/setup/cluster.md) §5 (`scripts/ride.sh`, then the baseline link) | a plate and an ETA, every hop `baseline`; `baseline_url` recorded |
-| 9 | each chosen scenario, one at a time, in the order under "Combining add-ons" | its menu name | its file ([isolated-change.md](references/core/isolated-change.md), [multi-service-preview.md](references/core/multi-service-preview.md), [local-development.md](references/core/local-development.md), then the add-ons' files), then [references/finish/report.md](references/finish/report.md) "After each scenario" | proven; its page written and opened; the result shown; the user said to go on |
-| 10 | hand-off | — | [references/finish/playground.md](references/finish/playground.md) | the user knows what's running and how to tear down |
-| 11 | teardown, on request | Removing the trial | [references/finish/teardown.md](references/finish/teardown.md) | everything in the trial log's resources is gone |
+| 9 | the basics, one at a time | its menu name | [isolated-change.md](references/core/isolated-change.md), [multi-service-preview.md](references/core/multi-service-preview.md), [local-development.md](references/core/local-development.md), each followed by [references/finish/report.md](references/finish/report.md) "After each scenario" | each proven, its page written and opened, the result shown; the user said to go on |
+| 10 | more scenarios | each one's menu name | the menu, then each chosen file in the order under "Combining add-ons", each followed by "After each scenario" | the user said "done", or every chosen one has run |
+| 11 | hand-off | — | [references/finish/playground.md](references/finish/playground.md) | the closing message is sent |
+| 12 | teardown, on request | Removing the trial | [references/finish/teardown.md](references/finish/teardown.md) | everything in the trial log's resources is gone |
 
 Create `$T/trial-log.md` right after the OK and keep it current ([references/trial-log.md](references/trial-log.md)).
-Start step 3 as soon as step 2 is done, so the cluster, image pulls and any demo-app deploys overlap with signup.
-Once setup is done, run the first scenario straight away; pause only after a scenario. Work that later scenarios
-need (demo-app deploys, the Jobs runner group) keeps going in the background while the user reads a result. If your
-shell can't keep a background job running, run it in the foreground and show progress.
+Start step 3 as soon as step 2 is done, so the cluster and image pulls overlap with signup. Once setup is done, run
+the first scenario straight away; pause only after a scenario. If your shell can't keep a background job running,
+run it in the foreground and show progress.
 
 **Existing org.** If the user signs in to an org they already have, every org-scoped name gets the suffix
 `-<4 random lowercase letters or digits>` (empty for an org the trial created). Record it as `suffix:` and pass
@@ -129,24 +131,21 @@ Ask the user to disconnect it with their own CLI (`signadot local disconnect`); 
 continue, so stop and say so. If they do, record `disconnected_user_connection: yes` under Run, so the report and
 teardown remind them to reconnect.
 
-## The menu
+## The plan
 
 Send it right after preflight, as formatted text (markdown, not inside a code block), so it reads well in a
-terminal and in an app. Keep the wording and the numbers. Above it, one line: "Your computer is ready." or what's
-missing (Prerequisites). If preflight rules out an add-on, drop it and say why in one line. If `docker_mem_gb` can't
-fit the basics plus every add-on (the index's memory column), add one line such as "Docker has 5.8 GB: enough for
-the basics and a couple of add-ons; I'll check your choice."
+terminal and in an app. Keep the wording. Above it, one line: "Your computer is ready." or what's missing
+(Prerequisites). Leave out lines that don't apply.
 
 ```markdown
-**What would you like to try?**
+**Here's the plan**
 
 Signadot lets you test a code change against the rest of your app, without copying the app. Your changed service
 runs in a **sandbox**, next to the shared, unchanged app (the **baseline**). Requests that carry the sandbox's
 **routing key** go to your version; all other requests use the baseline, so nobody else is affected.
 
-The trial shows this on HotROD, a small ride-booking demo app, in a Kubernetes cluster on your computer.
-
-**The basics** · always included · about 10 min
+I'll show this on HotROD, a small ride-booking demo app, in a Kubernetes cluster on your computer, with three
+scenarios, one after the other:
 
 1. **Test one change in isolation.** Run a changed version of one service and test it, while every other request
    keeps using the normal version.
@@ -155,74 +154,63 @@ The trial shows this on HotROD, a small ride-booking demo app, in a Kubernetes c
 3. **Run a service on your computer.** Run a service from your laptop and have the cluster send it only the
    requests that carry your routing key.
 
-**Add-ons** · optional · pick any
+After each one, I'll show you the result and a page that explains it. Then you can try more: service meshes, a
+database per sandbox, message queues and workflows, and automated tests.
 
-4. **Database per sandbox** (+3 min). Your sandbox gets its own database with its own test data, created and
-   removed with the sandbox.
-5. **Kafka** (+2 min). Your sandbox's consumer handles only the messages meant for it, on the shared Kafka topic.
-6. **Temporal** (+6 min). Your sandbox's worker runs only the workflows meant for it, on the shared task queue.
-7. **RabbitMQ** (+3 min). The same for messages on a shared RabbitMQ exchange.
-8. **Redis Streams** (+3 min). The same for entries in a shared Redis stream.
-9. **Automated tests** (+8 min). Run the app's existing Playwright tests against your sandbox, then save them as a
-   reusable test plan and watch it catch a bug.
-
-**Service mesh** · optional · pick one
-
-10. **Istio** · 11. **Istio ambient** · 12. **Linkerd**
-    Without one, Signadot routes requests itself, so you don't need a mesh.
-
-**Reply with the numbers you'd like**, for example "5, 9" or "4, 11", or "default" for just the basics. The basics
-always run; add "skip 2" or "skip 3" to leave one out.
-```
-
-Menu numbers to files: 1 isolated-change, 2 multi-service-preview, 3 local-development, 4 sandbox-database,
-5 kafka, 6 temporal, 7 rabbitmq, 8 redis-streams, 9 jobs then plans, 10 istio, 11 istio-ambient, 12 linkerd. If the
-user names things instead of numbers ("Kafka and Istio"), map them the same way.
-
-## The confirmation
-
-Send it once the user has chosen, and wait for one OK. Keep it short: it's the first time they see any setup
-details. Add up the time from the index (about 10 min for the basics, plus each add-on) and leave out lines that
-don't apply.
-
-```markdown
-**Your trial:** the basics, Temporal and automated tests, on Istio ambient · about 25 min
-
-**What Signadot does in your add-ons**
-- **Temporal:** the routing key travels from the web request into the workflow's headers. Your sandbox's worker
-  joins the shared task queue and runs only the workflows that carry its key; it hands the rest back.
-- **Automated tests:** a Job runs the app's Playwright tests in the cluster, and Signadot adds your sandbox's
-  routing key to their traffic, so the unchanged tests exercise your version. A Plan saves that run so anyone (or
-  a coding agent) can rerun it against any sandbox.
-
-**What I'll set up**
-- A local Kubernetes cluster (kind) with the demo app and Signadot, plus the Signadot CLI. The trial's files all
-  go in `/Users/me/project/.signadot-trial`; your kube context and your own Signadot setup stay as they are.
-- kind and helm, which are missing: `brew install kind helm`.
-- Two settings in your Signadot org, for automated tests: a test runner on the trial's cluster, and permission to
-  use the Playwright test image.
-- Everything stays running after the trial so you can explore, until you ask me to remove it.
+**What I'll set up:** a local Kubernetes cluster (kind) with the demo app and Signadot, plus the Signadot CLI, all
+in `/Users/me/project/.signadot-trial`. Your kube context and your own Signadot setup stay as they are. kind and helm
+are missing, so I'll install them: `brew install kind helm`. Setup takes about 6 minutes, and everything keeps
+running until you ask me to remove it.
 
 **What I'll need from you:** a few minutes in a browser to create your Signadot account, or to sign in to one you
 already have.
 
-**How it runs:** setup takes about 6 minutes, most of it signup. Then I run one scenario at a time, show you the result
-and a page that explains it, and wait for you before the next one.
-
 Go ahead?
 ```
 
-- **Add-ons:** for each one chosen, say in one or two plain lines what Signadot does in it, from its file's "What
-  it shows". Don't explain the mesh, Kafka, Temporal, RabbitMQ or Redis themselves: assume the user knows them.
-  Leave the section out when they chose no add-ons. Never mention a mesh beyond its name.
-- **Memory:** if the total in the index is more than `docker_mem_gb`, say so and suggest what to drop before asking
-  for the OK.
-- **Cluster:** if preflight lists local clusters, add to that line: (say "use `<context>`" to use your local cluster
-  instead).
-- **Linux:** if automated tests are chosen and preflight shows `apparmor_userns: restricted`, say that the test plan
-  needs a kernel setting first (prerequisites.md).
+- **Cluster:** if preflight lists local clusters, add: (say "use `<context>`" to use your local cluster instead).
+- **Memory:** if `docker_mem_gb` is under 4, say so and how to raise it before asking for the OK.
+- **First request named more:** add one line, e.g. "Right after the basics, I'll show Kafka too.", or "The basics
+  will run on Istio ambient." for a mesh (install it during setup; add about 2 minutes).
 - The OK covers everything listed, including the install command shown. Anything else needs its own yes
   ("Side effects and guardrails").
+
+## More scenarios
+
+When the third basic is done, send its result (see "After each scenario") and, instead of "Next", this menu:
+
+```markdown
+**Want to try more?** Each one runs on the same demo app, one at a time, with its own page.
+
+1. **Database per sandbox** (about 3 min). Your sandbox gets its own database with its own test data, created and
+   removed with the sandbox.
+2. **Kafka** (about 2 min). Your sandbox's consumer handles only the messages meant for it, on the shared Kafka
+   topic.
+3. **Temporal** (about 6 min). Your sandbox's worker runs only the workflows meant for it, on the shared task queue.
+4. **RabbitMQ** (about 3 min). The same for messages on a shared RabbitMQ exchange.
+5. **Redis Streams** (about 3 min). The same for entries in a shared Redis stream.
+6. **Automated tests** (about 8 min). Run the app's existing Playwright tests against your sandbox, then save them
+   as a reusable test plan and watch it catch a bug.
+
+**On your service mesh** · pick one · I rebuild the demo cluster on it (about 10 min) and run the first scenario
+there
+
+7. **Istio** · 8. **Istio ambient** · 9. **Linkerd**
+
+Reply with the numbers you'd like, or "done" to stop here.
+```
+
+- Numbers to files: 1 sandbox-database, 2 kafka, 3 temporal, 4 rabbitmq, 5 redis-streams, 6 jobs then plans,
+  7 istio, 8 istio-ambient, 9 linkerd. Map names the same way ("Kafka and Istio").
+- Leave out the mesh options when the basics already ran on a mesh, or on an existing cluster (a rebuild would
+  touch it); leave out what preflight rules out, and say why in one line.
+- Once they've picked, send one short message before starting: for each pick, one plain line on what Signadot does
+  in it (from its file's "What it shows"; don't explain the mesh, Kafka, Temporal, RabbitMQ or Redis themselves),
+  and the total time. Wait for an OK only if it also lists something with a side effect: a mesh rebuild (the basics'
+  sandboxes are removed; their pages stay), the two org settings automated tests change, a missing tool to
+  install, or more memory than Docker has. Otherwise start right away.
+- Then start the chosen demo apps' deploys and the Jobs runner group in the background (after a mesh rebuild, if
+  there is one), and run the picks one at a time.
 
 ## After each scenario
 
@@ -240,51 +228,52 @@ Write-up, open in your browser: `/Users/me/project/.signadot-trial/report/isolat
 
 - A failed scenario gets `✗`, what was seen and what was tried, and the same question.
 - "Yes", "go on" or "next": run the next scenario. "Skip": mark the next one `skipped` and ask about the one after.
-  "Run the rest": run the remaining scenarios without pausing, still writing each page. "Stop here": go to the
-  hand-off; the scenarios not run stay listed in the overview as to go, and the user can say "continue the trial"
-  later.
-- After the last scenario, say so and go to the hand-off instead of asking.
+  "Run the rest": run the remaining ones without pausing, still writing each page. "Stop here": go to the
+  hand-off; the user can say "continue the trial" later.
+- After the third basic, the menu replaces "Next" ("More scenarios"). After the last scenario the user picked, go
+  to the hand-off.
 
-## Add-ons index
+## Scenario index
 
-Read only the files for what the user chose. Each scenario file has the same sections: What it shows, Costs,
-Before you start, Set up, Run, Prove it, Record, Try it yourself, Tear down, Docs. Infra files have: What it shows,
-Install before HotROD, Overlay and operator values, Mesh check, Tear down, Docs. A scenario's ID, in the trial log
-and in these files, is its file name.
+Read only the files for what runs. Each scenario file has the same sections: What it shows, Costs, Before you
+start, Set up, Run, Prove it, Record, Try it yourself, Tear down, Docs. Infra files have: What it shows, Install
+before HotROD, Overlay and operator values, Mesh check, Tear down, Docs. A scenario's ID, in the trial log and in
+these files, is its file name.
 
 | Menu | ID and file | Time | Memory | Needs |
 |---|---|---|---|---|
-| 1 · one change in isolation | [isolated-change](references/core/isolated-change.md) | 1 min | — | always runs |
-| 2 · a change across two services | [multi-service-preview](references/core/multi-service-preview.md) | 2 min | — | isolated-change |
-| 3 · a service on your computer | [local-development](references/core/local-development.md) | 3 min | — | Go or Docker |
+| basics 1 · one change in isolation | [isolated-change](references/core/isolated-change.md) | 1 min | — | always runs |
+| basics 2 · a change across two services | [multi-service-preview](references/core/multi-service-preview.md) | 2 min | — | isolated-change |
+| basics 3 · a service on your computer | [local-development](references/core/local-development.md) | 3 min | — | Go or Docker |
 | — · no mesh (default) | [devmesh](references/infra/devmesh.md) | — | — | — |
-| 10 · Istio | [istio](references/infra/istio.md) | +2 min | +0.5 GB | chosen before setup |
-| 11 · Istio ambient | [istio-ambient](references/infra/istio-ambient.md) | +2 min | +0.5 GB | chosen before setup |
-| 12 · Linkerd | [linkerd](references/infra/linkerd.md) | +2 min | +0.5 GB | chosen before setup; openssl |
-| 4 · database per sandbox | [sandbox-database](references/data/sandbox-database.md) | +3 min | — | — |
-| 5 · Kafka | [kafka](references/async/kafka.md) | +2 min | — | isolated-change |
-| 6 · Temporal | [temporal](references/async/temporal.md) | +6 min | +1 GB | Docker (local image build) |
-| 7 · RabbitMQ | [rabbitmq](references/async/rabbitmq.md) | +3 min | +0.5 GB | — |
-| 8 · Redis Streams | [redis-streams](references/async/redis-streams.md) | +3 min | +0.5 GB | Docker (local image build) |
-| 9 · automated tests, part 1 | [jobs](references/testing/jobs.md) | +4 min | +1 GB | isolated-change |
-| 9 · automated tests, part 2 | [plans](references/testing/plans.md) | +4 min | — | isolated-change; two org settings |
+| more 1 · database per sandbox | [sandbox-database](references/data/sandbox-database.md) | +3 min | — | — |
+| more 2 · Kafka | [kafka](references/async/kafka.md) | +2 min | — | isolated-change |
+| more 3 · Temporal | [temporal](references/async/temporal.md) | +6 min | +1 GB | Docker (local image build) |
+| more 4 · RabbitMQ | [rabbitmq](references/async/rabbitmq.md) | +3 min | +0.5 GB | — |
+| more 5 · Redis Streams | [redis-streams](references/async/redis-streams.md) | +3 min | +0.5 GB | Docker (local image build) |
+| more 6 · automated tests, part 1 | [jobs](references/testing/jobs.md) | +4 min | +1 GB | isolated-change |
+| more 6 · automated tests, part 2 | [plans](references/testing/plans.md) | +4 min | — | isolated-change; two org settings |
+| more 7 · Istio | [istio](references/infra/istio.md) | +10 min after the basics, +2 min during setup | +0.5 GB | a kind cluster the trial created |
+| more 8 · Istio ambient | [istio-ambient](references/infra/istio-ambient.md) | +10 min after the basics, +2 min during setup | +0.5 GB | a kind cluster the trial created |
+| more 9 · Linkerd | [linkerd](references/infra/linkerd.md) | +10 min after the basics, +2 min during setup | +0.5 GB | a kind cluster the trial created; openssl |
 
 ## Combining add-ons
 
-- **Service mesh:** at most one, chosen before setup, because it changes how HotROD and the operator are
-  installed. Without one, the trial uses devmesh.
+- **Service mesh:** at most one. Named in the first request: install it during setup (its file's "Install before
+  HotROD"). Picked after the basics: rebuild the demo cluster on it with
+  [references/infra/switch-mesh.md](references/infra/switch-mesh.md), before any other pick.
 - **Namespaces:** HotROD runs in `hotrod`. Every other demo app runs in its own namespace, named in its file. Never
   deploy two apps into one namespace, and never change a namespace the trial didn't create. If a namespace
   already exists on an existing cluster, ask before using it, and don't record it for teardown
   (`references/setup/cluster.md` §1).
-- **Memory:** add up the basics and each chosen add-on from the index, compare with `docker_mem_gb`, and settle it
-  in the confirmation.
+- **Memory:** add up the basics and each pick from the index, compare with `docker_mem_gb`, and settle it before
+  starting.
 - **Demo apps** other than HotROD come from `signadot/examples`, fetched once at a pinned commit
-  (`references/setup/cluster.md` §2). Start their deploys as soon as the cluster is up, so image pulls overlap the
-  basics. Once the operator is installed, restart the deployments of any app deployed before it (§3).
-- **Order:** the basics (isolated-change, multi-service-preview, local-development), then data, then async (Kafka
-  first, then the menu order), then testing (jobs, then plans). Kafka, jobs and plans reuse isolated-change's
-  sandbox; the plans file's local step needs local-development.
+  (`references/setup/cluster.md` §2). Start their deploys as soon as they're picked, so image pulls overlap the
+  scenarios before them.
+- **Order:** the basics (isolated-change, multi-service-preview, local-development); then a mesh rebuild; then data,
+  async (Kafka first, then the menu order) and testing (jobs, then plans). Kafka, jobs and plans reuse
+  isolated-change's sandbox (a mesh rebuild creates it again).
 
 ## Verifying results and handling failures
 
@@ -309,8 +298,8 @@ and in these files, is its file name.
 | Action | Policy |
 |---|---|
 | Preflight, reads, status checks, fetching docs pages | Do it. |
-| Everything the confirmation listed (CLI in `$T/bin`, kind cluster, operator, mesh, demo apps, sandboxes, report, and any install command or org settings it showed) | Covered by the confirmation OK. |
-| Installing kubectl, kind, helm or git, or changing org settings, when the confirmation didn't list it; ticking the Terms box; asking the user to disconnect a local connection; teardown | Only after an explicit yes for that action. |
+| Everything the plan or the message before more scenarios listed (CLI in `$T/bin`, kind cluster, operator, mesh or rebuild, demo apps, sandboxes, reports, and any install command or org settings shown) | Covered by that OK. |
+| Installing kubectl, kind, helm or git, or changing org settings, when no OK covered it; ticking the Terms box; asking the user to disconnect a local connection; teardown | Only after an explicit yes for that action. |
 | Typing passwords or verification codes; running sudo; using a cloud or shared cluster; changing anything in `~/.signadot` or the user's own Signadot login; switching a kube context the user chose | Never. |
 
 - **Cluster:** default to a new kind cluster. Refuse cloud clusters (EKS, GKE, AKS) and any cluster that already

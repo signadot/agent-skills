@@ -31,7 +31,7 @@ Then run the chosen infra file's "Install before HotROD" (nothing for DevMesh).
 
 ### Using an existing local cluster instead
 
-Only if the user picked one in the confirmation:
+Only if the user picked one in reply to the plan:
 
 1. Refuse it if its context or server looks like a cloud cluster: `arn:aws:eks`, `eks.amazonaws.com`, `gke_`,
    `container.googleapis.com`, `azmk8s.io`.

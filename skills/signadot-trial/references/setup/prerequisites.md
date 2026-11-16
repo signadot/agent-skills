@@ -1,7 +1,7 @@
 # Prerequisites
 
 Run `bash $S/scripts/preflight.sh` first. It changes nothing and prints one `key: value` line per fact. Use it to
-fill the confirmation and to decide what's missing; SKILL.md's Prerequisites table says what each kind of gap means.
+fill the plan and to decide what's missing; SKILL.md's Prerequisites table says what each kind of gap means.
 
 What each key decides:
 
@@ -9,20 +9,20 @@ What each key decides:
   start Docker Desktop, OrbStack, Colima or the Docker service.
 - `docker_mem_gb`: about 4 GB for the basics; add each add-on's figure from the SKILL.md index. See "Docker memory"
   below.
-- `kubectl`, `kind`, `helm`, `git`: show the install command below in the confirmation; its OK covers running it.
+- `kubectl`, `kind`, `helm`, `git`: show the install command below in the plan; its OK covers running it.
 - `lsof` (local-development checks its port with it) and `unzip` (the jobs proof reads the test traces with it):
   present on macOS and most Linux desktops. If one is missing, the user installs it with their package manager (it
   needs sudo), or skip that scenario.
 - `signadot`: `scripts/install-cli.sh` installs CLI 1.9.1 into `$T/bin`, or reuses theirs if it's 1.9.1 or newer.
 - `go`: 1.27.1 or newer builds local-development's service directly; otherwise it builds in a `golang` container.
 - `apparmor_userns: restricted`: Plans can't run until the user changes a kernel setting (troubleshooting.md,
-  Testing). Mention it in the confirmation if they pick automated tests.
+  Testing). Mention it when they pick automated tests.
 - `trial_dir`: the trial folder `T`. Use this absolute path in every command.
 - `signadot_login`: the org the user's own CLI is logged in to, if any. The trial never uses or changes that login
   (it has its own in `$T/home`), but the account step offers that org as an alternative to signing up.
 - `local_connect`: a connection is running. `(trial)` means it is the trial's own from an earlier run; otherwise see
   "Another local connection is running" in SKILL.md.
-- `kube_context` and `kube_contexts`: the trial never changes their context. In the confirmation, offer the ones that
+- `kube_context` and `kube_contexts`: the trial never changes their context. In the plan, offer the ones that
   look local (`docker-desktop`, `kind-*`, `k3d-*`, `minikube`, `orbstack`, `rancher-desktop`, `colima`) as an
   alternative to a new kind cluster.
 - `port_8083: busy`: local-development runs the route service on port 8083. Ask the user to free it, or skip

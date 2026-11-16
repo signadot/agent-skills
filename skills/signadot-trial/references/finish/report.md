@@ -38,7 +38,7 @@ and suffix, no `$T`, `<…>` or other placeholders. Use `kubectl --kubeconfig <t
 them.
 
 - **title:** the scenario's menu name.
-- **status:** the pill (`passed` or `failed`), "Scenario n of N" (in run order, of the scenarios chosen), the time
+- **status:** the pill (`passed` or `failed`), "Scenario n" (its place in run order), the time
   from the scenario's first command to its proof, the cluster and the date.
 - **headline:** one or two sentences that say what was proven, with the proving values.
 - **urls:** the box with the demo app's two links (see "App links"): the baseline, and the sandbox with a line saying
@@ -98,23 +98,18 @@ record both in the scenario's entry as `link-baseline:` and `link-sandbox:`.
 
 ## The overview page
 
-- **title:** e.g. "Your Signadot trial: 3 scenarios proven, 1 to go", or "…: 4 of 4 scenarios proven" at the end.
+Keep it short, so the trial reads as simple: the links, the list of scenarios, and how to look at the cluster. The
+detail is on the scenario pages; teardown and next steps are for the agent to offer in chat, not for this page.
+
+- **title:** e.g. "Your Signadot trial: 3 scenarios proven, 1 to go", or "…: 3 of 3 scenarios proven" when nothing
+  is to go.
 - **summary:** pills with counts (passed, failed, to go), then org, cluster and date.
 - **urls:** the baseline link, then each scenario's sandbox link with what to look for (see "App links").
-- **scenarios:** one `ROW` per chosen scenario in run order, linking its page, with a one-sentence result and its
-  time; a scenario that hasn't run yet gets the `next` pill and no link. Then one `NOT-PICKED` row per menu item the
-  user didn't choose.
-- **running:** everything in `## Resources` that still exists, the preview link, and the connection. Say that
-  nothing expires on its own. At the hand-off, add what `references/finish/playground.md` §2 lists.
+- **scenarios:** one `ROW` per scenario that ran or is to go, in run order, linking its page, with a one-sentence
+  result and its time; one that hasn't run yet gets the `next` pill and no link. Then the `MORE` line while
+  something on the menu of more scenarios hasn't been tried.
 - **Look at the cluster yourself** (a fixed section): replace `TRIAL_FOLDER` with the trial folder's full path. It
   tells the user why `kubectx` doesn't show the trial's cluster and how to see it.
-- **next steps:** the agent skills for their own services (`npx skills add signadot/agent-skills --skill
-  signadot-validate`, and `--skill signadot-plan` for Plans); the Signadot MCP server (`<T>/bin/sd mcp` with the
-  trial's login and org, or `signadot mcp` once their own CLI is logged in); installing the operator on their own
-  cluster (https://www.signadot.com/docs/installation/signadot-operator); add-ons they didn't try.
-- **teardown:** what teardown will remove, and the manual steps (from `references/finish/teardown.md`).
-- **timeline** and **run details:** the `## Steps` (by their "Tell the user" names), what the user did, any
-  fallbacks, and the `## Run` facts, except secrets.
 
 ## Screenshots
 

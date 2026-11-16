@@ -1,7 +1,8 @@
 # Linkerd
 
-Chosen before setup. Adds about 2 minutes and 0.5 GB of memory. Namespace `linkerd`. Needs `openssl` for the
-mesh's certificates.
+Installed during setup when the first request names it (about 2 more minutes), or after the basics by rebuilding
+the demo cluster (`references/infra/switch-mesh.md`, about 10 minutes). Adds 0.5 GB of memory. Namespace `linkerd`.
+Needs `openssl` for the mesh's certificates.
 
 ## What it shows
 
