@@ -4,10 +4,12 @@ spec:
   script: |
     #!/bin/bash
     set -e
-    git clone --depth 1 --single-branch -b main https://github.com/signadot/hotrod.git
-    cd hotrod
+    # The same HotROD commit as the cluster, so the tests match the app they run against.
+    git init -q hotrod && cd hotrod
+    git fetch -q --depth 1 https://github.com/signadot/hotrod.git b16178651580a8ba3ceb45ac7c59f4579611b0b3
+    git checkout -q FETCH_HEAD
     export HOTROD_NAMESPACE=hotrod CI=true
-    npm ci
+    CYPRESS_INSTALL_BINARY=0 npm ci
     set +e
     npm run e2e:playwright --spec playwright-tests/basic.spec.ts
     E2E_EXIT_CODE=$?

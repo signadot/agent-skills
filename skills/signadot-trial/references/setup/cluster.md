@@ -10,17 +10,22 @@ Start this right after `install-cli.sh`, in the background if your shell allows 
 kind writes the cluster's credentials to the trial's own kubeconfig, so the user's kube context and
 `~/.kube/config` never change.
 
+First check `kind get clusters`. If a cluster named `signadot-trial` is already there and the trial log doesn't
+mention it, ask the user before reusing it: it may be someone else's.
+
 ```bash
 T="${SIGNADOT_TRIAL_HOME:-$HOME/.signadot-trial}"
-kind get clusters 2>/dev/null | grep -qx signadot-trial \
-  || kind create cluster --name signadot-trial --kubeconfig "$T/kubeconfig" --wait 120s > "$T/logs/kind.log" 2>&1
+if kind get clusters 2>/dev/null | grep -qx signadot-trial; then
+  kind export kubeconfig --name signadot-trial --kubeconfig "$T/kubeconfig"
+else
+  kind create cluster --name signadot-trial --kubeconfig "$T/kubeconfig" --wait 120s > "$T/logs/kind.log" 2>&1
+fi
 chmod 600 "$T/kubeconfig"
 "$T/bin/kc" get nodes
 ```
 
 Done when the node is `Ready`. Record `kind_cluster signadot-trial` under Resources and `created_kind_cluster: yes`,
-`kube_context: kind-signadot-trial` under Run. If a kind cluster named `signadot-trial` already exists and the trial
-log doesn't mention it, ask the user before reusing it.
+`kube_context: kind-signadot-trial` under Run (`created_kind_cluster: no` when you reused one, so teardown leaves it).
 
 Then run the chosen infra file's "Install before HotROD" (nothing for DevMesh).
 
@@ -73,8 +78,15 @@ The first start pulls about 3.5 GB of images; Kafka is the slowest. Every 30–6
 pending (`"$T/bin/kc" -n hotrod get pods`). Done when every deployment is available and both statefulsets are
 rolled out. Record `namespace hotrod` under Resources.
 
-This is also when to start each chosen async demo app's deploy (its file's "Set up"), so its images pull while you
-do the core tutorial.
+This is also when to start each chosen async demo app's deploy, so its images pull while you do the core tutorial.
+Temporal, RabbitMQ and Redis Streams come from `signadot/examples` at a pinned commit; fetch it once for all of
+them, then run each chosen file's "Set up":
+
+```bash
+mkdir -p "$T/examples" && cd "$T/examples"
+[ -d .git ] || { git init -q && git remote add origin https://github.com/signadot/examples.git; }
+git fetch -q --depth 1 origin 26f759be92917adae40d9f928290863548d837fa && git checkout -q FETCH_HEAD
+```
 
 ## 3. Operator (`operator`)
 
@@ -87,7 +99,9 @@ bash "$S/scripts/install-operator.sh" --trial-dir "$T" --cluster "signadot-trial
 It registers the cluster in the org, installs the operator (namespace `signadot`) with the cluster token passed
 privately, waits until Signadot sees it, and restarts HotROD's four services so they get the routing proxy. Done when
 it prints `operator_version: …` and `sidecars: 4/4`. Record the operator version under Run. If `sidecars` is short,
-see troubleshooting.md. It's safe to re-run: it skips what's already done.
+see troubleshooting.md. It's safe to re-run: it skips what's already done. The script installs the chart version the
+skill was verified with; for installing the operator on a cluster of their own, the user follows
+https://www.signadot.com/docs/installation/signadot-operator.md.
 
 If you started a demo app's deploy before this step (its file's "Set up"), restart its deployments now so they get
 the routing proxy too, or its sandbox stays Not Ready with `RoutingNotReady`:
@@ -99,8 +113,9 @@ the routing proxy too, or its sandbox stays Not Ready with `RoutingNotReady`:
 ## 4. Connection (`connect`)
 
 The connection lets this computer reach services in the cluster. Write it into the CLI config the trial uses:
-`$T/home/.signadot/config.yaml` when isolated, otherwise `~/.signadot/config.yaml`. Replace any existing `local:`
-block and keep the other keys:
+`$T/home/.signadot/config.yaml` when isolated, otherwise `~/.signadot/config.yaml` (which the trial created at
+login, since it only skips isolation when there was no config). Replace any existing `local:` block and keep the
+other keys:
 
 ```bash
 CFG="$T/home/.signadot/config.yaml"   # or ~/.signadot/config.yaml when not isolated
@@ -112,6 +127,7 @@ local:
   - cluster: signadot-trial<suffix>
     type: PortForward
     kubeContext: kind-signadot-trial
+    kubeConfig: $T/kubeconfig
 EOF
 mv "$CFG.new" "$CFG"
 "$T/bin/sd" local connect --unprivileged
@@ -119,7 +135,8 @@ mv "$CFG.new" "$CFG"
 ```
 
 The last command prints the address of a local SOCKS proxy, e.g. `127.0.0.1:60123`. Record
-`proxy: socks5h://<address>` and `connect_mode: unprivileged` under Run. Every request to a cluster service goes
+`proxy: socks5h://<address>` and `connect_mode: unprivileged` under Run, and `local_config <the CFG path>` under
+Resources, so teardown removes the block. Every request to a cluster service goes
 through it (`curl --proxy socks5h://<address> …`, `ride.sh --proxy …`). Check:
 
 ```bash
@@ -132,8 +149,10 @@ Done when it prints `200`.
 `"$T/bin/sd" local connect` in their own terminal; it asks for their sudo password once. Never type it yourself.
 Then there's no proxy: drop `--proxy` everywhere and record `connect_mode: privileged`.
 
-Why PortForward with `kubeContext`: on a local cluster it's the direct path, and `kubeContext` makes the CLI look up
-workloads in the trial cluster whatever the current context is.
+`PortForward` is the direct path on a local cluster. `kubeContext` and `kubeConfig` point the CLI at the trial
+cluster whatever the user's current context is, including when they reconnect with their own CLI or with sudo.
+Connection settings: https://www.signadot.com/docs/getting-started/installation/signadot-cli.md (Connection
+Configs); commands: https://www.signadot.com/docs/reference/cli/local.md.
 
 ## 5. Baseline ride (`baseline`)
 

@@ -1,6 +1,6 @@
 # C2 · Test a feature across two services, with a shareable preview
 
-Runs by default. About 2 minutes. Needs C1's sandbox. `<cluster>`, `<suffix>` and `<proxy>` as in C1.
+Runs by default. About 2 minutes. Needs C1's sandbox. `<cluster>`, `<suffix>` and `<proxy>` as in SKILL.md.
 
 ## What it shows
 

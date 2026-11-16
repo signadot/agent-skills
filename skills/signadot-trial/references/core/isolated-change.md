@@ -1,7 +1,6 @@
 # C1 · Test one service change in isolation
 
-Always runs. About 1 minute. `<cluster>` is `signadot-trial<suffix>`; `<proxy>` is `socks5h://<address>` from the
-connection step (drop `--proxy` for a privileged connection).
+Always runs. About 1 minute. `<cluster>`, `<suffix>` and `<proxy>` as in SKILL.md.
 
 ## What it shows
 
@@ -55,9 +54,9 @@ links: https://www.signadot.com/docs/tutorials/quickstart/first-sandbox
 try: book rides with and without the key: bash <S>/scripts/ride.sh --proxy <proxy> [--key <routing key>]
 ```
 
-**Screenshot (optional):** if you can drive a browser that sends an extra header (and uses `<proxy>` as a SOCKS
-proxy when the connection is unprivileged), open `http://frontend.hotrod.svc:8080` with
-`baggage: sd-routing-key=<key>`, book a ride, and save `$T/report/screens/C1.png`.
+**Screenshot (optional):** if you can drive a browser, start a local proxy for `driver-plates<suffix>`
+(`references/finish/report.md` "Screenshots"), open `http://localhost:18080`, book a ride, and save
+`$T/report/screens/C1.png`.
 
 ## Try it yourself
 

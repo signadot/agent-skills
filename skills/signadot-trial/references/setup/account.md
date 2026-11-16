@@ -60,4 +60,5 @@ Then wait for the login to finish:
 
 Done when it shows `Authenticated` and `Organization: <org>`. Signadot derives the org's short name from the name
 typed, for example "Acme Trial" becomes `acmetrial`; use the short name from here on. Record the step with the org.
-Never print the token line from `auth status` in your messages or the trial log.
+Never print the token line from `auth status` in your messages or the trial log. Command reference:
+https://www.signadot.com/docs/reference/cli/auth.md.

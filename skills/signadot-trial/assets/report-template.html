@@ -214,15 +214,17 @@ a request went.</p>
 <h2>What adopting this would take for your team</h2>
 <div class="grid">
 <div class="tile"><h3>Header propagation</h3><p>Services pass the routing key along with each request, usually through
-OpenTelemetry baggage, which many teams already propagate.</p></div>
+OpenTelemetry baggage, which many teams already propagate. <a href="https://www.signadot.com/docs/guides/set-up-context-propagation">How</a></p></div>
 <div class="tile"><h3>Request routing</h3><p>Signadot DevMesh (a lightweight sidecar), Istio or Linkerd sends keyed
-requests to sandboxes.</p></div>
+requests to sandboxes. <a href="https://www.signadot.com/docs/guides/request-routing">Options</a></p></div>
 <div class="tile"><h3>Queue consumers</h3><p>Consumers of Kafka, RabbitMQ, Redis Streams, Temporal and similar
-systems check the routing key, so sandboxes and baseline each process only their own messages.</p></div>
+systems check the routing key, so sandboxes and baseline each process only their own messages.
+<a href="https://www.signadot.com/docs/guides/set-up-message-queue-isolation">Patterns</a></p></div>
 <div class="tile"><h3>Database strategy</h3><p>Shared databases, per-sandbox databases from resource plugins, or a
-mix, depending on what each change touches.</p></div>
+mix, depending on what each change touches. <a href="https://www.signadot.com/docs/guides/set-up-data-isolation">Strategies</a></p></div>
 <div class="tile"><h3>Operator and CLI</h3><p>One Helm-installed operator per cluster, and the Signadot CLI or a CI
-integration to create sandboxes from pull requests.</p></div>
+integration to create sandboxes from pull requests.
+<a href="https://www.signadot.com/docs/installation/signadot-operator">Install</a></p></div>
 </div>
 </section>
 

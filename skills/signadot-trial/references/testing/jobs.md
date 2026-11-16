@@ -1,6 +1,6 @@
 # Run a Playwright suite as a Job
 
-`<cluster>` and `<suffix>` as in C1. Needs C1's `driver-plates<suffix>`.
+`<cluster>` and `<suffix>` as in SKILL.md. Needs C1's `driver-plates<suffix>`.
 
 ## What it shows
 
@@ -14,7 +14,7 @@
 
 ## Costs
 
-About 3 minutes: the runner's image is about 2 GB to pull, then the suite takes about a minute. About 1 GB of
+About 4 minutes: the runner's image is about 2 GB to pull, then the suite takes about a minute. About 1 GB of
 memory. Namespace `signadot-tests`.
 
 ## Before you start
@@ -24,7 +24,7 @@ memory. Namespace `signadot-tests`.
 
 ## Set up
 
-Start this early (right after the operator is installed), so the image pulls while you do the core tutorial:
+SKILL.md's flow starts this right after the operator is installed, so the image pulls during the core tutorial:
 
 ```bash
 "$T/bin/kc" create namespace signadot-tests --dry-run=client -o yaml | "$T/bin/kc" apply -f -
@@ -102,5 +102,5 @@ listed as `draining`.
 
 ## Docs
 
-https://www.signadot.com/docs/tutorials/quickstart/jobs.md. The trial's job clones HotROD's `main` branch for the
-tests and checks the traces, since the suite's assertions pass on the baseline too.
+https://www.signadot.com/docs/tutorials/quickstart/jobs.md. The trial's job fetches HotROD's tests at the same commit as
+the cluster, and checks the traces, since the suite's assertions pass on the baseline too.

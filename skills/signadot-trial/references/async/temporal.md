@@ -1,6 +1,6 @@
 # Temporal
 
-`<cluster>`, `<suffix>` and `<proxy>` as in C1 (drop `--proxy` for a privileged connection).
+`<cluster>`, `<suffix>`, `<proxy>` and `<key>` as in SKILL.md.
 
 ## What it shows
 
@@ -14,13 +14,12 @@
 
 ## Costs
 
-About 5 minutes, including two local image builds (about 1 minute) and the Temporal server's start. About 0.7 GB of
+About 6 minutes, including two local image builds (about 1 minute) and the Temporal server's start. About 1 GB of
 memory: the Temporal server with Postgres and Elasticsearch is the heaviest variation. Namespace `temporal`.
 
 ## Before you start
 
-- Fetch `signadot/examples` at the pinned commit, as in `references/async/rabbitmq.md` "Before you start", if it
-  isn't already in `$T/examples`.
+- The demo comes from `signadot/examples` in `$T/examples` (`references/setup/cluster.md` §2).
 - The demo has workers in Python, TypeScript, Go and Java. The trial uses the Python worker (the default); for
   another language, follow the docs page with `k8s/<language>-worker-deployment.yaml`.
 - Its images aren't published: you build them locally and load them into the kind node; no registry is needed. On
@@ -41,9 +40,8 @@ kind load docker-image temporal-py-client-ui:v1.0 temporal-money-transfer:v1.0 -
 ```
 
 The worker restarts a few times until the Temporal server is up; that's expected. Done when every deployment in
-`temporal` is available. If the operator wasn't installed yet when you deployed, restart them once it is:
-`"$T/bin/kc" -n temporal rollout restart deploy`; otherwise the worker sandbox stays Not Ready with
-`RoutingNotReady`. Record `namespace temporal` under Resources.
+`temporal` is available. If you deployed it before the operator, restart it as
+`references/setup/cluster.md` §3 says, or the worker sandbox stays Not Ready. Record `namespace temporal` under Resources.
 
 ## Run
 

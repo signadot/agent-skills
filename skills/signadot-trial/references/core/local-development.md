@@ -1,7 +1,7 @@
 # C3 · Run a service on this computer against the cluster
 
 Runs by default. About 3 minutes, most of it the first build. Needs Go 1.27.1+ or Docker, and port 8083 free.
-`<cluster>`, `<suffix>` and `<proxy>` as in C1.
+`<cluster>`, `<suffix>` and `<proxy>` as in SKILL.md.
 
 ## What it shows
 
@@ -10,11 +10,12 @@ Runs by default. About 3 minutes, most of it the first build. Needs Go 1.27.1+ o
 - **What Signadot does:** a local sandbox maps a cluster workload (`route`) to a process on this computer. Requests
   with its routing key reach the local process, which calls the real services in the cluster.
 - **Why it matters:** edit, rebuild and restart in seconds against real dependencies, with no image build or
-  deploy. A coding agent can use the same loop to validate its own changes.
+  deploy. A coding agent can use the same loop to validate its own changes: the `signadot-validate` agent skill runs it
+  for the user's own services.
 
 ## Set up: fetch, patch and build
 
-Start this early (it can run in the background during setup). The patch changes one line in
+SKILL.md's flow starts this in the background right after the CLI is installed, so the first build overlaps signup. The patch changes one line in
 `services/route/server.go`, so ETAs are in seconds instead of minutes.
 
 ```bash

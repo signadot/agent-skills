@@ -1,6 +1,6 @@
 # RabbitMQ
 
-`<cluster>`, `<suffix>` and `<proxy>` as in C1 (drop `--proxy` for a privileged connection).
+`<cluster>`, `<suffix>`, `<proxy>` and `<key>` as in SKILL.md.
 
 ## What it shows
 
@@ -18,13 +18,8 @@ About 3 minutes (image pulls on first run). About 0.5 GB of memory. Namespace `r
 
 ## Before you start
 
-The demo comes from `signadot/examples` at a pinned commit. Fetch it once (shared with the other async variations):
-
-```bash
-mkdir -p "$T/examples" && cd "$T/examples"
-[ -d .git ] || { git init -q && git remote add origin https://github.com/signadot/examples.git; }
-git fetch -q --depth 1 origin 26f759be92917adae40d9f928290863548d837fa && git checkout -q FETCH_HEAD
-```
+The demo comes from `signadot/examples` in `$T/examples`, fetched at a pinned commit by `references/setup/cluster.md`
+§2.
 
 ## Set up
 
@@ -40,8 +35,8 @@ cd "$T/examples/rabbitmq-signadot-demo"
 "$T/bin/kc" -n rabbitmq-demo wait --for=condition=available deploy --all --timeout=300s
 ```
 
-Done when every deployment in `rabbitmq-demo` is available. If the operator wasn't installed yet when you
-deployed, restart them once it is: `"$T/bin/kc" -n rabbitmq-demo rollout restart deploy`. Record `namespace rabbitmq-demo` under Resources.
+Done when every deployment in `rabbitmq-demo` is available. If you deployed it before the operator, restart it
+as `references/setup/cluster.md` §3 says. Record `namespace rabbitmq-demo` under Resources.
 
 ## Run
 

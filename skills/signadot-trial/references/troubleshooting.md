@@ -1,7 +1,8 @@
 # Troubleshooting
 
 Try the matching fix once, record what you did under Fallbacks, and move on. A failed scenario never blocks the
-others. First look at the state:
+others. For symptoms not listed here, see https://www.signadot.com/docs/guides/troubleshooting.md. First look at the
+state:
 
 ```bash
 "$T/bin/sd" sandbox get <name> -o json        # status.message says what it's waiting for
@@ -23,7 +24,8 @@ memory" or the last state `OOMKilled`. Remove a variation you've finished with (
 raise Docker's memory.
 
 **`install-operator.sh` shows fewer sidecars than workloads.** Pods get the proxy only when they restart after the
-operator is installed. Re-run the script; it restarts them again and re-counts.
+operator is installed. Re-run the script; it restarts them again and re-counts. To see which workloads lack it and
+why: `"$T/bin/sd" cluster devmesh analyze --cluster <cluster> --namespace hotrod`.
 
 **The login shows the wrong account, or never finishes.** The confirmation page uses whichever Signadot account the
 browser is signed in to. Use the browser from signup; if it's another account, sign out there and start the login
@@ -36,16 +38,21 @@ expired, `signadot auth login` first). Record `disconnected_user_connection: yes
 
 **The frontend doesn't answer 200 through the connection.** Give it up to a minute after connecting. Check
 `"$T/bin/sd" local status` says healthy and names `signadot-trial<suffix>`; read the proxy address again (it changes
-on every connect). The connection needs `kubeContext: kind-signadot-trial` in the CLI config the trial uses.
+on every connect). The connection needs `kubeContext: kind-signadot-trial` and `kubeConfig: <T>/kubeconfig` in the
+CLI config the trial uses.
 
-**`sandbox get-env` fails with "not found".** The connection's `kubeContext` is missing or wrong, so the CLI looks for
-the workload in another cluster. Fix the `local:` block, then `sd local disconnect` and connect again.
+**`sandbox get-env` fails with "not found".** The connection's `kubeContext` or `kubeConfig` is missing or wrong, so
+the CLI looks for the workload in another cluster. Fix the `local:` block, then `sd local disconnect` and connect again.
 
 ## Scenarios
 
 **A sandbox stays Not Ready with `RoutingNotReady: DevMesh Sidecar absent on baseline <ns>/<deployment>`.** The
 baseline started before the operator was installed, so it has no routing proxy. Restart it:
 `"$T/bin/kc" -n <ns> rollout restart deploy`; the sandbox turns Ready within seconds.
+
+**An apply fails with a limit, such as "can't go over" a number of clusters or sandboxes.** The org is at one of its
+plan's limits, which is likely in an existing org. Delete sandboxes or clusters it no longer needs, or ask the user
+which to remove; see https://www.signadot.com/docs/guides/admin/quotas-limits.md.
 
 **A sandbox doesn't become ready.** Read `status.message`, then `describe` its pod (fork pods are named
 `<sandbox>-dep-<workload>-…`). HotROD's sandbox images are amd64; on Apple Silicon they run under emulation, which
@@ -86,6 +93,12 @@ seconds later.
 **A plan step fails on an image policy.** The org doesn't allow `mcr.microsoft.com/playwright:*` for `run-container`
 yet (same section).
 
+**A plan step fails at start with "operation not permitted" (Linux).** On Ubuntu 23.10 or newer, AppArmor stops
+the unprivileged user namespaces that plan steps run in, and a kind node inherits the host's setting (preflight shows
+`apparmor_userns: restricted`). The user runs `sudo sysctl kernel.apparmor_restrict_unprivileged_userns=0` on the host;
+never run sudo yourself. Then run the plan again. See
+https://www.signadot.com/docs/reference/plans/cluster-requirements.md.
+
 **A plan run is `failed`, but `plan execution get-output <id> exit_code` prints `0`.** The tests passed; uploading the
 report afterwards failed (the run's error says "artifact upload failed … unexpected EOF"). Run the plan again.
 
@@ -98,6 +111,10 @@ file's resource flags and `trafficManager.replicas: 1` from the start. On a clus
 installed, run the infra file's helm commands again (they upgrade in place), then delete the old, larger pod so the
 new one can schedule.
 
-**Sandboxes on Istio ambient stay Not Ready with `RoutingNotReady`.** A forked service needs a waypoint and a route
-object. Check that the `hotrod` namespace has `istio.io/dataplane-mode=ambient` and `istio.io/use-waypoint=waypoint`,
+**Sandboxes on Istio ambient stay Not Ready with `RoutingNotReady`.** A forked service has no route object: the
+operator adds sandbox routes to HotROD's VirtualServices, so check they exist (`"$T/bin/kc" -n hotrod get
+virtualservices`) and that the operator values have `istio.enabled: true`.
+
+**On Istio ambient, a sandbox is Ready but keyed requests still reach the baseline.** No waypoint is applying the
+routes. Check that the `hotrod` namespace has `istio.io/dataplane-mode=ambient` and `istio.io/use-waypoint=waypoint`,
 and that the `waypoint` Gateway's pod is running.

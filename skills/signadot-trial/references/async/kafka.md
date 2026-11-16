@@ -1,6 +1,6 @@
 # Kafka
 
-`<suffix>` and `<proxy>` as in C1 (drop `--proxy` for a privileged connection). Needs C1's `driver-plates<suffix>`.
+`<suffix>` and `<proxy>` as in SKILL.md. Needs C1's `driver-plates<suffix>`.
 
 ## What it shows
 

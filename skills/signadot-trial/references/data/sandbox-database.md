@@ -1,6 +1,6 @@
 # A database per sandbox
 
-`<cluster>`, `<suffix>` and `<proxy>` as in C1 (drop `--proxy` for a privileged connection).
+`<cluster>`, `<suffix>`, `<proxy>` and `<key>` as in SKILL.md.
 
 ## What it shows
 
@@ -23,8 +23,12 @@ Nothing beyond the core setup.
 
 ## Set up
 
+A published plugin can't be applied again (Signadot rejects re-applying an existing version), so apply it only if
+it isn't there yet, for example on a retry or a resumed trial:
+
 ```bash
-"$T/bin/sd" resourceplugin apply -f "$S/assets/specs/data/hotrod-trial-db-plugin.yaml" --set suffix=<suffix>
+"$T/bin/sd" resourceplugin get hotrod-trial-db<suffix> >/dev/null 2>&1 \
+  || "$T/bin/sd" resourceplugin apply -f "$S/assets/specs/data/hotrod-trial-db-plugin.yaml" --set suffix=<suffix>
 ```
 
 Record `plugin hotrod-trial-db<suffix>` under Resources.

@@ -1,21 +1,22 @@
 # Prerequisites
 
 Run `bash $S/scripts/preflight.sh` first. It changes nothing and prints one `key: value` line per fact. Use it to
-fill the briefing and to decide what's missing.
+fill the briefing and to decide what's missing; SKILL.md's Prerequisites table says what each kind of gap means.
 
-| Kind | What | Check (preflight key) | If it's missing |
-|---|---|---|---|
-| Must have | macOS or Linux | `os` | Stop: the trial doesn't support other systems. |
-| Must have | Docker, running | `docker: running` | Ask the user to start Docker Desktop, OrbStack, Colima or the Docker service. |
-| Must have | Enough Docker memory | `docker_mem_gb` | About 4 GB for the core; add each variation's figure from the SKILL.md index. See "Docker memory" below. |
-| Must have | curl and internet access | `curl` | Stop and say so. |
-| Must have | A browser the user can use | — | Needed for signup. |
-| Install with consent | kubectl, kind, helm, git | `kubectl`, `kind`, `helm`, `git` | Show the command below; run it only after a yes. |
-| Installed by the trial | Signadot CLI ≥ 1.9.1 | `signadot` | `scripts/install-cli.sh` installs 1.9.1 into `$T/bin`, or reuses theirs if it's new enough. |
-| Optional | Go ≥ 1.27.1 | `go` | C3 builds in a `golang` container. |
-| Optional | A browser you can drive | — | The user does the browser steps; no screenshots. |
+What each key decides:
 
-Other facts preflight reports:
+- `os`, `docker`, `curl`: must haves. On anything but macOS or Linux, stop. If Docker is stopped, ask the user to
+  start Docker Desktop, OrbStack, Colima or the Docker service.
+- `docker_mem_gb`: about 4 GB for the core; add each variation's figure from the SKILL.md index. See "Docker memory"
+  below.
+- `kubectl`, `kind`, `helm`, `git`: show the install command below; run it only after a yes.
+- `lsof` (C3 checks its port with it) and `unzip` (the Jobs proof reads the test traces with it): present on macOS
+  and most Linux desktops. If one is missing, the user installs it with their package manager (it needs sudo), or
+  skip that scenario.
+- `signadot`: `scripts/install-cli.sh` installs CLI 1.9.1 into `$T/bin`, or reuses theirs if it's 1.9.1 or newer.
+- `go`: 1.27.1 or newer builds C3 directly; otherwise C3 builds in a `golang` container.
+- `apparmor_userns: restricted`: Plans can't run until the user changes a kernel setting (troubleshooting.md,
+  Testing). Mention it if they pick the testing variations.
 
 - `signadot_config` and `signadot_login`: if either shows the user already uses Signadot, the trial isolates its
   config (`--isolate yes`), so `~/.signadot` and their login stay untouched. On resume, keep `isolated:` from the trial log
@@ -50,8 +51,8 @@ curl -fsSL "https://get.helm.sh/helm-v3.16.2-linux-$ARCH.tar.gz" | tar -xz
 install -m 755 kubectl kind "linux-$ARCH/helm" ~/.local/bin/
 ```
 
-git comes from the distribution's package manager (for example `sudo apt-get install git`). That needs sudo, so the
-user runs it themselves.
+git, lsof and unzip come from the distribution's package manager (for example
+`sudo apt-get install git lsof unzip`). That needs sudo, so the user runs it themselves.
 
 Done when preflight shows a version for each tool.
 

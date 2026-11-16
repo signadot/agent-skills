@@ -1,6 +1,6 @@
 # Run the suite as a Plan, and catch a regression
 
-`<cluster>` and `<suffix>` as in C1. Needs C1's `driver-plates<suffix>`; the last step also needs C3's
+`<cluster>` and `<suffix>` as in SKILL.md. Needs C1's `driver-plates<suffix>`; the last step also needs C3's
 `local-route<suffix>`.
 
 ## What it shows
@@ -30,6 +30,10 @@ first, then change them in a browser you drive (signed in to the trial org), or 
    `run-container`, expand Allowed images. If `mcr.microsoft.com/playwright:*` is already listed, change nothing;
    otherwise add it and press Apply.
 
+On Linux, if preflight shows `apparmor_userns: restricted` (Ubuntu 23.10 or newer), plan steps fail at start with
+"operation not permitted" until the user changes a kernel setting that needs sudo (troubleshooting.md, Testing).
+Say so before they choose Plans. Requirements: https://www.signadot.com/docs/reference/plans/cluster-requirements.md.
+
 Record what you changed as `org_setting plan-runner <cluster>` and, only if you added it,
 `org_setting allowed-image mcr.microsoft.com/playwright:*` under Resources, so teardown lists them for the user to
 revert. Done when a Plan run doesn't fail with "no plan runner group on cluster" or an image-policy error.
@@ -58,7 +62,8 @@ Against C1's sandbox:
 "$T/bin/sd" plan run --tag hotrod-e2e<suffix> --param sandbox=driver-plates<suffix> --timeout 10m -o json > "$T/logs/plan-driver.json"
 ```
 
-Then against a sandbox with a deliberate bug (`route` pointed at a Redis that doesn't exist):
+Then against a sandbox with a deliberate bug (`route` pointed at a Redis that doesn't exist). This run is meant to
+fail, so `plan run` exits non-zero; that's the regression being caught, not a problem with the trial:
 
 ```bash
 "$T/bin/sd" sandbox apply -f "$S/assets/specs/testing/broken-route.yaml" --set cluster=<cluster> --set suffix=<suffix>

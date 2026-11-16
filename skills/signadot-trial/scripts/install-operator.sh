@@ -3,6 +3,7 @@
 # so they get their routing proxy. The cluster token goes from the CLI to helm through a private temp file
 # (mode 600, deleted on exit); it is never printed or passed on a command line. Safe to re-run.
 set -eu
+OPERATOR_VERSION=1.4.0   # the operator chart version the skill was verified with; see MAINTAINING.md
 
 usage() {
   echo "Usage: install-operator.sh --trial-dir <dir> --cluster <name> [--values <file>] [--namespace hotrod]"
@@ -26,27 +27,37 @@ SD="$T/bin/sd" KC="$T/bin/kc" KCFG="$T/kubeconfig"
 mkdir -p "$T/logs"
 
 # 1. Register the cluster (once).
-# `cluster add` prints a token on stdout, so stdout is discarded and only errors are kept.
+# `cluster add` prints a token (on stderr in CLI 1.9.1). Capture both streams in memory, keep the token for helm
+# (step 2), and only ever write a redacted copy to a log.
+addtok=""
 clusters=$("$SD" cluster list -o json 2>"$T/logs/cluster-list.log") \
   || { echo "error: signadot cluster list failed (login expired?); see $T/logs/cluster-list.log" >&2; exit 4; }
 if echo "$clusters" | tr -d ' \n' | grep -q "\"name\":\"$CLUSTER\""; then
   registered=existing
 else
-  "$SD" cluster add --name "$CLUSTER" >/dev/null 2>"$T/logs/cluster-add.log" \
-    || { echo "error: signadot cluster add failed; see $T/logs/cluster-add.log" >&2; exit 4; }
+  if ! addout=$("$SD" cluster add --name "$CLUSTER" 2>&1); then
+    echo "$addout" | sed "s/token='[^']*'/token='<redacted>'/g" > "$T/logs/cluster-add.log"
+    echo "error: signadot cluster add failed; see $T/logs/cluster-add.log" >&2; exit 4
+  fi
+  addtok=$(echo "$addout" | sed -n "s/.*token='\([^']*\)'.*/\1/p" | head -1); addout=""
   registered=added
 fi
 
-# 2. Install the operator (once).
+# 2. Install the operator (once), with the token from `cluster add`, or a new one if the cluster was registered before.
+token_source=none
 if helm status signadot-operator -n signadot --kubeconfig "$KCFG" >/dev/null 2>&1; then
   operator=already-installed
 else
   umask 077; tok=$(mktemp); trap 'rm -f "$tok"' EXIT
-  printf 'controlPlane:\n  clusterToken: "%s"\n' \
-    "$("$SD" cluster token create --cluster "$CLUSTER" -o json | sed -n 's/.*"token": *"\([^"]*\)".*/\1/p')" > "$tok"
-  if ! grep -q 'clusterToken: ".' "$tok"; then echo "error: could not create a cluster token" >&2; exit 5; fi
+  token=$addtok token_source=cluster-add
+  if [ -z "$token" ]; then
+    token=$("$SD" cluster token create --cluster "$CLUSTER" -o json | sed -n 's/.*"token": *"\([^"]*\)".*/\1/p')
+    token_source=created
+  fi
+  printf 'controlPlane:\n  clusterToken: "%s"\n' "$token" > "$tok"; token="" addtok=""
+  if ! grep -q 'clusterToken: ".' "$tok"; then echo "error: could not get a cluster token" >&2; exit 5; fi
   set -- -f "$tok"; if [ -n "$VALUES" ]; then set -- "$@" -f "$VALUES"; fi
-  helm upgrade --install signadot-operator operator --repo https://charts.signadot.com \
+  helm upgrade --install signadot-operator operator --repo https://charts.signadot.com --version "$OPERATOR_VERSION" \
     -n signadot --create-namespace --kubeconfig "$KCFG" "$@" >"$T/logs/operator-install.log" 2>&1 \
     || { echo "error: helm install failed; see $T/logs/operator-install.log" >&2; exit 6; }
   rm -f "$tok"; operator=installed
@@ -83,5 +94,5 @@ if [ "$operator" = installed ] || [ "$ok" -lt "$total" ]; then
   count
 fi
 
-printf 'cluster_registered: %s\noperator: %s\noperator_version: %s\nsidecars: %s/%s\n' \
-  "$registered" "$operator" "$version" "$ok" "$total"
+printf 'cluster_registered: %s\ntoken_source: %s\noperator: %s\noperator_version: %s\nsidecars: %s/%s\n' \
+  "$registered" "$token_source" "$operator" "$version" "$ok" "$total"

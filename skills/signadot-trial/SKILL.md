@@ -6,6 +6,13 @@ description: >
   "with Temporal", "with Kafka", "with a database per sandbox" or "with Playwright tests". It signs the user up,
   sets up a local kind cluster with the HotROD demo app, proves each capability with and without a routing key,
   writes an HTML report, and leaves everything running until the user asks for teardown.
+license: Apache-2.0
+compatibility: >
+  Needs macOS or Linux, a shell, Docker with about 4 GB of memory, curl, internet access and a browser for signup.
+  Installs kubectl, kind, helm and git with the user's consent. No sudo by default.
+metadata:
+  version: "1.0.0"
+  verified: "2026-11-15 with Signadot CLI 1.9.1 and operator 1.4.0"
 ---
 
 # Signadot trial
@@ -20,6 +27,14 @@ skill's folder; call that folder `S`. The trial folder `T` is `$SIGNADOT_TRIAL_H
 variables may not survive between your commands: use absolute paths, or set `T` and `S` again in each command. Run
 every Signadot command as `$T/bin/sd` and every kubectl command as `$T/bin/kc`; they carry the trial's kubeconfig
 and config.
+
+Placeholders in every file: `<suffix>` is the run's suffix (empty for an org the trial created; see "Existing org"),
+`<cluster>` is `signadot-trial<suffix>`, `<proxy>` is `socks5h://<address>` from the connection step (drop `--proxy`
+when the connection is privileged), and `<key>` is the routing key of the sandbox the scenario created.
+
+During the trial, follow this skill's files, even if the `signadot-validate` or `signadot-plan` skills are installed:
+the trial uses its own CLI wrapper, config and connection, and a fixed path. Those skills are what the hand-off
+recommends for the user's own services afterwards.
 
 ## How you work with the user
 
@@ -59,6 +74,7 @@ one.
 | Kind | What | If it's missing |
 |---|---|---|
 | Must have | macOS or Linux, a shell, Docker running with enough memory (about 4 GB for the core, more per variation), internet access, curl, a browser the user can use for signup | Stop. Say what's missing and how to get it. |
+| Must have for one scenario | lsof (C3), unzip (Jobs); usually preinstalled | The user installs it with their package manager, or skip that scenario. |
 | Install with consent | kubectl, kind, helm, git | Show the install command from [references/setup/prerequisites.md](references/setup/prerequisites.md); run it only after a yes. |
 | Installed by the trial | Signadot CLI 1.9.1 or newer, into `$T/bin` | `scripts/install-cli.sh` (covered by the briefing OK) |
 | Optional | Go 1.27.1 or newer | C3 builds in a `golang` container instead. |
@@ -69,20 +85,20 @@ one.
 | # | Step (trial-log ID) | What you run | Done when |
 |---|---|---|---|
 | 1 | `preflight` | `bash $S/scripts/preflight.sh` | no missing must-haves; menu and briefing sent; the user said OK |
-| 2 | `cli` | `bash $S/scripts/install-cli.sh --trial-dir $T --isolate yes\|no [--reuse <their signadot>]` | `sd` and `kc` exist |
+| 2 | `cli` | `bash $S/scripts/install-cli.sh --trial-dir $T --isolate yes\|no [--reuse <their signadot>]` | `sd` and `kc` exist; then start C3's "Set up" (fetch, patch, build) in the background |
 | 3 | `cluster` (in the background) | [references/setup/cluster.md](references/setup/cluster.md) §1–2, with the infra file's install | HotROD ready |
 | 4 | `account` ★ | [references/setup/account.md](references/setup/account.md) §1 | the dashboard loads |
 | 5 | `login` | [references/setup/account.md](references/setup/account.md) §2 | `sd auth status` shows the trial org |
-| 6 | `operator` | [references/setup/cluster.md](references/setup/cluster.md) §3 (`scripts/install-operator.sh`) | `sidecars` shows all workloads |
+| 6 | `operator` | [references/setup/cluster.md](references/setup/cluster.md) §3 (`scripts/install-operator.sh`) | `sidecars` shows all workloads; then, if Jobs was chosen, start its runner group ([references/testing/jobs.md](references/testing/jobs.md) "Set up") |
 | 7 | `connect` | [references/setup/cluster.md](references/setup/cluster.md) §4 | the frontend answers 200 through the connection |
 | 8 | `baseline` | `bash $S/scripts/ride.sh --proxy <proxy>` | a plate and an ETA, every hop `baseline` |
-| 9 | C1 → C2 → C3 | [references/core/](references/core/isolated-change.md) | each card proven |
+| 9 | C1 → C2 → C3 | [isolated-change.md](references/core/isolated-change.md), [multi-service-preview.md](references/core/multi-service-preview.md), [local-development.md](references/core/local-development.md) | each card proven |
 | 10 | variations | one file per choice, in the order under "Combining variations" | each card proven |
 | 11 | report | [references/finish/report.md](references/finish/report.md) | `$T/report/index.html` opened |
 | 12 | hand-off | [references/finish/playground.md](references/finish/playground.md) | the user knows what's running and how to tear down |
 | 13 | teardown, on request | [references/finish/teardown.md](references/finish/teardown.md) | everything in the trial log's resources is gone |
 
-Create `$T/trial-log.md` right after the OK and keep it current ([references/finish/report.md](references/finish/report.md)).
+Create `$T/trial-log.md` right after the OK and keep it current ([references/trial-log.md](references/trial-log.md)).
 Start step 3 as soon as step 2 is done, so the cluster, image pulls and any demo-app deploys overlap with signup.
 If your shell can't keep a background job running, run it in the foreground and narrate.
 
@@ -130,7 +146,8 @@ On signadot.com
 On this computer (everything under ~/.signadot-trial)
   • Signadot CLI 1.9.1 in ~/.signadot-trial/bin, unless you already have 1.9.1 or newer
   • [existing Signadot user] Keep the trial's config and login in ~/.signadot-trial; ~/.signadot stays untouched
-  • [new user] Save the CLI login in ~/.signadot, so Signadot tools keep working after the trial
+  • [new user] Save the CLI login in ~/.signadot, so Signadot tools keep working after the trial, plus the trial's
+    connection settings (teardown removes those; the login stays)
   • A local Kubernetes cluster "signadot-trial" with kind, with its own kubeconfig in ~/.signadot-trial: your
     kube context stays "<current>"
   • A connection from this computer to the cluster, without sudo
@@ -153,7 +170,9 @@ and memory. If the memory total is more than Docker has, say so and suggest what
 
 ## Variations index
 
-Read only the files for what the user chose. Each one is self-contained and follows the template at the end.
+Read only the files for what the user chose. Each variation file has the same sections: What it shows, Costs,
+Before you start, Set up, Run, Prove it, Record, Try it yourself, Tear down, Docs. Infra files have: What it shows,
+Install before HotROD, Overlay and operator values, Mesh check, Tear down, Docs.
 
 | Category | Option | File | Time | Memory | Needs |
 |---|---|---|---|---|---|
@@ -169,7 +188,7 @@ Read only the files for what the user chose. Each one is self-contained and foll
 | Async | Temporal | [references/async/temporal.md](references/async/temporal.md) | +6 min | +1 GB | Docker (local image build) |
 | Async | RabbitMQ | [references/async/rabbitmq.md](references/async/rabbitmq.md) | +3 min | +0.5 GB | — |
 | Async | Redis Streams | [references/async/redis-streams.md](references/async/redis-streams.md) | +3 min | +0.5 GB | Docker (local image build) |
-| Testing | Playwright suite as a Job | [references/testing/jobs.md](references/testing/jobs.md) | +4 min | +1 GB | C1; an org setting |
+| Testing | Playwright suite as a Job | [references/testing/jobs.md](references/testing/jobs.md) | +4 min | +1 GB | C1 |
 | Testing | Same suite as a Plan; catch a regression | [references/testing/plans.md](references/testing/plans.md) | +4 min | — | C1; two org settings |
 
 ## Combining variations
@@ -182,9 +201,9 @@ Read only the files for what the user chose. Each one is self-contained and foll
   (`references/setup/cluster.md` §1).
 - **Memory:** add up the core and each chosen variation from the index, compare with `docker_mem_gb`, and settle it
   in the briefing.
-- **Demo apps** other than HotROD come from `signadot/examples` at the commit their file pins. Start their deploys
-  as soon as the cluster is up, so image pulls overlap the core tutorial. Once the operator is installed, restart the
-  deployments of any app deployed before it (`references/setup/cluster.md` §3).
+- **Demo apps** other than HotROD come from `signadot/examples`, fetched once at a pinned commit
+  (`references/setup/cluster.md` §2). Start their deploys as soon as the cluster is up, so image pulls overlap the
+  core tutorial. Once the operator is installed, restart the deployments of any app deployed before it (§3).
 - **Order:** C1, C2, C3, then data, then async (Kafka first, then the menu order), then testing (Jobs, then Plans).
   Kafka, Jobs and Plans reuse C1's sandbox; the Plans file's local step needs C3.
 
@@ -198,8 +217,11 @@ Read only the files for what the user chose. Each one is self-contained and foll
   1. read the state: `$T/bin/sd sandbox get <name> -o json` (`status`), `$T/bin/kc -n <ns> get pods`,
      `describe pod`, `logs`;
   2. find the symptom in [references/troubleshooting.md](references/troubleshooting.md);
-  3. try that fix once, and record it under Fallbacks;
-  4. if it still fails, mark the scenario `failed` with what you saw, and go on to the next one.
+  3. if a command's output, flag or spec field doesn't match what the file expects, the product may have changed:
+     read the page in that file's Docs section (its `.md` copy), or find the right page in
+     https://www.signadot.com/docs/llms.txt, and adapt the command to it;
+  4. try that fix once, and record it under Fallbacks;
+  5. if it still fails, mark the scenario `failed` with what you saw, and go on to the next one.
 
   Stop and ask only when the fix has a side effect, or when setup itself can't continue.
 
@@ -210,7 +232,7 @@ Read only the files for what the user chose. Each one is self-contained and foll
 | Preflight, reads, status checks, fetching docs pages | Do it. |
 | Everything the briefing listed (CLI in `$T/bin`, kind cluster, operator, mesh, demo apps, sandboxes, report) | Covered by the briefing OK. |
 | Installing kubectl, kind, helm or git; ticking the Terms box; changing org settings; asking the user to disconnect a local connection; teardown | Only after an explicit yes for that action. |
-| Typing passwords or verification codes; running sudo; using a cloud or shared cluster; changing `~/.signadot` or another login; switching a kube context the user chose | Never. |
+| Typing passwords or verification codes; running sudo; using a cloud or shared cluster; changing a `~/.signadot` config or login that existed before the trial; switching a kube context the user chose | Never. |
 
 - **Cluster:** default to a new kind cluster. Refuse cloud clusters (EKS, GKE, AKS) and any cluster that already
   runs a Signadot operator. Ask before using a cluster that doesn't look local. Touch only the namespaces the trial
@@ -230,36 +252,23 @@ Read only the files for what the user chose. Each one is self-contained and foll
 - After: `✓ <result with the proving value>`, or `✗ <what failed> → <what you're trying next>`.
 - Each scenario as a card: problem · what Signadot does · doing · proof (without key vs with key) · why it matters ·
   docs link.
-- Define each term the first time you use it, in one line: a *sandbox* runs only the changed services; a *routing
-  key* sent with a request decides which sandbox handles it; the *baseline* is the shared, unchanged version.
+- Define each term the first time you use it, in one line (C1 has the wording for sandbox, routing key and
+  baseline).
 
 ## Report, hand-off, teardown and resume
 
 - **Report:** [references/finish/report.md](references/finish/report.md). Fill `assets/report-template.html` from the
   trial log into `$T/report/index.html` and open it.
-- **Hand-off:** [references/finish/playground.md](references/finish/playground.md). Then reply with: one line per
-  scenario result, the report path, the preview URL, what's running, and that you'll tear it down when asked.
+- **Hand-off:** [references/finish/playground.md](references/finish/playground.md), ending with its closing message.
 - **Teardown:** [references/finish/teardown.md](references/finish/teardown.md), only when the user asks.
-- **Resume:** if `$T/trial-log.md` exists (`trial_log: present`), read it, tell the user what's done, and continue
-  from the first step or scenario that isn't `ok` or `passed`. Keep the recorded isolation, suffix, cluster and infra
-  choices. A connection to the trial's own cluster is the trial's, not "another connection".
+- **Resume:** if preflight shows `trial_log: present`, follow "Resume and retire" in
+  [references/trial-log.md](references/trial-log.md). A connection to the trial's own cluster is the trial's, not
+  "another connection". Teardown renames the log, so a torn-down trial is never resumed.
 - **Problems:** [references/troubleshooting.md](references/troubleshooting.md).
 
-## Variation file template
+## Docs
 
-Every file under `references/data/`, `references/async/` and `references/testing/` has these sections, so a new
-variation is one new file plus a row in the index above:
-
-1. **What it shows:** the card copy: problem, what Signadot does, why it matters.
-2. **Costs:** time, memory, namespace.
-3. **Before you start:** requirements and choices.
-4. **Set up:** commands, each with "done when".
-5. **Run:** the scenario's commands.
-6. **Prove it:** without key vs with key, "done when", and the hops or message path for the flow diagram.
-7. **Record:** the trial-log scenario entry.
-8. **Try it yourself:** lines for the hand-off.
-9. **Tear down:** commands that remove what this file created.
-10. **Docs:** the docs page's markdown copy (`https://www.signadot.com/docs/<page>.md`) and where the trial differs.
-
-Files under `references/infra/` instead have: What it shows · Install before HotROD · Overlay and operator values ·
-Mesh check · Tear down · Docs.
+Each reference file ends with a Docs section that links the page it's based on; the report links the same pages for
+the user. Index of every docs page, with a markdown copy at `<page>.md`: https://www.signadot.com/docs/llms.txt.
+Concepts: https://www.signadot.com/docs/concepts/sandbox.md and
+https://www.signadot.com/docs/guides/set-up-context-propagation.md (routing keys).

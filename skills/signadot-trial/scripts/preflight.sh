@@ -5,8 +5,9 @@ set -eu
 
 if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then
   echo "Usage: preflight.sh"
-  echo "Prints os, arch, docker, docker_mem_gb, tool versions (kubectl kind helm git curl go), signadot,"
-  echo "signadot_config, signadot_login, local_connect, kube_context, kube_contexts, port_8083, trial_log."
+  echo "Prints os, arch, docker, docker_mem_gb, tool versions (kubectl kind helm git curl go), lsof, unzip, signadot,"
+  echo "signadot_config, signadot_login, local_connect, kube_context, kube_contexts, port_8083, apparmor_userns,"
+  echo "trial_log."
   exit 0
 fi
 
@@ -39,6 +40,7 @@ ver() {
   esac
 }
 for t in kubectl kind helm git curl go; do kv "$t" "$(ver "$t")"; done
+for t in lsof unzip; do if command -v "$t" >/dev/null 2>&1; then kv "$t" present; else kv "$t" missing; fi; done
 
 # Signadot CLI on PATH, the user's own config and login (never read credentials).
 if sd=$(command -v signadot 2>/dev/null); then
@@ -90,4 +92,8 @@ if command -v lsof >/dev/null 2>&1 && lsof -nP -iTCP:8083 -sTCP:LISTEN >/dev/nul
 else
   kv port_8083 free
 fi
+# Linux hosts that restrict unprivileged user namespaces (Ubuntu 23.10+) break Plan steps on kind.
+case "$(cat /proc/sys/kernel/apparmor_restrict_unprivileged_userns 2>/dev/null)" in
+  1) kv apparmor_userns restricted ;; 0) kv apparmor_userns unrestricted ;; *) kv apparmor_userns n/a ;;
+esac
 if [ -f "$T/trial-log.md" ]; then kv trial_log present; else kv trial_log absent; fi

@@ -22,25 +22,46 @@ What keeps running, and what doesn't:
 | kind cluster, HotROD, demo apps, operator | Yes, while Docker runs | Start Docker again; the cluster comes back |
 | Sandboxes, route group, plugin, runner group, plan tag | Yes (stored in Signadot) | — |
 | Local connection | Yes (a background daemon), until reboot | `<T>/bin/sd local connect --unprivileged` |
-| C3's route process and Redis port-forward | Usually; they're background processes this session started | the start commands in `references/core/local-development.md` "Run" |
+| C3's route process, Redis port-forward, a local proxy | Usually; they're background processes this session started | the start commands in `references/core/local-development.md` "Run", or below |
 
-If the proxy address changed after a reconnect, read it again with the command in `references/setup/cluster.md` §4 (the `portforward` section's `localAddress`).
+If the proxy address changed after a reconnect, read it again with the command in `references/setup/cluster.md` §4
+(the `portforward` section's `localAddress`).
 
 ## 2. Tell the user how to use it
 
 Include what applies, with real values:
 
-- **The app with a routing key:** the preview URL from C2 (no setup needed: it opens in a browser signed in to the
-  org), or any request through the connection:
+- **See a sandbox in any browser:** a local proxy serves the frontend on a plain localhost URL and adds the
+  sandbox's routing key to every request, so no header extension or proxy setting is needed:
+
+  ```bash
+  nohup "$T/bin/sd" local proxy --sandbox driver-plates<suffix> --map http://frontend.hotrod.svc:8080@localhost:18080 \
+    > "$T/logs/local-proxy.log" 2>&1 & echo $! > "$T/local-proxy.pid"
+  ```
+
+  Then open http://localhost:18080 and book a ride: the plate starts with `SD-`. Use `--sandbox local-route<suffix>`
+  for C3 (ETAs in seconds) or `--routegroup hotrod-plates<suffix>` for C2. Record `process <pid> local proxy` under
+  Resources. One proxy at a time on this port; stop it before starting another:
+
+  ```bash
+  p=$(cat "$T/local-proxy.pid" 2>/dev/null) && ps -p "$p" -o args= 2>/dev/null | grep -qF 'local proxy' && kill "$p"
+  ```
+
+- **The preview URL from C2:** opens in a browser signed in to the org, with no setup.
+- **Any request through the connection:**
   `curl --proxy socks5h://<address> -H "baggage: sd-routing-key=<key>" http://frontend.hotrod.svc:8080/`.
-  A browser can use the same proxy (SOCKS5 at `<address>`) with a header extension that adds the `baggage` header.
 - **The trial's CLI and cluster:** `<T>/bin/sd` (the trial org) and `<T>/bin/kc`, or
   `export KUBECONFIG=<T>/kubeconfig` for any kubectl tool. Their own `signadot` and kube context are unchanged.
 - **The dashboard:** https://app.signadot.com, with the sandboxes, route group and any jobs or plans.
 - **Things to try:** the `try:` line of every scenario that ran, from the trial log, plus each file's "Try it
   yourself" section.
-- **Connect a coding agent:** the Signadot MCP server, `<T>/bin/sd mcp` (or `signadot mcp` when the trial didn't
-  isolate its config), uses the same org.
+- **Use it on their own services:** the agent skills that run this loop for any change:
+  `npx skills add signadot/agent-skills --skill signadot-validate` (and `--skill signadot-plan` to author Plans).
+  See https://www.signadot.com/docs/integrations/coding-agents/agent-skills. To install the operator on their own
+  cluster: https://www.signadot.com/docs/installation/signadot-operator.
+- **Connect a coding agent:** the Signadot MCP server, `<T>/bin/sd mcp` when the trial isolated its config or the CLI
+  isn't on the user's PATH, otherwise `signadot mcp`; it uses the same org. Per-client setup:
+  https://www.signadot.com/docs/integrations/mcp.
 
 ## 3. Offer teardown, don't do it
 
@@ -48,6 +69,7 @@ End the hand-off with something like: "Everything stays running so you can explo
 When you're done, ask me to tear down the Signadot trial and I'll remove it all, in order, and tell you what's left
 for you to do." Then stop. Run `references/finish/teardown.md` only when the user asks.
 
-Closing message, after the hand-off: one line per scenario result, the report path, the preview URL, what's running,
-and the teardown offer. If the CLI in `$T/bin` isn't on the user's PATH, say where it is, and offer to add it (only
-with their OK).
+**Closing message,** after the hand-off: one line per scenario result, the report path, the preview URL, what's
+running, and the teardown offer. If the user has no `signadot` on their PATH, say where the CLI is
+(`cli_path` in the trial log) and offer to link it into a folder on their PATH, with their OK. Don't put `<T>/bin` itself on
+PATH: its `sd` wrapper would shadow the `sd` find-and-replace tool some people use.

@@ -1,6 +1,6 @@
 # Redis Streams
 
-`<cluster>`, `<suffix>` and `<proxy>` as in C1 (drop `--proxy` for a privileged connection).
+`<cluster>`, `<suffix>`, `<proxy>` and `<key>` as in SKILL.md.
 
 ## What it shows
 
@@ -19,8 +19,7 @@ About 3 minutes, including a local image build. About 0.5 GB of memory. Namespac
 
 ## Before you start
 
-Fetch `signadot/examples` at the pinned commit, as in `references/async/rabbitmq.md` "Before you start", if it isn't
-already in `$T/examples`. The demo has no published image, so you build it locally and load it into the kind node;
+The demo comes from `signadot/examples` in `$T/examples` (`references/setup/cluster.md` §2). It has no published image, so you build it locally and load it into the kind node;
 no registry is needed. On an existing (non-kind) cluster, use that cluster's way of loading local images instead
 (for example `minikube image load`).
 
@@ -35,9 +34,8 @@ kind load docker-image redis-streams-demo-python:latest --name signadot-trial
 "$T/bin/kc" -n redis-streams-demo wait --for=condition=available deploy --all --timeout=300s
 ```
 
-Done when every deployment in `redis-streams-demo` is available. If the operator wasn't installed yet when you
-deployed, restart them once it is: `"$T/bin/kc" -n redis-streams-demo rollout restart deploy`. Record `namespace redis-streams-demo` under
-Resources.
+Done when every deployment in `redis-streams-demo` is available. If you deployed it before the operator, restart it
+as `references/setup/cluster.md` §3 says. Record `namespace redis-streams-demo` under Resources.
 
 ## Run
 

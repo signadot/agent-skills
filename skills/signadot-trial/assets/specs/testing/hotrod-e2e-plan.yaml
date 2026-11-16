@@ -1,12 +1,12 @@
 spec:
-  selectionHint: "Run HotROD's existing Playwright suite (playwright-tests/ in signadot/hotrod) against a sandbox. Pass sandbox; optionally branch."
+  selectionHint: "Run HotROD's existing Playwright suite (playwright-tests/ in signadot/hotrod) against a sandbox. Pass sandbox; optionally ref (a HotROD commit or branch)."
   cluster:
     fromSandbox: sandbox
   params:
   - name: sandbox
     required: true
-  - name: branch
-    default: main
+  - name: ref
+    default: b16178651580a8ba3ceb45ac7c59f4579611b0b3
   steps:
   - id: e2e
     action:
@@ -20,8 +20,10 @@ spec:
         timeout: 15m
         script: |
           set -e
-          git clone --depth 1 -b "$(cat ./context/branch)" https://github.com/signadot/hotrod.git
-          cd hotrod
+          REF=$(cat ./context/ref)
+          git init -q hotrod && cd hotrod
+          git fetch -q --depth 1 https://github.com/signadot/hotrod.git "$REF"
+          git checkout -q FETCH_HEAD
           CYPRESS_INSTALL_BINARY=0 npm ci
           export HOTROD_NAMESPACE=hotrod CI=true
           echo "routing key: $SIGNADOT_ROUTING_KEY (sandbox $SIGNADOT_SANDBOX_NAME)"
@@ -31,9 +33,9 @@ spec:
           tar czf "$OLDPWD/outputs/report" playwright-report
           exit $ec
       refs:
-        branch: params.branch
+        ref: params.ref
     extraInputs:
-    - name: branch
+    - name: ref
     extraOutputs:
     - name: report
       metadata:
