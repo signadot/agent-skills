@@ -147,7 +147,8 @@ Done when it prints `200`.
 `"$T/bin/sd" local connect` in their own terminal; it asks for their sudo password once. Never type it yourself.
 Then cluster names resolve on this computer: drop `--proxy` everywhere and record `connect_mode: privileged`.
 
-The user may also switch to the privileged connection later, from a report page, while scenarios are still to run.
+The user may also switch to the privileged connection later, from a report page, or when you ask because a page's
+main link is a cluster address (`references/finish/report.md`, "After each scenario").
 Reconnecting moves the connection's proxy to a new address, so the recorded `proxy:` stops answering. If they say
 so, or a request through the proxy fails, check the direct path:
 `curl -s -o /dev/null -w '%{http_code}\n' http://frontend.hotrod.svc:8080/`. If it prints `200`, record

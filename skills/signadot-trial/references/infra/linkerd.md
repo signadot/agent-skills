@@ -8,7 +8,7 @@ Needs `openssl` for the mesh's certificates.
 
 Signadot routing in a cluster that runs Linkerd. Linkerd keeps doing what it does (mTLS, retries, metrics), and
 Signadot's DevMesh sidecar, running next to the Linkerd proxy in each pod, routes requests that carry a routing key
-to their sandbox.
+to their sandbox. As without a mesh, it routes at the destination: the sidecar in the called service's pod decides.
 
 ## Install before HotROD
 

@@ -79,6 +79,11 @@ for f in "$R/index.html" "$R/scenario.html"; do
 done
 grep -qE 'fetch\(|XMLHttpRequest|https?://' "$R/report.js" && bad "report.js must not reach the network"
 grep -nE 'curl -s ' "$R/scenario.html" && bad "scenario template: use curl -sS, not -s, so the user sees errors instead of a blank line"
+# DevMesh decides at the destination: the template draws the sidecar inside the normal route's pod.
+grep -q 'class="pod"' "$R/scenario.html" || bad "scenario template: draw the sidecar inside the normal route's pod (DevMesh routes at the destination)"
+grep -q '\.pod' "$R/report.css" || bad "report.css: no style for the diagram's pod outline"
+has references/finish/report.md 'destination side' "the diagram rules must place DevMesh's decision at the destination pod"
+has references/finish/report.md 'source side' "the diagram rules must place Istio's decision at the caller's sidecar"
 
 # 7. Snippets: no ${x:+…}, which zsh and bash expand differently.
 grep -rnE '\$\{[A-Za-z_]+:\+' "$S/SKILL.md" "$S/references" && bad "a snippet uses \${x:+…}"
@@ -88,11 +93,15 @@ has references/finish/teardown.md 'trial-log.torn-down-' "teardown must retire t
 has references/finish/teardown.md 'delete namespace signadot' "teardown must remove the operator's namespace on an existing cluster"
 has references/setup/account.md 'Always give the user the link and the code in chat' "the CLI login must show the user its sign-in link and code"
 has references/setup/account.md 'end your turn' "the CLI login must wait for the user's reply, not poll before they've seen the link"
+has references/finish/report.md "won't open in the user's browser yet" "a page whose main link is a cluster address must get the sudo connection asked for, and checked, in chat"
 has references/setup/cluster.md 'kind export kubeconfig' "reusing a kind cluster must export its kubeconfig"
 has references/setup/cluster.md 'get namespace <ns>' "an existing cluster's namespaces must be checked before use"
 has references/infra/istio.md 'hm" status istiod -n istio-system' "an existing Istio must be detected, not reinstalled"
 has references/infra/istio-ambient.md 'hm" status istiod -n istio-system' "an existing Istio must be detected, not reinstalled"
 has references/infra/linkerd.md 'get namespace linkerd' "an existing Linkerd must be detected, not reinstalled"
+has references/async/rabbitmq.md 'orders_exchange' "the RabbitMQ demo's exchange is orders_exchange (orders is RabbitMQ's own routing key)"
+grep -nE '`orders` exchange|exchange, `orders`' "$S/references/async/rabbitmq.md" "$S/references/finish/report.md" \
+  && bad "RabbitMQ: the exchange is orders_exchange, not orders"
 sed -n '/^## Set up/,/^## /p' "$S/references/data/sandbox-database.md" | grep -q 'resourceplugin get' \
   || bad "sandbox-database.md: re-applying the plugin fails; Set up must check it exists first"
 sed -n '/^## Tear down/,/^## /p' "$S/references/testing/plans.md" | grep -q '^"$T/bin/sd" plan delete' \

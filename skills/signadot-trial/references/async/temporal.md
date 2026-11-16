@@ -124,7 +124,8 @@ try: start a transfer from each link, then open it in the Temporal UI and see wh
 
 The links lead the page (`references/finish/report.md`, "App links"). Two of them are cluster addresses, so they
 open only once the laptop has Signadot's connection with sudo; when `connect_mode` is `unprivileged`, the reconnect
-goes first in the link box.
+goes first in the link box, and you ask for it in chat when you show the page, then check the links
+(`references/finish/report.md`, "After each scenario").
 
 - Start a transfer from the transfer app at its cluster address, http://temporal-py-client-ui.temporal.svc:8080: no
   routing key is added, so the page shows "Routing Key: undefined" and the normal worker runs it.

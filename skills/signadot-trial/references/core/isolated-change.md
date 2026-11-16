@@ -12,8 +12,9 @@ Always runs. About 1 minute. `<cluster>`, `<suffix>` and `<proxy>` as in SKILL.m
   Every other service is shared with the baseline. The sandbox gets a routing key; requests that carry it reach the
   new route, and all others reach the normal one.
 - **How the key gets there:** the sandbox's preview link adds it to every request. HotROD passes it along with
-  OpenTelemetry, from frontend through the Kafka message to driver, and on driver's call to route. The DevMesh
-  sidecar on the normal route pod reads it and forwards those calls to the sandbox's route.
+  OpenTelemetry, from frontend through the Kafka message to driver, and on driver's call to route. Signadot routes
+  where the call arrives: the DevMesh sidecar in the normal route's pod reads the key and forwards those calls to
+  the sandbox's route.
 
 Introduce the terms in one line each: a **sandbox** runs only the services you changed, next to the shared
 **baseline**; a **routing key** sent with a request (`baggage: sd-routing-key=<key>`) sends it to the sandbox.

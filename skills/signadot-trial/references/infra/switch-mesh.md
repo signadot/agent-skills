@@ -48,8 +48,9 @@ jobs and plans create `driver-plates<suffix>` again themselves if they're picked
 with the menu name ("On your service mesh: Istio"):
 
 - **change:** the same one-service change as the first scenario, now on the mesh the user picked.
-- **routing:** the same diagram, with the decision point labelled for the mesh (Istio's sidecar on driver, the
-  ambient waypoint in front of route, or Signadot's sidecar next to Linkerd's proxy).
+- **routing:** the same diagram, with the decision point where the mesh makes it (`references/finish/report.md`,
+  "The diagram"): Istio's Envoy sidecar inside driver's pod, the caller; the ambient waypoint in front of route,
+  outside any pod; or Signadot's sidecar inside the normal route's pod, next to Linkerd's proxy.
 - **works:** card 3 from the mesh file's "What it shows": how Signadot works with the mesh to route by the routing
   key. Don't explain the mesh itself.
 - Everything else as for any scenario page (`references/finish/report.md`).

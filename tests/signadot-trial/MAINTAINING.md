@@ -145,7 +145,11 @@ pin one commit instead, use a tree URL with the full 40-character SHA (a short S
 2. **Existing user:** with a `~/.signadot` config and login present. The trial uses its own login in the trial folder; checksum
    `~/.signadot` before and after (`find ~/.signadot -type f -exec shasum {} + | sort | shasum`): unchanged.
 3. **Every variation:** each infra option on a fresh cluster with the basics; then data, Kafka, Temporal, RabbitMQ,
-   Redis Streams, Jobs and Plans (Plans needs the two org settings in `references/testing/plans.md`).
+   Redis Streams, Jobs and Plans (Plans needs the two org settings in `references/testing/plans.md`). Each page's
+   diagram puts the decision where the routing makes it: the sidecar inside the normal pod of the called service
+   (DevMesh, Linkerd), the Envoy sidecar inside the caller's pod (Istio), the waypoint in front of the called
+   service (ambient), nothing for messages and workflows. For Temporal, Redis Streams and RabbitMQ, the agent asks
+   in chat for the sudo reconnect when it shows the page, checks the link, and the link then opens in a browser.
 4. **Resume and retry:** stop mid-run and resume; rerun a variation's Set up (it must succeed twice).
 5. **Teardown:** org lists are clean, the kind cluster is gone, `~/.kube/config` and the kube context are unchanged,
    the trial log is renamed, and a new "try Signadot" starts fresh.

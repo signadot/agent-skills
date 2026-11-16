@@ -100,7 +100,8 @@ try: publish a message from each link and compare the trails; look at the consum
 
 The links lead the page (`references/finish/report.md`, "App links"). The baseline is the producer's cluster
 address, so it opens only once the laptop has Signadot's connection with sudo; when `connect_mode` is
-`unprivileged`, the reconnect goes first in the link box.
+`unprivileged`, the reconnect goes first in the link box, and you ask for it in chat when you show the page, then
+check the link (`references/finish/report.md`, "After each scenario").
 
 - Publish a message from the producer's cluster address, http://producer.redis-streams-demo.svc:4000: no routing
   key is added (the trail shows `routingKey: ""`), and `consumer (baseline)` processes it with processor v1.

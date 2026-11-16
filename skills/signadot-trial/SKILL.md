@@ -52,7 +52,8 @@ ask.
 2. **Steps only the user can do,** when you reach them: the signup details and the browser steps
    ([references/setup/account.md](references/setup/account.md)), ticking the Terms box (or an explicit "tick it for
    me"), confirming the CLI login code if you can't drive a browser, and the sudo prompt if they chose the
-   privileged connection. Say exactly what to do, where, and what happens next. Whenever something waits on a
+   privileged connection, or when a page's main link is a cluster address
+   ([references/finish/report.md](references/finish/report.md), "After each scenario"). Say exactly what to do, where, and what happens next. Whenever something waits on a
    browser (signup, the CLI login, org settings), give the full link in chat, and for the CLI login the code too,
    even when you'll do it yourself. When the user has to act, end your turn and wait for their reply: never wait
    or poll silently, since some agents show messages only when the turn ends.

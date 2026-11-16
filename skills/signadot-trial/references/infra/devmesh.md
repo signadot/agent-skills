@@ -2,9 +2,9 @@
 
 ## What it shows
 
-Signadot's own request routing. The operator adds a small proxy (`sd-sidecar`) to each annotated workload; it
-reads the routing key on each request and sends the request to the sandbox that owns the key, or to the baseline.
-No service mesh is needed.
+Signadot's own request routing. The operator adds a small proxy (`sd-sidecar`) to each annotated workload. It
+routes at the destination: when a request arrives at a pod, that pod's sidecar reads the routing key and sends the
+request on to the sandbox that owns the key, or to the service beside it. No service mesh is needed.
 
 ## Install before HotROD
 

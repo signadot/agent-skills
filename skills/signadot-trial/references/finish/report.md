@@ -20,6 +20,21 @@ mkdir -p "$T/report/screens" && cp "$S/assets/report/report.css" "$S/assets/repo
    so it's always current (see "The overview page").
 4. **Open the scenario page** with `open` (macOS) or `xdg-open` (Linux), or give the user its path. Then show the
    result in chat and ask before the next scenario (SKILL.md, "After each scenario").
+5. **Make its cluster links work.** When the page's link box has a cluster address (one ending in `.svc`: the
+   Temporal UI and transfer app, the Redis Streams producer, RabbitMQ's management UI) and the trial's connection is
+   `connect_mode: unprivileged`, that link won't open in the user's browser yet: cluster names resolve on the laptop
+   only with the sudo connection. Don't leave it to the page: in the result message, before the question about the
+   next scenario, add a step for the user: "To open <the link> in your browser, run this once in your own terminal
+   (it asks for your sudo password), then tell me:" with the reconnect command,
+   `<trial folder>/bin/sd local disconnect && <trial folder>/bin/sd local connect`. When they reply, check the link
+   with `curl -sS -o /dev/null -w '%{http_code}\n' <link>`:
+   - an HTTP status (`200`, or `302` for a redirect): it opens now. Tell the user, record `connect_mode: privileged`
+     and drop `--proxy` from then on (`references/setup/cluster.md` §4).
+   - `000` and "Could not resolve host": the reconnect didn't take. `"$T/bin/sd" local status` says `running with
+     root-daemon` once it has. Ask the user to run the command again and paste what it printed.
+
+   If the user would rather not use sudo, say the link stays closed and carry on; the rest of the page still
+   applies.
 
 In every page, escape `<`, `>` and `&` in anything copied from command output, and leave no `FILL:` comment or
 template block behind.
@@ -93,28 +108,51 @@ The template's diagram is the finished one for isolated-change. Keep its layout 
 - the app's real path in one row, left to right: for HotROD, frontend (location above it), Kafka, driver (Redis
   above it), route. The trial log's hops say which version served each service, but list them in the order the
   notifications arrived: don't draw that order;
-- two lanes along the path: grey (`lane base`) for the request without the key, accent (`lane key`) for the one
-  with it;
+- two lanes along the path: grey (`lane base`) for the request without the sandbox's key (a baseline link's key
+  belongs to no sandbox), accent (`lane key`) for the one with it;
 - for each service the sandbox changed, its copy below the normal box (`box sbx`, or `box local` for a process on
   the user's computer), inside a dashed `outline` labelled with the sandbox's name; the keyed lane drops to the copy
   and the grey lane goes on to the normal one;
-- the place the decision is made, labelled for this scenario: the `router` node in front of the forked service
-  (DevMesh's sidecar, Istio's sidecar, the ambient waypoint), or, for messages and workflows, nothing: both lanes go
-  into the topic or queue and each consumer takes only its own;
+- the place the routing decision is made, drawn where it really happens
+  ([request routing](https://www.signadot.com/docs/guides/request-routing.md)). Both lanes reach it together, and it
+  is where they split:
+  - **DevMesh and Linkerd, destination side** (the template): Signadot's sidecar inside the pod of the normal version
+    of the service being called. Draw that pod as a `pod` rectangle around a `router` ("sidecar") and the normal
+    box; the grey lane goes on to the normal box beside it and the accent lane leaves the pod for the copy. On
+    Linkerd, title the pod "pod of the normal route, with Linkerd's proxy".
+  - **Istio sidecar mode, source side:** the caller's Envoy sidecar decides, so the `router` ("Envoy") goes inside
+    the caller's `pod` instead, and the normal route is a plain box. For route, replace the template's driver, its
+    line to Redis, the route pod (rectangle, title, sidecar and route box) and the lanes from driver on with:
+
+    ```html
+    <rect class="pod" x="480" y="120" width="200" height="80" rx="10"/><text class="sub" x="672" y="112" text-anchor="end">pod of driver, the caller</text>
+    <rect class="box" x="490" y="133" width="90" height="54" rx="8"/><text x="535" y="156" text-anchor="middle">driver</text><text class="sub" x="535" y="173" text-anchor="middle">shared</text>
+    <rect class="router" x="596" y="146" width="74" height="28" rx="14"/><text class="small" x="633" y="164" text-anchor="middle">Envoy</text><text class="sub" x="633" y="191" text-anchor="middle">reads the key</text>
+    <rect class="box" x="736" y="133" width="120" height="54" rx="8"/><text x="796" y="156" text-anchor="middle">route</text><text class="sub" x="796" y="173" text-anchor="middle">normal · ETA 23m14s</text>
+    <path class="line" d="M535,133 V60" marker-end="url(#a-line)"/>
+    <path class="lane base" d="M580,153 H592" marker-end="url(#a-base)"/>
+    <path class="lane base" d="M670,153 H732" marker-end="url(#a-base)"/>
+    <path class="lane key" d="M580,167 H592" marker-end="url(#a-key)"/>
+    <path class="lane key" d="M670,167 C704,167 700,244 732,244" marker-end="url(#a-key)"/>
+    ```
+  - **Istio ambient, waypoint:** pods have no sidecar; a waypoint proxy in front of the called service decides. Draw
+    the template without the `pod` rectangle and its title, and label the `router` "waypoint".
+  - **Messages and workflows:** nothing to draw: both lanes go into the topic or queue, and each consumer or worker
+    takes only its own;
 - the results in the boxes where they appear (an ETA, a plate, a processed message), so the picture carries the
   result. Update the `aria-label` to describe the picture.
 
 | Scenario | Copies below the row | Where the decision is made (card 3) |
 |---|---|---|
-| isolated-change | route | DevMesh's sidecar on the normal route pod forwards keyed calls to the copy |
-| multi-service-preview | frontend and driver, one outline per sandbox, under the route group's name | the sidecar on the normal frontend pod; driver's copy takes only the Kafka messages that carry the key, and the normal driver skips them |
-| local-development | route, as `box local`, "on your computer" | the sidecar on the normal route pod forwards keyed calls through Signadot's connection to the process on the user's computer |
-| sandbox-database | location, with its own database (a `store` inside the outline) | the sidecar on the normal location pod; the resource plugin created the database with the sandbox and removes it with it |
+| isolated-change | route | the sidecar in the normal route's pod forwards calls with the key to the copy |
+| multi-service-preview | frontend and driver, one outline per sandbox, under the route group's name | the sidecar in the normal frontend's pod (the link's requests arrive there); driver's copy takes only the Kafka messages that carry the key, and the normal driver skips them |
+| local-development | route, as `box local`, "on your computer" | the sidecar in the normal route's pod forwards calls with the key through Signadot's connection to the process on the user's computer |
+| sandbox-database | location, with its own database (a `store` inside the outline) | the sidecar in the normal location's pod; the resource plugin created the database with the sandbox and removes it with it |
 | kafka | driver | no router: both messages go into the one topic; each driver reads the key on every message and processes only its own |
 | temporal, rabbitmq, redis-streams | the worker or consumer | no router: each worker or consumer reads the key on every task, message or entry and handles only its own (from the file's "What Signadot does") |
 | jobs | driver (the Job tests the driver sandbox) | the job runner sets the sandbox's key on the test traffic (card 1); then as in multi-service-preview |
 | plans | the driver sandbox and broken-route, the broken one's result marked failed | the plan runner sets the key of the sandbox it's given (card 1); then the sidecars, as in isolated-change |
-| istio, istio-ambient, linkerd | route | Istio: the caller's Envoy sidecar; ambient: the waypoint in front of route; Linkerd: Signadot's sidecar next to Linkerd's proxy (from the mesh file's "What it shows") |
+| istio, istio-ambient, linkerd | route | Istio: the Envoy sidecar in driver's pod, the caller (source side); ambient: the waypoint in front of route; Linkerd: Signadot's sidecar in the normal route's pod, next to Linkerd's proxy (destination side) |
 
 For Temporal, RabbitMQ and Redis Streams, draw their own apps the same way, with their services from the file.
 
@@ -162,7 +200,7 @@ Read a link with `"$T/bin/sd" sandbox get <name> -o json | grep -oE '"url": *"ht
 | istio, istio-ambient, linkerd | `baseline_url` | sandbox `fast-route<suffix>` | as isolated-change, on the mesh |
 | temporal | the transfer app's cluster address, `http://temporal-py-client-ui.temporal.svc:8080` (no key; needs the connection) | sandbox `temporal-worker<suffix>`; plus the Temporal UI, `http://temporal-ui-service.temporal.svc` (needs the connection) | the transfer page shows "Routing Key: undefined" on the baseline and the sandbox's key through its link; in the Temporal UI, each transfer's completed steps list the worker that ran them (Identity): `1@temporal-worker-…` or the sandbox's `1@temporal-worker<suffix>-dep-temporal-worker-…`; a "Workflow Task Failed … cannot handle routing key" event is the other worker handing a step back (say so on the page) |
 | redis-streams | the producer's cluster address, `http://producer.redis-streams-demo.svc:4000` (no key; needs the connection) | sandbox `redis-streams-consumer<suffix>` | each message's trail: `routingKey: ""` and `consumer (baseline)` with processor v1 on the baseline; the sandbox's key and `consumer (sandbox=…)` with processor v2, in upper case, through its link |
-| rabbitmq | — (the app has no page of its own) | RabbitMQ's management UI, `http://rabbitmq.rabbitmq-demo.svc:15672`, user `guest` / `guest` (the demo's default; needs the connection) | Queues: `consumer-baseline` and `consumer-trial<suffix>`, both bound to the `orders` exchange; every order reaches both, and each consumer processes only its own (the logs show PROCESSING and SKIP) |
+| rabbitmq | — (the app has no page of its own) | RabbitMQ's management UI, `http://rabbitmq.rabbitmq-demo.svc:15672`, user `guest` / `guest` (the demo's default; needs the connection) | Queues: `consumer-baseline` and `consumer-trial<suffix>`, both bound with `#` to the `orders_exchange` exchange; every order reaches both, and each consumer processes only its own (the logs show PROCESSING, and SKIP or `process=False` for the rest) |
 
 ## The overview page
 

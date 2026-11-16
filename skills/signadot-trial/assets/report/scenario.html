@@ -148,39 +148,40 @@ The overview page explains how to use the trial's cluster from any terminal.</p>
 driver's ETA. Only the request from the sandbox link carries the routing key, and only that one reaches the new
 route.</p>
 <div class="diagram">
-<svg viewBox="0 0 870 300" role="img" aria-label="Two rides through HotROD. The ride from the baseline link carries no routing key: it goes through the shared frontend, Kafka and driver to the normal route, and arrives in 23m14s. The ride from the sandbox link carries the key through the same shared services; at route, the sidecar sends it to the sandbox's route, and it arrives in 1s.">
+<svg viewBox="0 0 870 300" role="img" aria-label="Two rides through HotROD. The ride from the baseline link doesn't carry the sandbox's routing key: it goes through the shared frontend, Kafka and driver into the normal route's pod, whose sidecar passes it to the normal route, and it arrives in 23m14s. The ride from the sandbox link carries the key through the same shared services; in the normal route's pod, the sidecar reads it and sends the call to the sandbox's route, and it arrives in 1s.">
   <defs>
     <marker id="a-line" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head" d="M0,0 L10,5 L0,10 z"/></marker>
     <marker id="a-base" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head base" d="M0,0 L10,5 L0,10 z"/></marker>
     <marker id="a-key" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head key" d="M0,0 L10,5 L0,10 z"/></marker>
   </defs>
-  <rect class="box" x="10" y="60" width="140" height="54" rx="8"/><text x="80" y="83" text-anchor="middle">Baseline link</text><text class="sub" x="80" y="100" text-anchor="middle">no routing key</text>
-  <rect class="box key" x="10" y="206" width="140" height="54" rx="8"/><text class="sbxt" x="80" y="229" text-anchor="middle">Sandbox link</text><text class="sub" x="80" y="246" text-anchor="middle">adds the routing key</text>
+  <rect class="box" x="10" y="60" width="140" height="54" rx="8"/><text x="80" y="83" text-anchor="middle">Baseline link</text><text class="sub" x="80" y="100" text-anchor="middle">a key no sandbox owns</text>
+  <rect class="box key" x="10" y="206" width="140" height="54" rx="8"/><text class="sbxt" x="80" y="229" text-anchor="middle">Sandbox link</text><text class="sub" x="80" y="246" text-anchor="middle">adds the sandbox's key</text>
   <rect class="box" x="190" y="10" width="110" height="46" rx="8"/><text x="245" y="30" text-anchor="middle">location</text><text class="sub" x="245" y="46" text-anchor="middle">shared</text>
   <rect class="box" x="190" y="133" width="110" height="54" rx="8"/><text x="245" y="156" text-anchor="middle">frontend</text><text class="sub" x="245" y="173" text-anchor="middle">shared</text>
   <rect class="bus" x="340" y="133" width="110" height="54" rx="8"/><text x="395" y="156" text-anchor="middle">Kafka</text><text class="sub" x="395" y="173" text-anchor="middle">dispatch topic</text>
   <rect class="store" x="490" y="10" width="110" height="46" rx="8"/><text x="545" y="38" text-anchor="middle">Redis</text>
   <rect class="box" x="490" y="133" width="110" height="54" rx="8"/><text x="545" y="156" text-anchor="middle">driver</text><text class="sub" x="545" y="173" text-anchor="middle">shared</text>
-  <rect class="router" x="625" y="146" width="70" height="28" rx="14"/><text class="small" x="660" y="164" text-anchor="middle">sidecar</text><text class="sub" x="660" y="192" text-anchor="middle">reads the key</text>
-  <rect class="box" x="725" y="60" width="135" height="54" rx="8"/><text x="792" y="83" text-anchor="middle">route</text><text class="sub" x="792" y="100" text-anchor="middle">normal · ETA 23m14s</text>
-  <rect class="outline" x="715" y="196" width="150" height="96" rx="10"/>
-  <rect class="box sbx" x="725" y="206" width="130" height="54" rx="8"/><text class="sbxt" x="790" y="229" text-anchor="middle">route (new)</text><text class="sub" x="790" y="246" text-anchor="middle">ETA 1s</text>
-  <text class="tag" x="790" y="282" text-anchor="middle">sandbox fast-route</text>
+  <rect class="pod" x="626" y="120" width="238" height="80" rx="10"/><text class="sub" x="634" y="112">pod of the normal route</text>
+  <rect class="router" x="638" y="146" width="72" height="28" rx="14"/><text class="small" x="674" y="164" text-anchor="middle">sidecar</text><text class="sub" x="674" y="191" text-anchor="middle">reads the key</text>
+  <rect class="box" x="736" y="133" width="120" height="54" rx="8"/><text x="796" y="156" text-anchor="middle">route</text><text class="sub" x="796" y="173" text-anchor="middle">normal · ETA 23m14s</text>
+  <rect class="outline" x="726" y="212" width="140" height="82" rx="10"/>
+  <rect class="box sbx" x="736" y="220" width="120" height="48" rx="8"/><text class="sbxt" x="796" y="240" text-anchor="middle">route (new)</text><text class="sub" x="796" y="257" text-anchor="middle">ETA 1s</text>
+  <text class="tag" x="796" y="285" text-anchor="middle">sandbox fast-route</text>
   <path class="line" d="M245,133 V60" marker-end="url(#a-line)"/>
   <path class="line" d="M545,133 V60" marker-end="url(#a-line)"/>
   <path class="lane base" d="M150,87 C172,87 168,153 186,153" marker-end="url(#a-base)"/>
   <path class="lane base" d="M300,153 H336" marker-end="url(#a-base)"/>
   <path class="lane base" d="M450,153 H486" marker-end="url(#a-base)"/>
-  <path class="lane base" d="M600,153 H621" marker-end="url(#a-base)"/>
-  <path class="lane base" d="M695,153 C712,153 704,87 721,87" marker-end="url(#a-base)"/>
+  <path class="lane base" d="M600,153 H634" marker-end="url(#a-base)"/>
+  <path class="lane base" d="M710,153 H732" marker-end="url(#a-base)"/>
   <path class="lane key" d="M150,233 C172,233 168,167 186,167" marker-end="url(#a-key)"/>
   <path class="lane key" d="M300,167 H336" marker-end="url(#a-key)"/>
   <path class="lane key" d="M450,167 H486" marker-end="url(#a-key)"/>
-  <path class="lane key" d="M600,167 H621" marker-end="url(#a-key)"/>
-  <path class="lane key" d="M695,167 C712,167 704,233 721,233" marker-end="url(#a-key)"/>
+  <path class="lane key" d="M600,167 H634" marker-end="url(#a-key)"/>
+  <path class="lane key" d="M710,167 C724,167 716,244 732,244" marker-end="url(#a-key)"/>
 </svg>
-<p class="key-legend"><span><span class="sw base"></span>request without the routing key</span>
-<span><span class="sw key"></span>request with the routing key</span>
+<p class="key-legend"><span><span class="sw base"></span>request without the sandbox's routing key</span>
+<span><span class="sw key"></span>request with the sandbox's routing key</span>
 <span><span class="sw new"></span>the new version, in the sandbox</span></p>
 </div>
 <p class="proof"><strong>Proof:</strong> each ride records which version of each service handled it. The ride from
@@ -222,10 +223,13 @@ the Kafka message, and from driver on to its call to route. Your services need t
 instrumentation does it in most languages, often with no code changes.
 <a href="https://www.signadot.com/docs/guides/set-up-context-propagation">Passing the key along</a></p></div>
 <div class="box"><h3><span class="step-n">3</span>Signadot routes by the key</h3>
-<p>A small Signadot proxy, the sidecar, runs next to each HotROD service. When driver's call reaches the normal route
-pod, its sidecar reads the key: with fast-route's key it forwards the call to the sandbox's route, and otherwise the
-normal route answers. On Istio, Signadot configures the mesh to do this instead; on Linkerd, the sidecar runs next
-to Linkerd's proxy. <a href="https://www.signadot.com/docs/guides/request-routing">Request routing</a></p>
+<p>Signadot adds a small proxy, the sidecar, to each HotROD pod. It decides where a request goes when the request
+arrives, at the service being called: driver's call to route reaches the normal route's pod, and that pod's sidecar
+reads the key. With fast-route's key it forwards the call to the sandbox's route; with any other key, or none, it
+passes the call to the normal route beside it. With Linkerd, the same sidecar runs next to Linkerd's proxy. With
+Istio, the decision moves to the caller: Signadot adds a route for the sandbox to route's VirtualService, and the
+Envoy sidecar in driver's pod sends calls with the key straight to the sandbox's route (in Istio's ambient mode, a
+waypoint proxy in front of route does it). <a href="https://www.signadot.com/docs/guides/request-routing">Request routing</a></p>
 <p>Messages work differently: a queue isn't routed. Every consumer reads the key on each message and handles only
 the messages that are its own, as the Kafka scenario shows.</p></div>
 </div>
