@@ -145,10 +145,11 @@ Done when it prints `200`.
 
 **Privileged instead** (only if the user asked for cluster names to resolve on this computer): ask them to run
 `"$T/bin/sd" local connect` in their own terminal; it asks for their sudo password once. Never type it yourself.
-Then there's no proxy: drop `--proxy` everywhere and record `connect_mode: privileged`.
+Then cluster names resolve on this computer: drop `--proxy` everywhere and record `connect_mode: privileged`.
 
 The user may also switch to the privileged connection later, from a report page, while scenarios are still to run.
-If they say so, or a request through the proxy fails, check the direct path:
+Reconnecting moves the connection's proxy to a new address, so the recorded `proxy:` stops answering. If they say
+so, or a request through the proxy fails, check the direct path:
 `curl -s -o /dev/null -w '%{http_code}\n' http://frontend.hotrod.svc:8080/`. If it prints `200`, record
 `connect_mode: privileged` and drop `--proxy` from then on. A running local-development route process keeps
 working; if its sandbox link stops answering, start the process again with the commands in that file's Run.
