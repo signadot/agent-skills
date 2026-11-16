@@ -2,11 +2,6 @@ name: location-db@{suffix}
 spec:
   cluster: "@{cluster}"
   description: "Signadot trial (database per sandbox): location service on its own database with different data"
-  # The sandbox's preview link: opens the app with this sandbox's routing key added to every request.
-  defaultRouteGroup:
-    endpoints:
-    - name: frontend
-      target: http://frontend.hotrod.svc:8080
   resources:
   - name: locationdb
     plugin: hotrod-trial-db@{suffix}
@@ -22,3 +17,10 @@ spec:
           resource:
             name: locationdb
             outputKey: provision.dbname
+  # The sandbox's preview link: a *.preview.signadot.com URL that opens the app with this sandbox's
+  # routing key added to every request. `target` is where the link leads inside the cluster, not a
+  # URL to open.
+  defaultRouteGroup:
+    endpoints:
+    - name: frontend
+      target: http://frontend.hotrod.svc:8080

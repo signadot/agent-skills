@@ -34,7 +34,7 @@ h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; margin: 
 p { margin: 0 0 10px; max-width: 75ch; }
 .eyebrow { margin: 0; color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: .06em; }
 .eyebrow a { color: inherit; }
-.hero, .card, .tile, .box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+.hero, .box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
   box-shadow: var(--shadow); }
 .hero { padding: 22px 22px 18px; }
 .lead { font-size: 17px; line-height: 1.5; margin: 6px 0 4px; }
@@ -47,70 +47,57 @@ p { margin: 0 0 10px; max-width: 75ch; }
 .pill.failed { color: var(--fail); background: var(--fail-bg); }
 .pill.not-run, .pill.skipped, .pill.next { color: var(--skip); background: var(--skip-bg); }
 
-/* "What we tested": three labelled blocks. */
-.tested { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+/* The routing diagram: both requests in one picture, the new version in its sandbox. */
 .box { padding: 14px 16px; }
 .box p { margin: 0; }
 .step-n { display: inline-flex; width: 22px; height: 22px; border-radius: 50%; align-items: center;
   justify-content: center; background: var(--sbx-bg); color: var(--sbx); font-size: 12px; font-weight: 700;
-  margin-right: 6px; }
-
-/* App diagram. */
-.diagram { margin-top: 16px; }
-.diagram svg { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
+  margin-right: 8px; flex: none; }
+.diagram { margin-top: 12px; overflow-x: auto; }
+.diagram svg { width: 100%; min-width: 640px; height: auto; display: block; margin: 8px 0 4px; }
 .diagram svg .box { fill: var(--surface); stroke: var(--border); stroke-width: 1.5; }
-.diagram svg .box.changed { fill: var(--sbx-bg); stroke: var(--sbx); stroke-width: 2; }
+.diagram svg .box.key { stroke: var(--sbx); stroke-width: 2; }
+.diagram svg .box.sbx, .diagram svg .box.changed { fill: var(--sbx-bg); stroke: var(--sbx); stroke-width: 2; }
+.diagram svg .box.local { fill: var(--sbx-bg); stroke: var(--sbx); stroke-width: 2; stroke-dasharray: 6 4; }
 .diagram svg .store { fill: var(--base-bg); stroke: var(--border); stroke-width: 1.5; }
 .diagram svg .bus { fill: var(--msg-bg); stroke: var(--msg); stroke-width: 1.5; }
+.diagram svg .router { fill: var(--surface); stroke: var(--muted); stroke-width: 1.5; }
+.diagram svg .outline { fill: none; stroke: var(--sbx); stroke-width: 1.2; stroke-dasharray: 5 4; }
 .diagram svg text { fill: var(--text); font: 600 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
 .diagram svg text.sub { fill: var(--muted); font-weight: 400; font-size: 11px; }
+.diagram svg text.small { font-size: 12px; }
+.diagram svg text.sbxt, .diagram svg text.tag { fill: var(--sbx); }
+.diagram svg text.tag { font-size: 11px; }
 .diagram svg .line { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+.diagram svg .lane { fill: none; stroke-width: 2.2; }
+.diagram svg .lane.base { stroke: var(--base); }
+.diagram svg .lane.key { stroke: var(--sbx); }
 .diagram svg .head { fill: var(--muted); }
+.diagram svg .head.base { fill: var(--base); }
+.diagram svg .head.key { fill: var(--sbx); }
+.key-legend { font-size: 13px; color: var(--muted); display: flex; gap: 6px 18px; flex-wrap: wrap; margin: 4px 0 0; }
+.key-legend > span { display: inline-flex; align-items: center; }
+.sw { display: inline-block; width: 22px; margin-right: 6px; }
+.sw.base, .sw.key { border-top: 2.5px solid; }
+.sw.base { border-color: var(--base); }
+.sw.key { border-color: var(--sbx); }
+.sw.new { height: 12px; border: 2px solid var(--sbx); background: var(--sbx-bg); border-radius: 3px; }
+pre.code { margin: 6px 0 10px; }
+ul.parts { margin: 2px 0 16px; }
 
-/* Flow diagram: one row per request or message, sandbox hops highlighted. */
-.flows { margin: 12px 0; display: grid; gap: 10px; }
-.flow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.flow .label { width: 120px; flex: none; font-size: 12px; color: var(--muted); text-transform: uppercase;
-  letter-spacing: .04em; }
-.hop { display: inline-flex; flex-direction: column; align-items: center; padding: 4px 10px; border-radius: 8px;
-  border: 1px solid var(--border); background: var(--base-bg); font-size: 13px; line-height: 1.25; }
-.hop small { font-size: 11px; color: var(--muted); }
-.hop.sbx { background: var(--sbx-bg); border-color: var(--sbx); color: var(--sbx); font-weight: 600; }
-.hop.sbx small { color: var(--sbx); font-weight: 500; }
-.hop.local { border-style: dashed; }
-.hop.msg { background: var(--msg-bg); border-color: var(--msg); color: var(--msg); }
-.arrow { color: var(--muted); }
-.legend { font-size: 12px; color: var(--muted); display: flex; gap: 14px; flex-wrap: wrap; }
-.legend .hop { padding: 1px 8px; font-size: 11px; }
+/* What makes the routing work: three numbered cards, one under the other. */
+.works { display: grid; gap: 12px; }
+.works h3 { display: flex; align-items: center; margin: 0 0 8px; }
+.works .box p + p, .works .box .cmd + p { margin-top: 10px; }
+.works .cmd { margin: 10px 0 0; }
 
-/* Result: without key vs with key. */
-.compare { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 0 0 12px; }
-.side { border-radius: 8px; padding: 12px 14px; border-left: 3px solid; }
-.side p { margin: 0; overflow-wrap: anywhere; }
-.side .big { font-size: 20px; font-weight: 700; margin: 2px 0 4px; }
-.side.base { background: var(--base-bg); border-color: var(--base); }
-.side.sbx { background: var(--sbx-bg); border-color: var(--sbx); }
-.side.sbx h4, .side.sbx .big { color: var(--sbx); }
 .proof { margin: 8px 0; }
 .proof strong { color: var(--text); }
 figure { margin: 12px 0; }
 figure img { max-width: 100%; border: 1px solid var(--border); border-radius: 6px; display: block; }
 figcaption { font-size: 12px; color: var(--muted); margin-top: 4px; }
 
-/* Value: numbers from the run, then without vs with Signadot. */
-.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 0 0 16px; }
-.stat { padding: 14px 16px; }
-.stat .num { font-size: 26px; font-weight: 700; line-height: 1.1; color: var(--sbx); }
-.stat p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
-.vs th:nth-child(2), .vs td:nth-child(2) { color: var(--muted); }
-.vs td:nth-child(3) { font-weight: 500; }
-.why { margin: 14px 0 0; }
-
-/* Tiles, tables, lists. */
-.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
-.tile { padding: 14px 16px; }
-.tile h3 { font-size: 14px; margin-bottom: 4px; }
-.tile p { margin: 0; color: var(--muted); font-size: 14px; overflow-wrap: anywhere; }
+/* Tables and lists. */
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--radius); }
@@ -129,13 +116,10 @@ summary { cursor: pointer; color: var(--muted); font-size: 13px; }
 .row .n { color: var(--muted); font-variant-numeric: tabular-nums; padding-top: 1px; }
 .row h3 a { text-decoration: none; }
 .row p { margin: 2px 0 0; color: var(--muted); font-size: 14px; }
-.row.not-picked { opacity: .75; padding: 10px 16px; }
 .foot-nav { margin-top: 36px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
   font-size: 14px; }
 
 @media (max-width: 680px) {
-  .tested, .stats, .compare { grid-template-columns: 1fr; }
-  .flow .label { width: 100%; }
   .row { grid-template-columns: 22px 1fr; }
   .row .pill { grid-column: 2; justify-self: start; }
   h1 { font-size: 23px; }
@@ -143,11 +127,11 @@ summary { cursor: pointer; color: var(--muted); font-size: 13px; }
 @media print {
   body { background: #fff; color: #000; font-size: 12px; }
   .wrap { max-width: none; padding: 0; }
-  .hero, .card, .tile, .box, table { box-shadow: none; border-color: #ccc; }
+  .hero, .box, table { box-shadow: none; border-color: #ccc; }
   details > summary { display: none; }
   a { color: #000; }
   h2 { break-after: avoid; }
-  .box, .stat, .row, .side { break-inside: avoid; }
+  .box, .row, .diagram { break-inside: avoid; }
 }
 
 /* "Open the demo app": the two links, highlighted at the top of every page. */

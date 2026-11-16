@@ -1,6 +1,7 @@
 # Run a Playwright suite as a Job
 
-`<cluster>` and `<suffix>` as in SKILL.md. Needs isolated-change's `driver-plates<suffix>`.
+`<cluster>` and `<suffix>` as in SKILL.md. Uses the driver sandbox `driver-plates<suffix>` from the two-service
+scenario.
 
 ## What it shows
 
@@ -19,7 +20,9 @@ memory. Namespace `signadot-tests`.
 
 ## Before you start
 
-- isolated-change's sandbox must exist.
+- The sandbox `driver-plates<suffix>` must exist. If the two-service scenario was skipped, or a mesh rebuild
+  removed it, create it (safe to run again; record it under Resources if it's new):
+  `"$T/bin/sd" sandbox apply -f "$S/assets/specs/core/driver-plates.yaml" --set cluster=<cluster> --set suffix=<suffix>`
 - No org settings are needed for Jobs.
 
 ## Set up
@@ -62,7 +65,7 @@ for z in playwright-report/data/*.zip; do unzip -p "$z"; done | grep -aoE '(SD-)
 Done when the job is `Succeeded` and the plates in the traces all start with `SD-`: the tests ran through
 `driver-plates<suffix>`. The job's dashboard page is `https://app.signadot.com/testing/jobs/<job name>`.
 
-Flow for the card: without key `playwright(runner) → frontend → driver(baseline)` (what a plain staging run tests);
+For the page's diagram: without key `playwright(runner) → frontend → driver(baseline)` (what a plain staging run tests);
 with the job's routing context `playwright(runner) → frontend → driver(driver-plates<suffix>)`.
 
 ## Record

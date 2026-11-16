@@ -33,7 +33,8 @@ add-ons), never file names, step IDs or section numbers.
    3. **Before you start:** requirements and choices.
    4. **Set up:** commands, each with "done when". Make them safe to run twice (resume and retries run them again).
    5. **Run:** the scenario's commands.
-   6. **Prove it:** without key vs with key, "done when", and the hops or message path for the flow diagram.
+   6. **Prove it:** without key vs with key, "done when", and what the page's diagram shows (which services get a
+      sandbox copy, and where the routing decision is made).
    7. **Record:** the trial-log scenario entry.
    8. **Try it yourself:** lines for the hand-off.
    9. **Tear down:** commands that remove everything the file created.
@@ -125,7 +126,9 @@ folder, with a coding agent following the skill literally. Use a test org.
 
 1. **Default path:** "try Signadot", default choices, a new org. The first message is the plan (the three basics),
    the basics run one by one with a menu of more after them, and progress lines show no file names or step IDs. The basics pass; each scenario's page opens after it and the trial waits before the next one; the hand-off
-   lists what's running; the sandbox's preview link shows `SD-` plates and the baseline link doesn't; command blocks copy. The agent never asks for access
+   lists what's running; the first sandbox's preview link gives 1s ETAs and the baseline link doesn't; each page reads
+   in order (change, sandbox, diagram, how routing works), and command blocks copy. The curl through the port-forward
+   on the first page prints a 1s ETA with the key and minutes without. The agent never asks for access
    outside its working folder, and afterwards the only new thing there is `.signadot-trial`.
 2. **Existing user:** with a `~/.signadot` config and login present. The trial uses its own login in the trial folder; checksum
    `~/.signadot` before and after (`find ~/.signadot -type f -exec shasum {} + | sort | shasum`): unchanged.

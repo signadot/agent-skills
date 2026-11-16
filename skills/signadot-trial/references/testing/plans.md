@@ -1,6 +1,7 @@
 # Run the suite as a Plan, and catch a regression
 
-`<cluster>` and `<suffix>` as in SKILL.md. Needs isolated-change's `driver-plates<suffix>`; the last step also needs local-development's
+`<cluster>` and `<suffix>` as in SKILL.md. Uses the driver sandbox `driver-plates<suffix>` from the two-service scenario
+(create it as in `references/testing/jobs.md` if it's missing); the last step also needs local-development's
 `local-route<suffix>`.
 
 ## What it shows
@@ -8,7 +9,7 @@
 - **Problem:** test automation that a person or agent can rerun on demand, against any change, usually means
   maintaining CI glue for every environment.
 - **What Signadot does:** a Plan is a reusable, parameterized test run that Signadot executes in the cluster on a
-  managed runner. The trial wraps HotROD's Playwright suite in a one-step Plan, tags it, runs it against the isolated-change
+  managed runner. The trial wraps HotROD's Playwright suite in a one-step Plan, tags it, runs it against the driver
   sandbox, then against a sandbox with a deliberate bug, and sees the Plan catch it. A coding agent can author and
   run Plans like this with the `signadot-plan` and `signadot-validate` skills.
 - **Why it matters:** the same tagged Plan validates any sandbox, including one running on a developer's computer,
@@ -57,7 +58,7 @@ Resources.
 
 ## Run
 
-Against isolated-change's sandbox:
+Against the driver sandbox:
 
 ```bash
 "$T/bin/sd" plan run --tag hotrod-e2e<suffix> --param sandbox=driver-plates<suffix> --timeout 10m -o json > "$T/logs/plan-driver.json"
@@ -98,7 +99,7 @@ Done when:
 If a run is `failed` but its exit code is `0`, the tests passed and only uploading the report failed (its error says
 "artifact upload failed"); run it again.
 
-Flow for the card: `plan(runner) → frontend → … → route(broken-route<suffix>) ✗` next to `plan(runner) → frontend →
+For the page's diagram: `plan(runner) → frontend → … → route(broken-route<suffix>) ✗` next to `plan(runner) → frontend →
 … → driver(driver-plates<suffix>) ✓`.
 
 ## Record

@@ -1,25 +1,30 @@
 # Test a feature across two services, with a shareable preview
 
-Runs by default. About 2 minutes. Needs isolated-change's sandbox. `<cluster>`, `<suffix>` and `<proxy>` as in SKILL.md.
+Runs by default. About 2 minutes. `<cluster>`, `<suffix>` and `<proxy>` as in SKILL.md.
 
 ## What it shows
 
 - **Problem:** a feature often spans several services and pull requests, and can only be tested once everything is
   merged and deployed together.
+- **The change:** one feature in two services. The driver service gives every driver's licence plate an `SD-`
+  prefix, and the frontend highlights those plates. Each service gets its own sandbox, from a prebuilt image.
 - **What Signadot does:** a route group joins the sandboxes that share a label (`feature: hotrod-plates<suffix>`)
-  under one routing key, and its endpoint gives a preview URL. Here the frontend sandbox highlights `SD-` plates,
-  and the driver sandbox from isolated-change produces them.
+  under one routing key, and its endpoint gives a preview URL. A request with that key reaches both new versions.
+  Driver gets its work from Kafka, so the driver sandbox picks up only the dispatch messages that carry the key and
+  the normal driver skips them; the Kafka scenario shows that part in detail.
 - **Why it matters:** reviewers, designers and PMs open one URL and see the whole feature before anything merges.
 
 ## Run
 
 ```bash
+"$T/bin/sd" sandbox apply -f "$S/assets/specs/core/driver-plates.yaml" --set cluster=<cluster> --set suffix=<suffix>
 "$T/bin/sd" sandbox apply -f "$S/assets/specs/core/frontend-highlight.yaml" --set cluster=<cluster> --set suffix=<suffix>
 "$T/bin/sd" routegroup apply -f "$S/assets/specs/core/hotrod-plates-routegroup.yaml" --set cluster=<cluster> --set suffix=<suffix>
 "$T/bin/sd" routegroup get hotrod-plates<suffix> -o json
 ```
 
-Record `sandbox frontend-highlight<suffix>` and `routegroup hotrod-plates<suffix>` under Resources. From the route
+Record `sandbox driver-plates<suffix>`, `sandbox frontend-highlight<suffix>` and `routegroup hotrod-plates<suffix>`
+under Resources. From the route
 group's JSON, note `routingKey` and the `url` of its `frontend` endpoint (the preview URL, on
 `preview.signadot.com`).
 
@@ -38,8 +43,8 @@ Done when:
   (HotROD's notifications don't include the frontend, so the bundle name is the frontend's proof);
 - you have the preview URL.
 
-For the flow diagram, put `frontend(frontend-highlight<suffix>)` in front of the keyed ride's hops, and
-`frontend(baseline)` in front of the baseline's.
+For the page's diagram: the keyed request reaches `frontend-highlight<suffix>` and `driver-plates<suffix>`; the
+request without the key reaches the normal frontend and driver. Route and location stay shared.
 
 Give the user the preview URL: anyone signed in to the org can open it, book a ride, and see the highlighted plate.
 It needs no header or proxy.
@@ -52,11 +57,11 @@ status: passed
 seconds: <apply to proof>
 baseline: bundle <baseline bundle>, plate <plate>
 sandbox: bundle <sandbox bundle>, plate SD-<plate> highlighted
-hops-baseline: frontend(baseline) → location(baseline) → driver(baseline) → route(baseline)
+hops-baseline: frontend(baseline) → kafka → driver(baseline) → route(baseline)
 hops-sandbox: frontend(frontend-highlight<suffix>) → <hops line from the keyed ride>
 proof: one routing key reached both sandboxes; preview <preview URL>
-commands: sd sandbox apply -f assets/specs/core/frontend-highlight.yaml …; sd routegroup apply -f assets/specs/core/hotrod-plates-routegroup.yaml …
-specs: assets/specs/core/frontend-highlight.yaml, assets/specs/core/hotrod-plates-routegroup.yaml
+commands: sd sandbox apply -f assets/specs/core/driver-plates.yaml …; sd sandbox apply -f assets/specs/core/frontend-highlight.yaml …; sd routegroup apply -f assets/specs/core/hotrod-plates-routegroup.yaml …
+specs: assets/specs/core/driver-plates.yaml, assets/specs/core/frontend-highlight.yaml, assets/specs/core/hotrod-plates-routegroup.yaml
 screenshot: screens/multi-service-preview.png (only if you took one)
 links: https://www.signadot.com/docs/tutorials/multi-pr-feature-testing, <preview URL>
 try: open the preview URL and book a ride
@@ -76,7 +81,10 @@ try: open the preview URL and book a ride
 ```bash
 "$T/bin/sd" routegroup delete hotrod-plates<suffix>
 "$T/bin/sd" sandbox delete frontend-highlight<suffix>
+"$T/bin/sd" sandbox delete driver-plates<suffix>
 ```
+
+Kafka and the automated tests reuse `driver-plates<suffix>`, so delete it only at teardown.
 
 ## Docs
 

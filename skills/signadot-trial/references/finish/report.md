@@ -26,47 +26,102 @@ template block behind.
 
 ## Writing a scenario page
 
-Write for someone who is new to Signadot and didn't watch the run: what was tested, how Signadot handled it, the
-proof, and why it matters to a team like theirs. Plain words; define a Signadot term the first time it appears; no
-file names, step IDs or placeholders. Use the scenario file's "What it shows" for the story and its trial-log entry
-for every value. The page leads with what the user can open and run; the explanation follows.
+Write for someone who is new to Signadot and didn't watch the run. The page explains how it works, not why to buy
+it: no sales lines, no "usual way vs Signadot" comparisons, no adoption checklist. Plain words; define a Signadot
+term the first time it appears; no file names, step IDs or placeholders. Use the scenario file's "What it shows"
+for the story and its trial-log entry for every value.
+
+Every page tells the same story, top to bottom:
+
+1. **The change** someone wants to check end to end.
+2. **The sandbox** that runs it: the spec, applied with the CLI, a second copy of only what changed, and its
+   routing key.
+3. **Requests with and without the routing key:** one diagram of both, with the results in it.
+4. **What makes the routing work:** the key is set where the request starts, each service passes it along, and
+   Signadot routes by it.
 
 **Commands on the pages.** Each command the user might run goes in its own `<div class="cmd">` block (a one-line
-explanation, then `<pre><code>`), so it gets a Copy button. Make it paste-ready: full paths, the real sandbox names
-and suffix, no `$T`, `<…>` or other placeholders. Use `kubectl --kubeconfig <trial folder>/kubeconfig …` and
-`<trial folder>/bin/sd …`. Never show `ride.sh`, `--proxy` or a local proxy: the preview links replace
-them.
+explanation, then `<pre><code>`), so it gets a Copy button; specs go in one too. Make it paste-ready: full paths,
+the real sandbox names, suffix and routing key, no `$T`, `<…>` or other placeholders. Use
+`kubectl --kubeconfig <trial folder>/kubeconfig …` and `<trial folder>/bin/sd …`. Never show `ride.sh`, `--proxy`
+or the trial's local proxy: the preview links, and a `kubectl port-forward` for curl, replace them.
+
+### The slots
 
 - **title:** the scenario's menu name.
-- **status:** the pill (`passed` or `failed`), "Scenario n" (its place in run order), the time
-  from the scenario's first command to its proof, the cluster and the date.
+- **status:** the pill (`passed` or `failed`), "Scenario n" (its place in run order), the time from the scenario's
+  first command to its proof, the cluster and the date.
 - **headline:** one or two sentences that say what was proven, with the proving values.
 - **urls:** the box with the demo app's two links (see "App links"): the baseline, and the sandbox with a line saying
   that Signadot adds the sandbox's routing key to every request made through it, so it reaches the changed version.
   Say what to look for in each. Leave the box out only for a demo app with no web page (RabbitMQ).
-- **try:** the file's "Try it yourself", as command blocks with real values (see "Commands on the pages").
-- **tested:** three boxes. *The situation:* the file's Problem, told as a team's day-to-day problem. *What we
-  changed:* the concrete change and the service it's in (from the file's Run and spec). *What we sent:* the requests
-  or messages, without and with the routing key.
-- **app:** for HotROD scenarios, the diagram, with `class="box changed"` on each service the scenario changed (the
-  local-development scenario's route runs on the user's computer; say so in the paragraph). For other demo apps
-  (Temporal, RabbitMQ, Redis Streams), one paragraph on what the app does and how its parts connect.
-- **how:** the file's "What Signadot does", in two to four plain sentences: what the sandbox (or route group, plugin,
-  job or plan) contains, what stays shared, and how the routing key travels. Then one flow row without the key and
-  one with it, from the hops (`hop sbx` for a sandbox, `hop sbx local` for a process on the user's computer, `hop
-  msg` for a topic or queue), and the legend.
-- **result:** both results with the real values in `big`, the proof sentence, and the screenshot if there is one.
-- **value:** three numbers measured in this run (for example time to ready, what was added, what else was affected;
-  for messages, how many each consumer handled). Then the "usual way vs with Signadot" table, four rows, from the
-  file's Problem and this run's numbers; don't invent figures for the usual way. End with the file's "Why it
-  matters".
-- **adopt:** what it would take on the user's own services (table below), with links. End with the file's Docs page,
-  linked as the HTML page (drop `.md`).
-- **details:** what this scenario created and whether it's still running, then the spec (with the cluster and suffix
-  filled in) and the commands that created it, as command blocks.
+- **change:** two or three sentences: what changed, in which service, and what the developer wants to check end to
+  end. Show the change itself when it's small (a code line, a setting, a patch), and say in one muted line how it
+  maps to real use (the image CI builds from the pull request, or the code on the developer's computer).
+- **sandbox:** what was created and what stays shared, the routing key, then the spec (cluster and suffix filled in,
+  comments kept) and a short list of what its parts mean. Explain `defaultRouteGroup` as the sandbox's preview link
+  whenever it's in the spec: its `target` is where the link leads inside the cluster, not an address to open. Then
+  command blocks: the command that created it, and the file's "Try it yourself" commands (see the pods, see the
+  sandbox and its key).
+- **routing:** one sentence on the app's path, the diagram (see "The diagram"), its legend, a **Proof:** sentence
+  from the trial log, and the screenshot if there is one.
+- **works:** three numbered cards. *1, the key is set where the request starts:* how this scenario's requests got
+  the key (the preview link, a job or plan runner, a producer), the other ways to send it (the Chrome extension, a
+  header in any HTTP client), and for HotROD the curl commands in "Setting the key yourself". *2, each service passes
+  it along:* how the key travels in this app (OpenTelemetry `baggage` over HTTP, message or workflow headers). *3,
+  Signadot routes by it:* where the decision is made in this scenario (table below). Link each card to its docs page.
+  End with the scenario's tutorial, from the file's Docs, linked as the HTML page (drop `.md`).
 
-If the scenario failed, say plainly what was seen and what was tried in the headline and result, keep the flow rows
-you have, and still explain the value it would have shown.
+If the scenario failed, say plainly what was seen and what was tried in the headline and under the diagram, and draw
+what you know.
+
+### The diagram
+
+The template's diagram is the finished one for isolated-change. Keep its layout for every scenario:
+
+- the request sources on the left: the baseline link (no key) and the sandbox or route group link (adds the key);
+  or the job or plan runner, or the producer;
+- the app's real path in one row, left to right: for HotROD, frontend (location above it), Kafka, driver (Redis
+  above it), route. The trial log's hops say which version served each service, but list them in the order the
+  notifications arrived: don't draw that order;
+- two lanes along the path: grey (`lane base`) for the request without the key, accent (`lane key`) for the one
+  with it;
+- for each service the sandbox changed, its copy below the normal box (`box sbx`, or `box local` for a process on
+  the user's computer), inside a dashed `outline` labelled with the sandbox's name; the keyed lane drops to the copy
+  and the grey lane goes on to the normal one;
+- the place the decision is made, labelled for this scenario: the `router` node in front of the forked service
+  (DevMesh's sidecar, Istio's sidecar, the ambient waypoint), or, for messages and workflows, nothing: both lanes go
+  into the topic or queue and each consumer takes only its own;
+- the results in the boxes where they appear (an ETA, a plate, a processed message), so the picture carries the
+  result. Update the `aria-label` to describe the picture.
+
+| Scenario | Copies below the row | Where the decision is made (card 3) |
+|---|---|---|
+| isolated-change | route | DevMesh's sidecar on the normal route pod forwards keyed calls to the copy |
+| multi-service-preview | frontend and driver, one outline per sandbox, under the route group's name | the sidecar on the normal frontend pod; driver's copy takes only the Kafka messages that carry the key, and the normal driver skips them |
+| local-development | route, as `box local`, "on your computer" | the sidecar on the normal route pod forwards keyed calls through Signadot's connection to the process on the user's computer |
+| sandbox-database | location, with its own database (a `store` inside the outline) | the sidecar on the normal location pod; the resource plugin created the database with the sandbox and removes it with it |
+| kafka | driver | no router: both messages go into the one topic; each driver reads the key on every message and processes only its own |
+| temporal, rabbitmq, redis-streams | the worker or consumer | no router: each worker or consumer reads the key on every task, message or entry and handles only its own (from the file's "What Signadot does") |
+| jobs | driver (the Job tests the driver sandbox) | the job runner sets the sandbox's key on the test traffic (card 1); then as in multi-service-preview |
+| plans | the driver sandbox and broken-route, the broken one's result marked failed | the plan runner sets the key of the sandbox it's given (card 1); then the sidecars, as in isolated-change |
+| istio, istio-ambient, linkerd | route | Istio: the caller's Envoy sidecar; ambient: the waypoint in front of route; Linkerd: Signadot's sidecar next to Linkerd's proxy (from the mesh file's "What it shows") |
+
+For Temporal, RabbitMQ and Redis Streams, draw their own apps the same way, with their services from the file.
+
+### Setting the key yourself
+
+For HotROD scenarios whose copies are reached through a sidecar or mesh (not multi-service-preview, whose changed
+frontend is the first stop), card 1 shows how to send the key with curl, through a port-forward:
+
+1. `kubectl --kubeconfig <trial folder>/kubeconfig -n hotrod port-forward svc/frontend 18080:8080`, left running.
+2. In another terminal, book a ride with the key:
+   `curl -s -X POST localhost:18080/dispatch -H 'baggage: sd-routing-key=<key>' -H 'Content-Type: application/json' -d '{"SessionID":4242,"RequestID":1,"PickupLocationID":1,"DropoffLocationID":123}'`
+3. Read the ride's notifications: `curl -s 'localhost:18080/notifications?sessionID=4242&cursor=0' | grep -o 'Driver [^"]*'`
+   (escape `&` as `&amp;` in the page).
+
+Say what it prints with the key, and that the same request without the header (and another `SessionID`) reaches
+the baseline.
 
 **App links.** Preview links open the app in any browser signed in to the user's Signadot org; Signadot adds the
 routing key of the sandbox or route group to every request made through them. Read a link with
@@ -75,26 +130,16 @@ record both in the scenario's entry as `link-baseline:` and `link-sandbox:`.
 
 | Scenario | Baseline link | Sandbox link | What to look for |
 |---|---|---|---|
-| isolated-change, kafka, jobs | `baseline_url` (route group `hotrod-baseline<suffix>`) | sandbox `driver-plates<suffix>` | plates start with `SD-` only through the sandbox |
+| isolated-change | `baseline_url` (route group `hotrod-baseline<suffix>`) | sandbox `fast-route<suffix>` | ETAs in minutes on the baseline, 1s through the sandbox |
 | multi-service-preview | `baseline_url` | route group `hotrod-plates<suffix>` | `SD-` plates, highlighted |
 | local-development | `baseline_url` | sandbox `local-route<suffix>` (works while the route process runs on this computer) | ETAs in seconds |
 | sandbox-database | `baseline_url` | sandbox `location-db<suffix>` | different pickup and drop-off locations |
+| kafka, jobs | `baseline_url` | sandbox `driver-plates<suffix>` | plates start with `SD-` only through the sandbox |
 | plans | `baseline_url` | sandboxes `driver-plates<suffix>` and `broken-route<suffix>` | rides through the broken one don't complete: the regression the plan caught |
+| istio, istio-ambient, linkerd | `baseline_url` | sandbox `fast-route<suffix>` | as isolated-change, on the mesh |
 | temporal | route group `temporal-baseline<suffix>` | sandbox `temporal-worker<suffix>` | start a transfer from each; the worker logs show which worker ran it |
 | redis-streams | route group `redis-streams-baseline<suffix>` | sandbox `redis-streams-consumer<suffix>` | the message trail: only the sandbox's are processed by processor v2, in upper case |
 | rabbitmq | — | — | no web page: leave out the box |
-
-**What it would take on their services**, by scenario:
-
-| Scenario | What it would take | Link |
-|---|---|---|
-| isolated-change | Services propagate the routing key (OpenTelemetry baggage); Signadot routing runs in the cluster (its sidecar or their mesh); CI creates a sandbox per pull request from the image it builds | https://www.signadot.com/docs/guides/set-up-context-propagation, https://www.signadot.com/docs/guides/request-routing |
-| multi-service-preview | The same, plus a route group that joins the sandboxes of one feature by label; the preview link goes on the pull requests | https://www.signadot.com/docs/tutorials/multi-pr-feature-testing |
-| local-development | The Signadot CLI on each developer's computer, `signadot local connect`, and a sandbox that points a service at their machine | https://www.signadot.com/docs/tutorials/quickstart/local-development |
-| sandbox-database | A resource plugin that creates and seeds a database (or schema) per sandbox and removes it afterwards | https://www.signadot.com/docs/guides/set-up-data-isolation |
-| kafka, rabbitmq, redis-streams, temporal | Producers carry the routing key into message headers (OpenTelemetry does this); each consumer handles only messages for its own routing key and skips the rest | https://www.signadot.com/docs/guides/set-up-message-queue-isolation |
-| jobs | A job runner group in the cluster, and the team's existing test suite run as a Job against each pull request's sandbox from CI | https://www.signadot.com/docs/tutorials/quickstart/jobs |
-| plans | Tagged Plans that CI or a coding agent runs against any sandbox; the `signadot-plan` skill authors them | https://www.signadot.com/docs/tutorials/quickstart/plan-based-validation |
 
 ## The overview page
 
@@ -115,8 +160,8 @@ detail is on the scenario pages; teardown and next steps are for the agent to of
 
 Take them only if you can drive a browser. Open the scenario's sandbox link (see "App links") in the browser session
 from signup, book a ride, and save `$T/report/screens/<scenario id>.png`. Link screenshots relatively
-(`screens/isolated-change.png`). Without a browser, leave out the `<figure>`: the flow rows and the proof carry the
+(`screens/isolated-change.png`). Without a browser, leave out the `<figure>`: the diagram and the proof carry the
 page.
 
-Good screenshots: isolated-change, the ride notifications with the `SD-` plate; multi-service-preview, the preview
-page with the highlighted plate; local-development, the ride with an ETA in seconds.
+Good screenshots: isolated-change, the ride with an ETA of 1s; multi-service-preview, the preview page with the
+highlighted plate; local-development, the ride with an ETA in seconds.

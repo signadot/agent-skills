@@ -68,7 +68,7 @@ R=$S/assets/report
 for k in title summary urls scenarios; do
   grep -q "<!-- FILL:$k" "$R/index.html" || bad "overview template: no FILL:$k slot"
 done
-for k in title status headline urls try tested app how result value adopt details; do
+for k in title status headline urls change sandbox routing works; do
   grep -q "<!-- FILL:$k" "$R/scenario.html" || bad "scenario template: no FILL:$k slot"
 done
 for f in "$R/index.html" "$R/scenario.html"; do

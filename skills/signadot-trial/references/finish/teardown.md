@@ -18,6 +18,7 @@ another local connection.
    "$T/bin/sd" routegroup delete hotrod-plates<suffix>
    "$T/bin/sd" sandbox delete frontend-highlight<suffix>
    "$T/bin/sd" sandbox delete driver-plates<suffix>
+   "$T/bin/sd" sandbox delete fast-route<suffix>
    "$T/bin/sd" routegroup delete hotrod-baseline<suffix>
    ```
 

@@ -68,7 +68,7 @@ curl -s --proxy <proxy> -X POST http://publisher.rabbitmq-demo.svc:8080/publish 
 Done when the baseline consumer processed `trial-1` and skipped `trial-2`, and the sandbox consumer processed
 `trial-2` only. Both orders went through the same exchange.
 
-Message path for the card: `publisher → rabbitmq:orders → consumer(baseline: trial-1) · consumer(rabbitmq-consumer<suffix>:
+For the page's diagram: `publisher → rabbitmq:orders → consumer(baseline: trial-1) · consumer(rabbitmq-consumer<suffix>:
 trial-2)`.
 
 ## Record

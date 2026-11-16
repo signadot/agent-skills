@@ -1,0 +1,22 @@
+name: fast-route@{suffix}
+spec:
+  cluster: "@{cluster}"
+  description: "Signadot trial: route returns every ETA as 1 second"
+  # The change: a copy of HotROD's route Deployment, with one setting added. FAST_ROUTE makes route
+  # return every ETA as 1 second instead of minutes. Every other service stays shared.
+  forks:
+  - forkOf:
+      kind: Deployment
+      namespace: hotrod
+      name: route
+    customizations:
+      env:
+      - name: FAST_ROUTE
+        value: "1"
+  # The sandbox's preview link: a *.preview.signadot.com URL that opens the app with this sandbox's
+  # routing key added to every request. `target` is where the link leads inside the cluster, not a
+  # URL to open.
+  defaultRouteGroup:
+    endpoints:
+    - name: frontend
+      target: http://frontend.hotrod.svc:8080

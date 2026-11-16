@@ -47,7 +47,9 @@ baseline · ok · 7s · plate T751234C, ETA 12min
 ## Resources
 kind_cluster signadot-trial
 namespace hotrod
+sandbox fast-route
 sandbox driver-plates
+sandbox frontend-highlight
 routegroup hotrod-plates
 routegroup hotrod-baseline
 process 48211 hotrod route (local-development)
@@ -56,18 +58,19 @@ portforward 48190 redis 16379:6379
 ## Scenario isolated-change
 status: passed
 seconds: 48
-baseline: plate T751234C
-sandbox: plate SD-T751234C
+baseline: ETA 23m14s
+sandbox: ETA 1s
 hops-baseline: location(baseline) → driver(baseline) → route(baseline)
-hops-sandbox: location(baseline) → driver(driver-plates) → route(baseline)
-proof: the driver step was served by sandbox driver-plates only when the routing key was sent
-commands: sd sandbox apply -f driver-plates.yaml --set cluster=signadot-trial --set suffix=
-specs: assets/specs/core/driver-plates.yaml
+hops-sandbox: location(baseline) → driver(baseline) → route(fast-route)
+routing-key: 7g2k9xq4m1ab
+proof: the route step was served by sandbox fast-route only when the routing key was sent
+commands: sd sandbox apply -f fast-route.yaml --set cluster=signadot-trial --set suffix=
+specs: assets/specs/core/fast-route.yaml
 screenshot: screens/isolated-change.png
 links: https://www.signadot.com/docs/tutorials/quickstart/first-sandbox
 link-baseline: https://frontend--hotrod-baseline.preview.signadot.com
-link-sandbox: https://frontend--driver-plates.preview.signadot.com
-try: open the baseline and sandbox links and compare the plates
+link-sandbox: https://frontend--fast-route.preview.signadot.com
+try: open the baseline and sandbox links and compare the ETAs
 ```
 
 ## Rules
@@ -81,10 +84,12 @@ try: open the baseline and sandbox links and compare the plates
 - **Scenarios:** IDs are file names: `isolated-change`, `multi-service-preview`, `local-development`, then each
   add-on's (`sandbox-database`, `kafka`, `temporal`, `rabbitmq`, `redis-streams`, `jobs`, `plans`). `status` is
   `passed`, `failed` or `skipped`.
-- **Hops** are the flow diagram's data. For a request: `service(served-by)` joined by ` → `, where `served-by` is
-  `baseline`, a sandbox name, or `local` for a process on this computer. `scripts/ride.sh` prints a ready-made
-  `hops:` line. HotROD records location, driver and route; add `frontend(<served-by>)` in front yourself when a
-  scenario proves which frontend served the page (multi-service-preview). For messages:
+- **Hops** say which version served each service, for the page's diagram. For a request: `service(served-by)`
+  joined by ` → `, where `served-by` is `baseline`, a sandbox name, or `local` for a process on this computer.
+  `scripts/ride.sh` prints a ready-made `hops:` line, in the order the notifications arrived, which is not the call
+  order: draw HotROD's real path (frontend calls location, then publishes to Kafka; driver consumes it and calls
+  route). Add `frontend(<served-by>)` yourself when a scenario proves which frontend served the page
+  (multi-service-preview). For messages:
   `producer → <topic or queue> → consumer(handled)`,
   e.g. `frontend → kafka:dispatch → driver(baseline: T7…) · driver(driver-plates: SD-T7…)`.
 

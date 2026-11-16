@@ -80,7 +80,7 @@ Done when the baseline consumer logged `processing <trial-1 entry> (routing key 
 and the sandbox consumer the opposite. The event trail for `trial-2` shows it consumed by
 `redis-streams-consumer<suffix>` "with processor v2".
 
-Message path for the card: `producer → redis:demo:messages → consumer(baseline: trial-1) ·
+For the page's diagram: `producer → redis:demo:messages → consumer(baseline: trial-1) ·
 consumer(redis-streams-consumer<suffix>: trial-2)`.
 
 ## Record

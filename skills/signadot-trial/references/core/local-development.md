@@ -105,7 +105,7 @@ seconds: <apply to proof>
 baseline: ETA <minutes>
 sandbox: ETA <seconds>
 hops-baseline: <hops line>
-hops-sandbox: <hops line, route served by local-route<suffix>; draw it as "hop sbx local">
+hops-sandbox: <hops line, route served by local-route<suffix>; draw it as a "box local">
 proof: route ran on this computer for keyed requests; rebuild and restart took <n> s
 commands: sd sandbox apply -f assets/specs/core/local-route.yaml …; sd sandbox get-env local-route<suffix>; hotrod route
 specs: assets/specs/core/local-route.yaml, assets/patches/route-eta.patch
@@ -118,7 +118,6 @@ try: edit <T>/hotrod/services/route/server.go, rebuild, restart, and book a ride
 - Book a ride on the sandbox's link: the ETA comes from the route service on this computer, in seconds.
 - Change the ETA again in `<T>/hotrod/services/route/server.go`, rebuild, restart the process (the commands under
   Set up and Run), and book another ride on the sandbox's link.
-- Restart it with `FAST_ROUTE=1` set: every ETA through the sandbox becomes one second, with no rebuild.
 - The local process and the Redis port-forward run in the background; if they stopped (for example after a reboot),
   start them again with the commands under Run.
 

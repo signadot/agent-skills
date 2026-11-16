@@ -72,7 +72,7 @@ Done when:
 - the counts are `0` without the key and `1` with it: the write stayed in the sandbox's database;
 - the database list includes `location_<key>`.
 
-Flow for the card: without key `frontend(baseline) → location(baseline) → MySQL: location`; with key
+For the page's diagram: without key `frontend(baseline) → location(baseline) → MySQL: location`; with key
 `frontend(baseline) → location(location-db<suffix>) → MySQL: location_<key>`.
 
 ## Record

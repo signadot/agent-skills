@@ -83,7 +83,7 @@ Each call prints the workflow ID and the routing key it carried.
 Done when the baseline worker logged tasks only with routing key `''` and the sandbox worker only with `<key>`.
 Both workflows ran on the same server and task queue.
 
-Message path for the card: `client → temporal:money-transfer → worker(baseline: no key) ·
+For the page's diagram: `client → temporal:money-transfer → worker(baseline: no key) ·
 worker(temporal-worker<suffix>: <key>)`.
 
 ## Record

@@ -1,14 +1,15 @@
 # Kafka
 
-`<suffix>` and `<proxy>` as in SKILL.md. Needs isolated-change's `driver-plates<suffix>`.
+`<cluster>`, `<suffix>` and `<proxy>` as in SKILL.md. Uses the driver sandbox `driver-plates<suffix>` from the
+two-service scenario.
 
 ## What it shows
 
 - **Problem:** with a shared message broker, a consumer under test either steals messages meant for everyone else,
   or needs its own broker and topics, which is slow and expensive.
 - **What Signadot does:** HotROD's frontend publishes every ride request to one Kafka topic, and both drivers (the
-  baseline and the isolated-change sandbox) consume it. Each request carries its routing key; each consumer processes only the
-  messages that are its own and skips the rest.
+  baseline and the sandbox `driver-plates<suffix>`) consume it. Each request carries its routing key; each consumer
+  processes only the messages that are its own and skips the rest.
 - **Why it matters:** async flows are tested end to end on the shared broker, without copying Kafka or topics, and
   without interfering with anyone else.
 
@@ -18,7 +19,12 @@ About 2 minutes. Nothing new to create or deploy: it uses HotROD's own Kafka in 
 
 ## Before you start
 
-isolated-change's sandbox `driver-plates<suffix>` must exist and be ready.
+The sandbox `driver-plates<suffix>` must exist and be ready. If the two-service scenario was skipped, or a mesh
+rebuild removed it, create it (safe to run again; record it under Resources if it's new):
+
+```bash
+"$T/bin/sd" sandbox apply -f "$S/assets/specs/core/driver-plates.yaml" --set cluster=<cluster> --set suffix=<suffix>
+```
 
 ## Set up
 
@@ -53,8 +59,8 @@ Done when the baseline pod's log has the unkeyed ride's plate and no `SD-` plate
 the keyed ride's plate and only `SD-` plates. Earlier rides may show up too; the split is what matters. Both
 requests went through the same broker and topic.
 
-Message path for the card: `frontend → kafka:dispatch → driver(baseline: <plate>) · driver(driver-plates<suffix>:
-SD-<plate>)`. Draw the topic as a `hop msg`.
+For the page's diagram: `frontend → kafka:dispatch → driver(baseline: <plate>) · driver(driver-plates<suffix>:
+SD-<plate>)`.
 
 ## Record
 
@@ -68,7 +74,7 @@ hops-baseline: frontend → kafka:dispatch → driver(baseline)
 hops-sandbox: frontend → kafka:dispatch → driver(driver-plates<suffix>)
 proof: one broker, one topic; each consumer processed only the messages carrying its routing key
 commands: ride.sh with and without the key; kubectl logs on both driver pods
-specs: assets/specs/core/driver-plates.yaml (from isolated-change)
+specs: assets/specs/core/driver-plates.yaml
 links: https://www.signadot.com/docs/guides/set-up-message-queue-isolation/kafka
 try: book rides on the baseline and sandbox links and watch both driver logs
 ```
@@ -80,7 +86,7 @@ try: book rides on the baseline and sandbox links and watch both driver logs
 
 ## Tear down
 
-Nothing of its own: isolated-change's sandbox is removed with the basics.
+Nothing of its own: `driver-plates<suffix>` is removed at teardown.
 
 ## Docs
 

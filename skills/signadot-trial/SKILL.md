@@ -219,8 +219,8 @@ each scenario"), open it, and send a short result in chat: one line on what was 
 question. The page has the rest. Then wait for the user's answer before the next scenario.
 
 ```markdown
-**✓ Test one change in isolation** · passed in 48 s. Rides with the routing key got the new driver (plate
-SD-T758011C); rides without it used the normal one (T751234C).
+**✓ Test one change in isolation** · passed in 48 s. Rides with the routing key reached the new route service
+(ETA 1s); rides without it used the normal one (ETA 23m14s).
 Write-up, open in your browser: `/Users/me/project/.signadot-trial/report/isolated-change.html`
 
 **Next: Test a change that spans two services** (about 2 min). Go on? Or say "run the rest", or "stop here".
@@ -243,16 +243,16 @@ these files, is its file name.
 | Menu | ID and file | Time | Memory | Needs |
 |---|---|---|---|---|
 | basics 1 · one change in isolation | [isolated-change](references/core/isolated-change.md) | 1 min | — | always runs |
-| basics 2 · a change across two services | [multi-service-preview](references/core/multi-service-preview.md) | 2 min | — | isolated-change |
+| basics 2 · a change across two services | [multi-service-preview](references/core/multi-service-preview.md) | 2 min | — | — |
 | basics 3 · a service on your computer | [local-development](references/core/local-development.md) | 3 min | — | Go or Docker |
 | — · no mesh (default) | [devmesh](references/infra/devmesh.md) | — | — | — |
 | more 1 · database per sandbox | [sandbox-database](references/data/sandbox-database.md) | +3 min | — | — |
-| more 2 · Kafka | [kafka](references/async/kafka.md) | +2 min | — | isolated-change |
+| more 2 · Kafka | [kafka](references/async/kafka.md) | +2 min | — | the driver sandbox (creates it if missing) |
 | more 3 · Temporal | [temporal](references/async/temporal.md) | +6 min | +1 GB | Docker (local image build) |
 | more 4 · RabbitMQ | [rabbitmq](references/async/rabbitmq.md) | +3 min | +0.5 GB | — |
 | more 5 · Redis Streams | [redis-streams](references/async/redis-streams.md) | +3 min | +0.5 GB | Docker (local image build) |
-| more 6 · automated tests, part 1 | [jobs](references/testing/jobs.md) | +4 min | +1 GB | isolated-change |
-| more 6 · automated tests, part 2 | [plans](references/testing/plans.md) | +4 min | — | isolated-change; two org settings |
+| more 6 · automated tests, part 1 | [jobs](references/testing/jobs.md) | +4 min | +1 GB | the driver sandbox (creates it if missing) |
+| more 6 · automated tests, part 2 | [plans](references/testing/plans.md) | +4 min | — | the driver sandbox; two org settings |
 | more 7 · Istio | [istio](references/infra/istio.md) | +10 min after the basics, +2 min during setup | +0.5 GB | a kind cluster the trial created |
 | more 8 · Istio ambient | [istio-ambient](references/infra/istio-ambient.md) | +10 min after the basics, +2 min during setup | +0.5 GB | a kind cluster the trial created |
 | more 9 · Linkerd | [linkerd](references/infra/linkerd.md) | +10 min after the basics, +2 min during setup | +0.5 GB | a kind cluster the trial created; openssl |
@@ -272,8 +272,8 @@ these files, is its file name.
   (`references/setup/cluster.md` §2). Start their deploys as soon as they're picked, so image pulls overlap the
   scenarios before them.
 - **Order:** the basics (isolated-change, multi-service-preview, local-development); then a mesh rebuild; then data,
-  async (Kafka first, then the menu order) and testing (jobs, then plans). Kafka, jobs and plans reuse
-  isolated-change's sandbox (a mesh rebuild creates it again).
+  async (Kafka first, then the menu order) and testing (jobs, then plans). Kafka, jobs and plans reuse the driver
+  sandbox from the two-service scenario, and create it if it's missing (skipped, or removed by a mesh rebuild).
 
 ## Verifying results and handling failures
 

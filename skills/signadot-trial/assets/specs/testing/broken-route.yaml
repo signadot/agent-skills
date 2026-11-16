@@ -2,11 +2,6 @@ name: broken-route@{suffix}
 spec:
   cluster: "@{cluster}"
   description: "Signadot trial (plans): route fork with a bad Redis address, a simulated regression"
-  # The sandbox's preview link: opens the app with this sandbox's routing key added to every request.
-  defaultRouteGroup:
-    endpoints:
-    - name: frontend
-      target: http://frontend.hotrod.svc:8080
   forks:
   - forkOf:
       kind: Deployment
@@ -16,3 +11,10 @@ spec:
       env:
       - name: REDIS_ADDR
         value: redis-missing.hotrod:6379
+  # The sandbox's preview link: a *.preview.signadot.com URL that opens the app with this sandbox's
+  # routing key added to every request. `target` is where the link leads inside the cluster, not a
+  # URL to open.
+  defaultRouteGroup:
+    endpoints:
+    - name: frontend
+      target: http://frontend.hotrod.svc:8080

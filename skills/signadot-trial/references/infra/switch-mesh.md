@@ -17,6 +17,7 @@ for f in route-local redis-pf; do p=$(cat "$T/$f.pid" 2>/dev/null) && ps -p "$p"
 "$T/bin/sd" routegroup delete hotrod-plates<suffix>
 "$T/bin/sd" sandbox delete frontend-highlight<suffix>
 "$T/bin/sd" sandbox delete driver-plates<suffix>
+"$T/bin/sd" sandbox delete fast-route<suffix>
 "$T/bin/sd" local disconnect
 kind delete cluster --name signadot-trial --kubeconfig "$T/kubeconfig"
 ```
@@ -41,14 +42,16 @@ Record each step under Steps as `rebuild-<step>` (for example `rebuild-operator`
 
 ## 3. Prove it on the mesh
 
-Run `references/core/isolated-change.md` again (Run, then Prove it). It creates `driver-plates<suffix>` again, which
-Kafka, jobs and plans reuse. Record the result as `## Scenario <mesh>` (`istio`, `istio-ambient` or `linkerd`), and
-write its page as `$T/report/<mesh>.html`, titled with the menu name ("On your service mesh: Istio"):
+Run `references/core/isolated-change.md` again (Run, then Prove it). It creates `fast-route<suffix>` again. Kafka,
+jobs and plans create `driver-plates<suffix>` again themselves if they're picked. Record the result as
+`## Scenario <mesh>` (`istio`, `istio-ambient` or `linkerd`), and write its page as `$T/report/<mesh>.html`, titled
+with the menu name ("On your service mesh: Istio"):
 
-- **tested:** the same one-service change as the first scenario, now on the mesh the user picked.
-- **how:** the mesh file's "What it shows": how Signadot works with the mesh to route the routing key. Don't
-  explain the mesh itself.
-- **value:** routing works with the mesh the team already runs, with no extra proxy, and the time this run took.
+- **change:** the same one-service change as the first scenario, now on the mesh the user picked.
+- **routing:** the same diagram, with the decision point labelled for the mesh (Istio's sidecar on driver, the
+  ambient waypoint in front of route, or Signadot's sidecar next to Linkerd's proxy).
+- **works:** card 3 from the mesh file's "What it shows": how Signadot works with the mesh to route by the routing
+  key. Don't explain the mesh itself.
 - Everything else as for any scenario page (`references/finish/report.md`).
 
 ## Docs
