@@ -55,10 +55,10 @@ or the trial's local proxy: the preview links, and the sudo connection for curl,
 - **headline:** one or two sentences that say what was proven, with the proving values.
 - **urls:** the box with the demo app's links (see "App links"): the baseline, and the sandbox with a line saying
   that Signadot adds the sandbox's routing key to every request made through it, so it reaches the changed version.
-  Add the app's own UI when it shows the scenario best (the Temporal UI). Say what to look for in each. When a link
+  Add the tool that shows the scenario best (the Temporal UI, RabbitMQ's management UI). Say what to look for in each. When a link
   is a cluster address (it ends in `.svc`) and the trial's connection is `connect_mode: unprivileged`, put the
   reconnect command block from "Setting the key yourself" first in the box, marked **First, once:**, saying those
-  links open only after it. Leave the box out only for a demo app with no web page (RabbitMQ).
+  links open only after it.
 - **app:** only for a demo app other than HotROD; leave the whole section out for HotROD. What the app does, in two
   sentences, then its parts in a short list (what each does, and which one is the scenario's changed part), ending
   with the UI that shows the scenario best. From the scenario file's "The demo app".
@@ -162,7 +162,7 @@ Read a link with `"$T/bin/sd" sandbox get <name> -o json | grep -oE '"url": *"ht
 | istio, istio-ambient, linkerd | `baseline_url` | sandbox `fast-route<suffix>` | as isolated-change, on the mesh |
 | temporal | the transfer app's cluster address, `http://temporal-py-client-ui.temporal.svc:8080` (no key; needs the connection) | sandbox `temporal-worker<suffix>`; plus the Temporal UI, `http://temporal-ui-service.temporal.svc` (needs the connection) | the transfer page shows "Routing Key: undefined" on the baseline and the sandbox's key through its link; in the Temporal UI, each transfer's completed steps list the worker that ran them (Identity): `1@temporal-worker-…` or the sandbox's `1@temporal-worker<suffix>-dep-temporal-worker-…`; a "Workflow Task Failed … cannot handle routing key" event is the other worker handing a step back (say so on the page) |
 | redis-streams | the producer's cluster address, `http://producer.redis-streams-demo.svc:4000` (no key; needs the connection) | sandbox `redis-streams-consumer<suffix>` | each message's trail: `routingKey: ""` and `consumer (baseline)` with processor v1 on the baseline; the sandbox's key and `consumer (sandbox=…)` with processor v2, in upper case, through its link |
-| rabbitmq | — | — | no web page: leave out the box |
+| rabbitmq | — (the app has no page of its own) | RabbitMQ's management UI, `http://rabbitmq.rabbitmq-demo.svc:15672`, user `guest` / `guest` (the demo's default; needs the connection) | Queues: `consumer-baseline` and `consumer-trial<suffix>`, both bound to the `orders` exchange; every order reaches both, and each consumer processes only its own (the logs show PROCESSING and SKIP) |
 
 ## The overview page
 

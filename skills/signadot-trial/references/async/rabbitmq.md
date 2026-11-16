@@ -5,9 +5,9 @@
 ## What it shows
 
 - **The demo app** (not HotROD): a small order app. A publisher service takes each order over HTTP and publishes it
-  to one RabbitMQ exchange, `orders`; a consumer service processes the orders it receives. It has no web page: the
-  consumers' logs show who processed each order. Explain this first on the page: the user has only seen HotROD so
-  far.
+  to one RabbitMQ exchange, `orders`; a consumer service processes the orders it receives. The app has no page of
+  its own; RabbitMQ's management UI is the place to watch it: each consumer has its own queue on the exchange.
+  Explain this first on the page: the user has only seen HotROD so far.
 - **Problem:** consumers on a shared RabbitMQ broker compete for messages, so a consumer under test either steals
   other people's messages or needs its own broker.
 - **What Signadot does:** a small order app publishes to one exchange; the baseline consumer and a sandboxed consumer
@@ -89,11 +89,20 @@ proof: one broker and exchange; each consumer processed only the orders carrying
 commands: kubectl apply (rabbitmq-signadot-demo); sd sandbox apply -f assets/specs/async/rabbitmq-consumer.yaml …; curl …/publish
 specs: assets/specs/async/rabbitmq-consumer.yaml
 links: https://www.signadot.com/docs/tutorials/testing-rabbitmq-microservices
+link-rabbitmq-ui: http://rabbitmq.rabbitmq-demo.svc:15672 (guest / guest; needs the laptop's connection)
 try: publish more orders with and without the key and watch both consumer logs
 ```
 
 ## Try it yourself
 
+The link box leads the page with RabbitMQ's management UI (`references/finish/report.md`, "App links"). It's a
+cluster address, so it opens only once the laptop has Signadot's connection with sudo; when `connect_mode` is
+`unprivileged`, the reconnect goes first in the link box.
+
+- Open RabbitMQ's management UI, http://rabbitmq.rabbitmq-demo.svc:15672, and sign in with the demo's default user,
+  `guest` / `guest`. Under Queues there are two: `consumer-baseline` (the normal consumer's) and
+  `consumer-trial<suffix>` (the sandbox's). Both are bound to the `orders` exchange, so every order reaches both;
+  each consumer then processes only the orders that are its own and skips the rest.
 - Follow both consumers' logs: `kubectl --kubeconfig <T>/kubeconfig -n rabbitmq-demo logs -f deploy/consumer | grep -E 'PROCESSING|SKIP'`,
   and the same for the sandbox's consumer pod. Ask your agent to publish more orders with and without the key.
 - The docs page also forks the publisher and joins both in a route group; its sandbox specs are in
