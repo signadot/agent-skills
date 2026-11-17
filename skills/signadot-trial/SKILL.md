@@ -44,11 +44,19 @@ recommends for the user's own services afterwards.
 
 ## How you work with the user
 
-Talk to the user at these moments. In between, work and show short progress lines (see "Showing progress"); don't
-ask.
+Walk the user through the trial in chat: they should understand what you're setting up and why before you do it,
+and what changed and how you verified it after. The report pages are the record of the conversation, not the main
+place the explanation lives. Between those moments, work and show short progress lines (see "Showing progress");
+don't ask. Talk to the user at these moments:
 
-1. **The plan.** Right after preflight, send the plan (below): the three basics, explained simply, what gets set up,
-   and one OK. Don't list the other scenarios yet; they come after the basics.
+0. **Customize or standard.** Right after preflight, ask whether they'd like to customize the trial to their use
+   case or run the standard trial ([references/setup/customize.md](references/setup/customize.md)). It's optional:
+   "standard" goes straight to the plan. "Customize" asks six quick questions about their org's stack and pains,
+   and tailors the plan and the menu to them.
+1. **The plan.** Then send the plan (below): the three basics, explained simply, what gets set up, and one OK. On the
+   standard path, don't list the other scenarios yet; they come after the basics.
+1a. **The baseline tour,** once setup is done (see "The baseline tour"): share the baseline link, explain what's
+   running and how a ride flows, then let the user pick the change for the first scenario.
 2. **Steps only the user can do,** when you reach them: the signup details and the browser steps
    ([references/setup/account.md](references/setup/account.md)), ticking the Terms box (or an explicit "tick it for
    me"), confirming the CLI login code if you can't drive a browser, and the sudo prompt if they chose the
@@ -57,19 +65,26 @@ ask.
    browser (signup, the CLI login, org settings), give the full link in chat, and for the CLI login the code too,
    even when you'll do it yourself. When the user has to act, end your turn and wait for their reply: never wait
    or poll silently, since some agents show messages only when the turn ends.
-3. **After each scenario:** show its result and its report page, and ask before starting the next one (see "After
-   each scenario"). The user gets value from each scenario as soon as it's proven.
+3. **After each scenario:** say what changed, how you verified it (with the proving values), and share the preview
+   link to review, then the report page; invite questions about it and answer them from the current docs, with
+   citations ([references/finish/questions.md](references/finish/questions.md)); then ask before starting the next
+   one (see "After each scenario").
 4. **More scenarios,** once the basics are done: the menu (below). Run what they pick the same way, one at a time.
 5. **Blocking decisions, only when they come up.** Another `local connect` is running; the cluster doesn't look
    local; Docker doesn't have enough memory; a fix that has a side effect. Ask one question with your
    recommendation.
-6. **Hand-off,** when the user is done ("done", "stop here", or the last scenario they picked has run): a two- or
-   three-line message that points to the report and says everything stays running until they ask for teardown.
-   Never tear down on your own.
+6. **Hand-off,** when the user is done ("done", "stop here", or the last scenario they picked has run): on the
+   customized path, the fit summary ([references/finish/fit.md](references/finish/fit.md)); on the standard path,
+   offer it once ("Want a quick fit check for your stack? Six questions."). Then ask "Is there anything else you'd
+   like to know about Signadot?" and answer from the current docs, pricing and comparison pages, with citations
+   ([references/finish/questions.md](references/finish/questions.md)). Then a short message that points to the
+   report and says everything stays running until they ask for teardown. Never tear down on your own.
 
 If the user's first request already names something beyond the basics ("try Signadot with Kafka", "on Istio
-ambient"), say in the plan that you'll do it right after the basics. A service mesh named in the first request is
-installed during setup, so the basics run on it.
+ambient"), say in the plan that you'll do it right after the basics. A service mesh named in the first request, or in
+the customize answers, is installed during setup, so the basics run on it. Ask about a mesh up front either way
+(the plan's mesh line): adding one after the basics means rebuilding the cluster, which removes every sandbox so far
+and breaks the earlier pages' preview links.
 
 Ask in plain chat. If your environment has a structured way to ask questions, you may use it, but don't depend on
 one.
@@ -78,7 +93,9 @@ one.
 
 | Input | Default |
 |---|---|
-| What to run first | the basics, one after the other; then offer more |
+| Trial path | asked first: customized (six questions) or standard; standard if they don't say |
+| What to run first | the basics, one after the other; then offer more (on the customized path, the relevant ones) |
+| The first scenario's change | the user picks: route (ETAs of 1 second) or driver (plates with an `SD-` prefix); route if they don't say |
 | Between scenarios | pause and ask, unless the user said "run the rest" |
 | Service mesh | none: Signadot's own routing (DevMesh); one named in the first request is installed during setup; one picked after the basics runs in its own namespace |
 | Cluster | a new kind cluster named `signadot-trial` |
@@ -105,17 +122,17 @@ The "Tell the user" column is how each step appears in your progress lines.
 
 | # | Step (trial-log ID) | Tell the user | What you run | Done when |
 |---|---|---|---|---|
-| 1 | `preflight` | Checking your computer | `bash $S/scripts/preflight.sh` | no missing must-haves; plan sent; the user said OK |
+| 1 | `preflight` | Checking your computer | `bash $S/scripts/preflight.sh`, then the opening question ([references/setup/customize.md](references/setup/customize.md)) | no missing must-haves; customized or standard chosen (and answered); plan sent; the user said OK |
 | 2 | `cli` | Installing the Signadot CLI | `bash $S/scripts/install-cli.sh --trial-dir $T [--reuse <their signadot>]` | `sd`, `kc` and `hm` exist; then start local-development's "Set up" (fetch, patch, build) in the background |
 | 3 | `cluster` (in the background) | Creating a local Kubernetes cluster with the demo app | [references/setup/cluster.md](references/setup/cluster.md) §1–2, with a mesh file's install if the first request named a mesh | HotROD ready |
 | 4 | `account` ★ | Creating your Signadot account | [references/setup/account.md](references/setup/account.md) §1 | the dashboard loads |
 | 5 | `login` | Logging the trial's CLI in to your org | [references/setup/account.md](references/setup/account.md) §2 | `sd auth status` shows the trial org |
 | 6 | `operator` | Installing Signadot in the cluster | [references/setup/cluster.md](references/setup/cluster.md) §3 (`scripts/install-operator.sh`) | `sidecars` shows all workloads |
 | 7 | `connect` | Connecting this computer to the cluster | [references/setup/cluster.md](references/setup/cluster.md) §4 | the frontend answers 200 through the connection |
-| 8 | `baseline` | Booking a ride on the unchanged app | [references/setup/cluster.md](references/setup/cluster.md) §5 (`scripts/ride.sh`, then the baseline link) | a plate and an ETA, every hop `baseline`; `baseline_url` recorded |
+| 8 | `baseline` | Booking a ride on the unchanged app | [references/setup/cluster.md](references/setup/cluster.md) §5 (`scripts/ride.sh`, then the baseline link) | a plate and an ETA, every hop `baseline`; `baseline_url` recorded; the baseline tour sent and the user picked the first change |
 | 9 | the basics, one at a time | its menu name | [isolated-change.md](references/core/isolated-change.md), [multi-service-preview.md](references/core/multi-service-preview.md), [local-development.md](references/core/local-development.md), each followed by [references/finish/report.md](references/finish/report.md) "After each scenario" | each proven, its page written and opened, the result shown; the user said to go on |
 | 10 | more scenarios | each one's menu name | the menu, then each chosen file in the order under "Combining add-ons", each followed by "After each scenario" | the user said "done", or every chosen one has run |
-| 11 | hand-off | — | [references/finish/playground.md](references/finish/playground.md) | the closing message is sent |
+| 11 | hand-off | — | the fit summary on the customized path ([references/finish/fit.md](references/finish/fit.md)), questions ([references/finish/questions.md](references/finish/questions.md)), then [references/finish/playground.md](references/finish/playground.md) | the closing message is sent |
 | 12 | teardown, on request | Removing the trial | [references/finish/teardown.md](references/finish/teardown.md) | everything in the trial log's resources is gone |
 
 Create `$T/trial-log.md` right after the OK and keep it current ([references/trial-log.md](references/trial-log.md)).
@@ -169,6 +186,9 @@ running until you ask me to remove it.
 **What I'll need from you:** a few minutes in a browser to create your Signadot account, or to sign in to one you
 already have.
 
+**Does your team run a service mesh** (Istio, Istio ambient, Linkerd)? If so, say which and I'll set the demo up on
+it now, so everything runs the way it would for you. Adding one later means rebuilding the cluster.
+
 Go ahead?
 ```
 
@@ -176,30 +196,78 @@ Go ahead?
 - **Memory:** if `docker_mem_gb` is under 4, say so and how to raise it before asking for the OK.
 - **First request named more:** add one line, e.g. "Right after the basics, I'll show Kafka too.", or "The basics
   will run on Istio ambient." for a mesh (install it during setup; add about 2 minutes).
+- **Mesh:** leave out the mesh question on the customized path (question 2 answered it) and on an existing cluster
+  (a mesh install would touch it). If the reply names a mesh, install it during setup and say "The basics will run
+  on <mesh>."
+- **Customized path:** add one line for what the answers changed ("Everything will run on Istio. After the basics
+  I'll offer Kafka, a database per sandbox and automated tests.") and one for what the trial can't demo but the fit
+  summary will cover ("No demo for SQS; I'll cover it in the fit summary.").
 - The OK covers everything listed, including the install command shown. Anything else needs its own yes
   ("Side effects and guardrails").
 
-## More scenarios
+## The baseline tour
 
-When the third basic is done, send its result (see "After each scenario") and, instead of "Next", this menu:
+Once the baseline ride works, before the first scenario, show the user what they're about to change. One message:
 
 ```markdown
-**Want to try more?** Each one runs on the same demo app, one at a time, with its own page.
+**The demo app is running, unchanged.** Open it and book a ride:
+https://frontend--hotrod-baseline.preview.signadot.com
 
-1. **Database per sandbox** (about 3 min). Your sandbox gets its own database with its own test data, created and
-   removed with the sandbox.
-2. **Kafka** (about 2 min). Your sandbox's consumer handles only the messages meant for it, on the shared Kafka
-   topic.
-3. **Temporal** (about 6 min). Your sandbox's worker runs only the workflows meant for it, on the shared task queue.
-4. **RabbitMQ** (about 3 min). The same for messages on a shared RabbitMQ exchange.
-5. **Redis Streams** (about 3 min). The same for entries in a shared Redis stream.
-6. **Automated tests** (about 8 min). Run the app's existing Playwright tests against your sandbox, then save them
-   as a reusable test plan and watch it catch a bug.
+What's running in the cluster: HotROD, a ride-booking app made of a few services. A ride goes from **frontend**,
+which asks **location** for the pickup and drop-off, onto **Kafka**; **driver** takes it from there, finds nearby
+drivers in Redis and asks **route** for each one's ETA. Signadot's operator is installed next to it: a small
+**sidecar** in each service that can send a request to a sandbox when it carries the sandbox's routing key. I just
+booked a ride: plate T751234C, ETA 12m (every service answered as the normal version).
 
-**On your service mesh** · each gets its own copy of the demo app next to the basics (1–2 GB each), and runs the
-first scenario there
+**Pick the change to test first:**
+1. **route:** every ETA comes back as 1 second instead of minutes (a setting route already has).
+2. **driver:** every licence plate gets an `SD-` prefix (a new driver image).
+```
 
-7. **Istio** (about 3 min) · 8. **Istio ambient** (about 3 min; 2 after Istio) · 9. **Linkerd** (about 3 min)
+- Use the real baseline link, plate and ETA. Keep the service names as they are.
+- Route is the default if they don't pick. Driver runs the first scenario with the driver sandbox instead
+  ([references/core/isolated-change.md](references/core/isolated-change.md), "Choose the change"); the two-service
+  scenario then reuses it.
+- They may ask for something else (location's data, frontend's look): say which add-on or basic shows it (a
+  database per sandbox; the two-service scenario), and offer route or driver for now.
+
+## More scenarios
+
+When the third basic is done, send its result (see "After each scenario") and, instead of "Next", this menu. Each
+option says what it sets up, what it proves, and what it needs or changes, so the user can choose without asking.
+On the customized path, show only the offered items ([references/setup/customize.md](references/setup/customize.md)
+§3) and end with "Or anything else from the full menu."
+
+```markdown
+**Want to try more?** Each one runs one at a time, with its own page.
+
+1. **Database per sandbox** (about 3 min). Gives a copy of the location service its own database, created by a
+   resource plugin and seeded with different places. Shows that requests with the key read and write only that
+   database, and that the plugin drops it when the sandbox goes.
+2. **Kafka** (about 2 min). Adds a second driver as a consumer on HotROD's existing Kafka topic. Shows that each
+   driver processes only the ride requests carrying its own key; there's no second broker or topic.
+3. **Temporal** (about 6 min). Deploys a separate money-transfer app on Temporal and adds a sandboxed worker to the
+   same server and task queue. Shows each worker running only the workflows carrying its key, in the Temporal UI.
+   *Builds two images locally; about 1 GB of memory.*
+4. **RabbitMQ** (about 3 min). Deploys a separate order app and adds a sandboxed consumer with its own queue on the
+   same exchange. Shows every order reaching both, and each consumer processing only its own, in RabbitMQ's UI.
+   *Builds two images locally.*
+5. **Redis Streams** (about 3 min). Deploys a separate demo and adds a sandboxed consumer, with a new processor, in
+   its own consumer group on the same stream. Shows each consumer processing only its own entries, with nothing
+   lost or handled twice. *Builds one image locally.*
+6. **Automated tests** (about 8 min). Runs HotROD's existing Playwright tests against a sandbox as a Job, then saves
+   them as a reusable Plan and runs it against a good change, a broken one (it catches the bug), and the service on
+   your computer. *Changes two org settings: a plan runner and an allowed image.*
+
+**On a service mesh** · each gets its own copy of the demo app next to the basics (1–2 GB each) and runs the
+first scenario there; nothing running is removed
+
+7. **Istio** (about 3 min): Signadot adds no proxy; it writes routing-key rules into Istio's VirtualServices, and
+   the caller's Envoy sidecar routes.
+8. **Istio ambient** (about 3 min; 2 after Istio): no sidecars; a waypoint proxy in front of the service applies
+   Signadot's rules.
+9. **Linkerd** (about 3 min): Linkerd keeps mTLS and metrics; Signadot's sidecar next to Linkerd's proxy routes by
+   key.
 
 Istio and Istio ambient can run side by side; Linkerd replaces them (I'll ask first).
 
@@ -223,17 +291,30 @@ Reply with the numbers you'd like, or "done" to stop here.
 
 ## After each scenario
 
-When a scenario is proven, write its report page ([references/finish/report.md](references/finish/report.md) "After
-each scenario"), open it, and send a short result in chat: one line on what was proven, the page, and the
-question. The page has the rest. Then wait for the user's answer before the next scenario.
+Before a scenario, say in a few lines what you're about to set up and why (from its file's "What it shows"): the
+problem it addresses, the sandbox you'll create, what stays shared, and what you'll check. When it's proven, write
+its report page ([references/finish/report.md](references/finish/report.md) "After each scenario"), open it, and
+explain the result in chat: what changed, how you verified it (both requests and their proving values), the
+preview link to review it, and the page. Then invite questions, and wait for the user's answer before the next
+scenario.
 
 ```markdown
-**✓ Test one change in isolation** · passed in 48 s. Rides with the routing key reached the new route service
-(ETA 1s); rides without it used the normal one (ETA 23m14s).
-Write-up, open in your browser: `/Users/me/project/.signadot-trial/report/isolated-change.html`
+**✓ Test one change in isolation** · passed in 48 s.
+
+**What changed:** the sandbox `fast-route` runs a second copy of route with `FAST_ROUTE=1`, next to the normal one.
+Everything else is shared.
+**How I verified it:** I booked the same ride twice. Without the routing key it went to the normal route (ETA
+23m14s); with it, to the sandbox's route (ETA 1s). Every other service answered as the normal version both times.
+**Review it:** book a ride through https://frontend--fast-route.preview.signadot.com: every ETA is 1 second.
+Write-up: `/Users/me/project/.signadot-trial/report/isolated-change.html`
+
+Any questions about what just happened, or how Signadot did it?
 
 **Next: Test a change that spans two services** (about 2 min). Go on? Or say "run the rest", or "stop here".
 ```
+
+- A question gets an answer before anything else, from the current docs, with citations
+  ([references/finish/questions.md](references/finish/questions.md)); then ask about the next scenario again.
 
 - A failed scenario gets `✗`, what was seen and what was tried, and the same question.
 - "Yes", "go on" or "next": run the next scenario. "Skip": mark the next one `skipped` and ask about the one after.
@@ -337,12 +418,12 @@ The user follows the trial through short progress lines. Keep them plain and eas
 - During waits over 20 s: an update every 30–60 s naming what's pending, in plain words ("downloading the Kafka
   image").
 - After: `✓ <the result, with its proving value>`, or `✗ <what failed> → <what you're trying next>`.
-- Before each scenario: `**<its menu name>** · about <time>`, and one line on what you're about to show. After it,
-  the result in "After each scenario"; the full story goes in its report page, not in chat.
+- Before each scenario: `**<its menu name>** · about <time>`, and a few lines on what you're about to set up and
+  why. After it, the result in "After each scenario": what changed, how you verified it, the link to review.
 - Never show internal names: trial-log step IDs (`preflight`, `cli`, `operator`), scenario IDs or file names,
   section numbers or placeholders. Use the menu's words: the basics, add-ons, service mesh.
-- Keep chat messages short: quote the proving value, not raw command output, and leave explanations, things to try
-  and next steps to the report pages.
+- Explain in chat, plainly: quote the proving value, not raw command output. The report pages keep the full record
+  (specs, commands, things to try), so chat doesn't need to repeat them.
 - Define each Signadot term the first time you use it, in one line (isolated-change.md has the wording for sandbox,
   routing key and baseline). Assume the user knows Kubernetes, service meshes and message brokers.
 
@@ -351,6 +432,9 @@ The user follows the trial through short progress lines. Keep them plain and eas
 - **Reports:** [references/finish/report.md](references/finish/report.md). One page per scenario,
   `$T/report/<scenario id>.html` from `assets/report/scenario.html`, written right after the scenario; and an
   overview, `$T/report/index.html` from `assets/report/index.html`, that links them, rebuilt after each scenario.
+- **Customizing:** [references/setup/customize.md](references/setup/customize.md) (the opening question and the six
+  questions); **fit summary:** [references/finish/fit.md](references/finish/fit.md), from the answers and
+  `assets/fit/compatibility.md`; **questions:** [references/finish/questions.md](references/finish/questions.md).
 - **Hand-off:** [references/finish/playground.md](references/finish/playground.md), ending with its closing message.
 - **Teardown:** [references/finish/teardown.md](references/finish/teardown.md), only when the user asks.
 - **Resume:** if preflight shows `trial_log: present`, a trial ran from this folder before: follow "Resume and

@@ -35,7 +35,20 @@ scenario list are current. Keep it to what that section lists: no next steps, se
 Don't change the user's PATH or shell profile, and don't suggest putting `<T>/bin` on PATH: its `sd` wrapper would
 shadow the `sd` find-and-replace tool some people use.
 
-## 3. The closing message
+## 3. Fit summary and questions
+
+Before the closing message:
+
+1. **Customized path** (`path: customized`): write and open the fit summary (`references/finish/fit.md`), and give
+   its three-line summary in chat. **Standard path:** offer it once: "Want a quick fit check for your stack? Six
+   questions, then a page you can share with your platform team." On a yes, ask the questions
+   (`references/setup/customize.md` §2), then write the fit summary.
+2. Ask: "Is there anything else you'd like to know about Signadot? For example how it would work on your stack, what
+   it costs, or how it compares with other tools." Answer each question as `references/finish/questions.md` says:
+   from the current docs, pricing and comparison pages, with citations. When they have no more, send the closing
+   message.
+
+## 4. The closing message
 
 Open the overview page (`open`, `xdg-open`, or `explorer.exe "$(wslpath -w <page>)"` on WSL), then send a short message: no scenario summaries and no lists of
 things to try, since the pages have them.

@@ -25,6 +25,14 @@ cli_path: /Users/me/project/.signadot-trial/bin/signadot
 cli_on_path: no
 versions: cli 1.9.1, operator 1.4.0, kind v0.33.0
 selection: isolated-change, multi-service-preview, local-development, sandbox-database, kafka
+path: customized
+answers-runs: eks, some services not on kubernetes
+answers-mesh: istio
+answers-messaging: http, grpc, kafka, sqs
+answers-tracing: opentelemetry in some services
+answers-data: shared databases; tests need seeded data
+answers-pains: shared staging, late end-to-end tests
+first-change: route
 started: 2026-11-15T10:02:11Z
 finished:
 

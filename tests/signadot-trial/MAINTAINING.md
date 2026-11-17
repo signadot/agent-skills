@@ -12,7 +12,8 @@ or `.github/`.
 - `scripts/`: four bash 3.2 scripts for steps that run on every trial (preflight, CLI install, operator install,
   booking a ride). No jq, python or node.
 - `assets/`: Signadot specs (`@{suffix}` and `@{cluster}` are filled with `--set`), the local-development patch,
-  and the report templates in `assets/report/` (the overview page, the scenario page and their shared CSS).
+  the report templates in `assets/report/` (the overview page, the scenario page, the fit summary and their shared
+  CSS), and `assets/fit/compatibility.md`, the matrix the fit summary takes every status from.
 - `tests/signadot-trial/`: this file and the checks (below).
 
 Nothing else belongs in the skill folder: everything there is installed for every user, and a check fails on any
@@ -69,6 +70,7 @@ Bump a pin deliberately: change it everywhere it appears, run the live checklist
 | Linkerd (edge) | 2026.11.2 | `references/infra/linkerd.md` |
 | kind, helm (Linux install) | v0.33.0, v3.16.2 | `references/setup/prerequisites.md` |
 | MariaDB (plugin runner) | 11.6 | `assets/specs/data/hotrod-trial-db-plugin.yaml` |
+| Compatibility matrix | `Retrieved:` date | `assets/fit/compatibility.md`: re-read the docs index and every cited page; a Signadot reviewer signs off status changes and the "Gaps / unclear" section |
 
 ## Product details the skill depends on
 
@@ -162,10 +164,15 @@ pin one commit instead, use a tree URL with the full 40-character SHA (a short S
 5. **Teardown:** org lists are clean, the kind cluster is gone, `~/.kube/config` and the kube context are unchanged,
    the trial log is renamed, and a new "try Signadot" starts fresh.
 6. **Another agent:** repeat the default path with a second coding agent product.
-7. **WSL:** the default path and one demo-app add-on on Windows with WSL2 and Docker Desktop. Preflight shows
+7. **Customized path:** "try Signadot", choose Customize, answer the six questions with a mesh and two brokers (one
+   with a demo, one without). The plan installs the mesh during setup and names the broker without a demo; after
+   the basics the menu shows only the relevant add-ons; the hand-off writes `fit.html` with every status from the
+   matrix and a guide link per row, then asks "anything else?". Ask about pricing and a competitor: the answers
+   cite `/pricing/` and `/comparison/<tool>/`. The agent never reads files outside its working folder.
+8. **WSL:** the default path and one demo-app add-on on Windows with WSL2 and Docker Desktop. Preflight shows
    `wsl: yes`; pages and the login link open in the Windows browser (`explorer.exe`), not a Linux browser inside
    WSL; every link the user is asked to open is a preview link; RabbitMQ's images build for amd64.
-8. **Apple Silicon Mac:** the default path and RabbitMQ on an arm64 Mac. RabbitMQ pulls its published images with no
+9. **Apple Silicon Mac:** the default path and RabbitMQ on an arm64 Mac. RabbitMQ pulls its published images with no
    local build; the local-development edit loop starts the new binary (no "Killed: 9") and the next keyed ride
    reaches it.
 

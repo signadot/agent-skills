@@ -241,6 +241,8 @@ detail is on the scenario pages; teardown and next steps are for the agent to of
 - **scenarios:** one `ROW` per scenario that ran or is to go, in run order, linking its page, with a one-sentence
   result and its time; one that hasn't run yet gets the `next` pill and no link. Then the `MORE` line while
   something on the menu of more scenarios hasn't been tried.
+- **fit summary:** once `fit.html` exists (`references/finish/fit.md`), a link to it right under the summary pills:
+  "How Signadot fits your stack".
 - **Look at the cluster yourself** (a fixed section): replace `TRIAL_FOLDER` with the trial folder's full path. It
   tells the user why `kubectx` doesn't show the trial's cluster and how to see it.
 

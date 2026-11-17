@@ -118,6 +118,10 @@ has references/infra/istio.md 'global.hub=$H' "Istio's images must come from Doc
 has scripts/install-operator.sh '--reuse-values' "upgrading the installed operator must keep its cluster token"
 has references/infra/add-mesh.md 'docker stats' "adding a mesh must check Docker's memory first"
 has references/infra/linkerd.md 'get namespace linkerd' "an existing Linkerd must be detected, not reinstalled"
+has references/setup/customize.md "Never read the user's repos" "customizing must ask, never read the user's code, other projects or the agent's memory"
+has references/finish/fit.md 'assets/fit/compatibility.md' "the fit summary must take every status from the compatibility matrix"
+has references/finish/questions.md 'docs/llms.txt' "answers must come from the current docs, not the agent's training"
+has references/finish/questions.md 'Cite every claim' "answers must cite their sources"
 has references/async/rabbitmq.md 'orders_exchange' "the RabbitMQ demo's exchange is orders_exchange (orders is RabbitMQ's own routing key)"
 grep -nE '`orders` exchange|exchange, `orders`' "$S/references/async/rabbitmq.md" "$S/references/finish/report.md" \
   && bad "RabbitMQ: the exchange is orders_exchange, not orders"
