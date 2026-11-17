@@ -80,7 +80,7 @@ one.
 |---|---|
 | What to run first | the basics, one after the other; then offer more |
 | Between scenarios | pause and ask, unless the user said "run the rest" |
-| Service mesh | none: Signadot's own routing (DevMesh); one named in the first request is installed during setup |
+| Service mesh | none: Signadot's own routing (DevMesh); one named in the first request is installed during setup; one picked after the basics runs in its own namespace |
 | Cluster | a new kind cluster named `signadot-trial` |
 | Connection | no sudo: `sd local connect --unprivileged` |
 | Signadot config and login | the trial's own, in `$T/home`; `~/.signadot` is never touched |
@@ -196,25 +196,30 @@ When the third basic is done, send its result (see "After each scenario") and, i
 6. **Automated tests** (about 8 min). Run the app's existing Playwright tests against your sandbox, then save them
    as a reusable test plan and watch it catch a bug.
 
-**On your service mesh** · pick one · I rebuild the demo cluster on it (about 10 min) and run the first scenario
-there
+**On your service mesh** · each gets its own copy of the demo app next to the basics (about 1 GB each), and runs the
+first scenario there
 
-7. **Istio** · 8. **Istio ambient** · 9. **Linkerd**
+7. **Istio** (about 4 min) · 8. **Istio ambient** (about 4 min; 2 after Istio) · 9. **Linkerd** (about 4 min)
+
+Istio and Istio ambient can run side by side; Linkerd replaces them (I'll ask first).
 
 Reply with the numbers you'd like, or "done" to stop here.
 ```
 
 - Numbers to files: 1 sandbox-database, 2 kafka, 3 temporal, 4 rabbitmq, 5 redis-streams, 6 jobs then plans,
-  7 istio, 8 istio-ambient, 9 linkerd. Map names the same way ("Kafka and Istio").
-- Leave out the mesh options when the basics already ran on a mesh, or on an existing cluster (a rebuild would
-  touch it); leave out what preflight rules out, and say why in one line.
+  7 istio, 8 istio-ambient, 9 linkerd (the meshes through add-mesh). Map names the same way ("Kafka and Istio").
+- Leave out the mesh options on an existing cluster: after setup, the trial installs a mesh only in a cluster it
+  created. When the basics ran on a mesh, offer only the other Istio mode if that mesh is Istio or Istio ambient,
+  and no mesh after Linkerd (the operator works with one mesh at a time, and the basics need theirs). Leave out what
+  preflight rules out. Say why in one line.
 - Once they've picked, send one short message before starting: for each pick, one plain line on what Signadot does
   in it (from its file's "What it shows"; don't explain the mesh, Kafka, Temporal, RabbitMQ or Redis themselves),
-  and the total time. Wait for an OK only if it also lists something with a side effect: a mesh rebuild (the basics'
-  sandboxes are removed; their pages stay), the two org settings automated tests change, a missing tool to
-  install, or more memory than Docker has. Otherwise start right away.
-- Then start the chosen demo apps' deploys and the Jobs runner group in the background (after a mesh rebuild, if
-  there is one), and run the picks one at a time.
+  and the total time. If the picks include Linkerd and an Istio mode, add that Linkerd comes after them and
+  replaces Istio, and that you'll ask before switching. Wait for an OK only if it also lists something with a side
+  effect: the two org settings automated tests change, a missing tool to install, or more memory than Docker has.
+  Otherwise start right away.
+- Then start the chosen demo apps' deploys and the Jobs runner group in the background, and run the picks one at a
+  time.
 
 ## After each scenario
 
@@ -241,8 +246,9 @@ Write-up, open in your browser: `/Users/me/project/.signadot-trial/report/isolat
 
 Read only the files for what runs. Each scenario file has the same sections: What it shows, Costs, Before you
 start, Set up, Run, Prove it, Record, Try it yourself, Tear down, Docs. Infra files have: What it shows, Install
-before HotROD, Overlay and operator values, Mesh check, Tear down, Docs. A scenario's ID, in the trial log and in
-these files, is its file name.
+before HotROD, Overlay and operator values, Mesh check, Tear down, Docs; a mesh picked after the basics runs through
+[references/infra/add-mesh.md](references/infra/add-mesh.md), which uses its infra file. A scenario's ID, in the
+trial log and in these files, is its file name.
 
 | Menu | ID and file | Time | Memory | Needs |
 |---|---|---|---|---|
@@ -257,27 +263,32 @@ these files, is its file name.
 | more 5 · Redis Streams | [redis-streams](references/async/redis-streams.md) | +3 min | +0.5 GB | Docker (local image build) |
 | more 6 · automated tests, part 1 | [jobs](references/testing/jobs.md) | +4 min | +1 GB | the driver sandbox (creates it if missing) |
 | more 6 · automated tests, part 2 | [plans](references/testing/plans.md) | +4 min | — | the driver sandbox; two org settings |
-| more 7 · Istio | [istio](references/infra/istio.md) | +10 min after the basics, +2 min during setup | +0.5 GB | a kind cluster the trial created |
-| more 8 · Istio ambient | [istio-ambient](references/infra/istio-ambient.md) | +10 min after the basics, +2 min during setup | +0.5 GB | a kind cluster the trial created |
-| more 9 · Linkerd | [linkerd](references/infra/linkerd.md) | +10 min after the basics, +2 min during setup | +0.5 GB | a kind cluster the trial created; openssl |
+| more 7 · Istio | [istio](references/infra/istio.md) | +4 min after the basics, +2 min during setup | +1.4 GB after the basics (mesh and copy), +0.3 GB during setup | after the basics, a kind cluster the trial created |
+| more 8 · Istio ambient | [istio-ambient](references/infra/istio-ambient.md) | +4 min after the basics (+2 after Istio), +2 min during setup | +1.4 GB after the basics (+1.1 GB after Istio), +0.3 GB during setup | after the basics, a kind cluster the trial created |
+| more 9 · Linkerd | [linkerd](references/infra/linkerd.md) | +4 min after the basics (+5 to switch from Istio), +2 min during setup | +1.4 GB after the basics, +0.3 GB during setup | after the basics, a kind cluster the trial created; openssl |
 
 ## Combining add-ons
 
-- **Service mesh:** at most one. Named in the first request: install it during setup (its file's "Install before
-  HotROD"). Picked after the basics: rebuild the demo cluster on it with
-  [references/infra/switch-mesh.md](references/infra/switch-mesh.md), before any other pick.
-- **Namespaces:** HotROD runs in `hotrod`. Every other demo app runs in its own namespace, named in its file. Never
+- **Service mesh:** named in the first request: install it during setup (its file's "Install before HotROD"), and
+  the basics run on it. Picked after the basics: each mesh gets its own namespace with its own copy of HotROD, next
+  to the basics ([references/infra/add-mesh.md](references/infra/add-mesh.md)); nothing running is removed. Istio
+  and Istio ambient share one Istio install and run side by side. The operator can't work with Linkerd and Istio at
+  once, so run the Istio picks first and ask before switching to Linkerd (add-mesh.md has the question).
+- **Namespaces:** HotROD runs in `hotrod`, and a mesh's copy in `hotrod-istio`, `hotrod-ambient` or
+  `hotrod-linkerd`. Every other demo app runs in its own namespace, named in its file. Never
   deploy two apps into one namespace, and never change a namespace the trial didn't create. If a namespace
   already exists on an existing cluster, ask before using it, and don't record it for teardown
   (`references/setup/cluster.md` §1).
 - **Memory:** add up the basics and each pick from the index, compare with `docker_mem_gb`, and settle it before
-  starting.
+  starting. A mesh copy whose scenario is done can be removed to make room (add-mesh.md, "Tear down"); its page
+  stays.
 - **Demo apps** other than HotROD come from `signadot/examples`, fetched once at a pinned commit
   (`references/setup/cluster.md` §2). Start their deploys as soon as they're picked, so image pulls overlap the
   scenarios before them.
-- **Order:** the basics (isolated-change, multi-service-preview, local-development); then a mesh rebuild; then data,
-  async (Kafka first, then the menu order) and testing (jobs, then plans). Kafka, jobs and plans reuse the driver
-  sandbox from the two-service scenario, and create it if it's missing (skipped, or removed by a mesh rebuild).
+- **Order:** the basics (isolated-change, multi-service-preview, local-development); then the meshes (Istio, Istio
+  ambient, then Linkerd); then data, async (Kafka first, then the menu order) and testing (jobs, then plans). Kafka,
+  jobs and plans reuse the driver sandbox from the two-service scenario, and create it if the user skipped that
+  scenario.
 
 ## Verifying results and handling failures
 
@@ -302,8 +313,8 @@ these files, is its file name.
 | Action | Policy |
 |---|---|
 | Preflight, reads, status checks, fetching docs pages | Do it. |
-| Everything the plan or the message before more scenarios listed (CLI in `$T/bin`, kind cluster, operator, mesh or rebuild, demo apps, sandboxes, reports, and any install command or org settings shown) | Covered by that OK. |
-| Installing kubectl, kind, helm or git, or changing org settings, when no OK covered it; ticking the Terms box; asking the user to disconnect a local connection; teardown | Only after an explicit yes for that action. |
+| Everything the plan or the message before more scenarios listed (CLI in `$T/bin`, kind cluster, operator, meshes, demo apps, sandboxes, reports, and any install command or org settings shown) | Covered by that OK. |
+| Installing kubectl, kind, helm or git, or changing org settings, when no OK covered it; ticking the Terms box; asking the user to disconnect a local connection; switching the mesh from Istio to Linkerd or back; teardown | Only after an explicit yes for that action. |
 | Typing passwords or verification codes; running sudo; using a cloud or shared cluster; changing anything in `~/.signadot` or the user's own Signadot login; switching a kube context the user chose | Never. |
 
 - **Cluster:** default to a new kind cluster. Refuse cloud clusters (EKS, GKE, AKS) and any cluster that already

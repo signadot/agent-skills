@@ -115,9 +115,10 @@ installed, run the infra file's helm commands again (they upgrade in place), the
 new one can schedule.
 
 **Sandboxes on Istio ambient stay Not Ready with `RoutingNotReady`.** A forked service has no route object: the
-operator adds sandbox routes to HotROD's VirtualServices, so check they exist (`"$T/bin/kc" -n hotrod get
-virtualservices`) and that the operator values have `istio.enabled: true`.
+operator adds sandbox routes to HotROD's VirtualServices, so check they exist (`"$T/bin/kc" -n <ns> get
+virtualservices`, where `<ns>` is `hotrod` or `hotrod-ambient`) and that the operator values have `istio.enabled:
+true`.
 
 **On Istio ambient, a sandbox is Ready but keyed requests still reach the baseline.** No waypoint is applying the
-routes. Check that the `hotrod` namespace has `istio.io/dataplane-mode=ambient` and `istio.io/use-waypoint=waypoint`,
+routes. Check that HotROD's namespace has `istio.io/dataplane-mode=ambient` and `istio.io/use-waypoint=waypoint`,
 and that the `waypoint` Gateway's pod is running.

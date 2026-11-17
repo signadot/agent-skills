@@ -45,7 +45,7 @@ cli=$(sed -n 's/^VERSION=//p' "$S/scripts/install-cli.sh")
 op=$(sed -n 's/^OPERATOR_VERSION=\([0-9.]*\).*/\1/p' "$S/scripts/install-operator.sh")
 get https://charts.signadot.com/index.yaml | grep -q "operator-$op.tgz" || bad "operator chart $op"
 istio=$(sed -n 's/.*istiod --repo .* --version \([0-9.]*\).*/\1/p' "$S/references/infra/istio.md" | head -1)
-[ "$(code "https://istio-release.storage.googleapis.com/charts/istiod-$istio.tgz")" = 200 ] || bad "istiod chart $istio"
+[ "$(code "https://blob.istio.io/istio-release/charts/istiod-$istio.tgz")" = 200 ] || bad "istiod chart $istio"
 lk=$(sed -n 's/.*--version \([0-9.]*\) -n linkerd --create.*/\1/p' "$S/references/infra/linkerd.md" | head -1)
 get https://helm.linkerd.io/edge/index.yaml | grep -q "version: $lk" || bad "linkerd edge chart $lk"
 for u in $(grep -rhoE 'https://(github\.com/kubernetes-sigs/gateway-api/releases|kind\.sigs\.k8s\.io/dl|get\.helm\.sh)/[^" ]+' "$S/references" | sed 's/\$ARCH/amd64/' | sort -u); do

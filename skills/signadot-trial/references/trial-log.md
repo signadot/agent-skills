@@ -82,8 +82,8 @@ try: open the baseline and sandbox links and compare the ETAs
   `plan_tag`, `process`, `portforward`, `org_setting`. Teardown reads this list; anything missing from it is left
   behind.
 - **Scenarios:** IDs are file names: `isolated-change`, `multi-service-preview`, `local-development`, then each
-  add-on's (`sandbox-database`, `kafka`, `temporal`, `rabbitmq`, `redis-streams`, `jobs`, `plans`). `status` is
-  `passed`, `failed` or `skipped`.
+  add-on's (`istio`, `istio-ambient`, `linkerd`, `sandbox-database`, `kafka`, `temporal`, `rabbitmq`,
+  `redis-streams`, `jobs`, `plans`). `status` is `passed`, `failed` or `skipped`.
 - **Hops** say which version served each service, for the page's diagram. For a request: `service(served-by)`
   joined by ` → `, where `served-by` is `baseline`, a sandbox name, or `local` for a process on this computer.
   `scripts/ride.sh` prints a ready-made `hops:` line, in the order the notifications arrived, which is not the call

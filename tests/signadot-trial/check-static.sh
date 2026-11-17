@@ -34,7 +34,8 @@ done
 grep -q -- '--version "$OPERATOR_VERSION"' "$S/scripts/install-operator.sh" || bad "install-operator.sh: chart version not pinned"
 hot=$(sed -n 's/.*hotrod\/\/.*ref=\([0-9a-f]\{40\}\).*/\1/p' "$S/references/setup/cluster.md" | head -1)
 [ -n "$hot" ] || bad "cluster.md: no pinned HotROD commit"
-for f in references/core/local-development.md assets/specs/testing/playwright-job.yaml assets/specs/testing/hotrod-e2e-plan.yaml; do
+for f in references/core/local-development.md references/infra/add-mesh.md assets/specs/testing/playwright-job.yaml \
+         assets/specs/testing/hotrod-e2e-plan.yaml; do
   grep -q "$hot" "$S/$f" || bad "$f doesn't use HotROD commit $hot from cluster.md"
 done
 grep -rqE -- '-b main|default: main' "$S/assets" "$S/references" && bad "a HotROD fetch follows main, not the pinned commit"
@@ -111,7 +112,10 @@ has references/finish/report.md "won't open in the user's browser yet" "a page w
 has references/setup/cluster.md 'kind export kubeconfig' "reusing a kind cluster must export its kubeconfig"
 has references/setup/cluster.md 'get namespace <ns>' "an existing cluster's namespaces must be checked before use"
 has references/infra/istio.md 'hm" status istiod -n istio-system' "an existing Istio must be detected, not reinstalled"
-has references/infra/istio-ambient.md 'hm" status istiod -n istio-system' "an existing Istio must be detected, not reinstalled"
+has references/infra/istio-ambient.md 'references/infra/istio.md' "Istio ambient must use Istio's install, which detects an existing Istio"
+has references/infra/istio.md 'profile=ambient' "Istio must be installed with the ambient profile, so both Istio modes can run side by side"
+has scripts/install-operator.sh '--reuse-values' "upgrading the installed operator must keep its cluster token"
+has references/infra/add-mesh.md 'docker stats' "adding a mesh must check Docker's memory first"
 has references/infra/linkerd.md 'get namespace linkerd' "an existing Linkerd must be detected, not reinstalled"
 has references/async/rabbitmq.md 'orders_exchange' "the RabbitMQ demo's exchange is orders_exchange (orders is RabbitMQ's own routing key)"
 grep -nE '`orders` exchange|exchange, `orders`' "$S/references/async/rabbitmq.md" "$S/references/finish/report.md" \

@@ -23,8 +23,8 @@ memory. Namespace `signadot-tests`.
 
 ## Before you start
 
-- The sandbox `driver-plates<suffix>` must exist. If the two-service scenario was skipped, or a mesh rebuild
-  removed it, create it (safe to run again; record it under Resources if it's new):
+- The sandbox `driver-plates<suffix>` must exist. If the two-service scenario was skipped, create it (safe to run
+  again; record it under Resources if it's new):
   `"$T/bin/sd" sandbox apply -f "$S/assets/specs/core/driver-plates.yaml" --set cluster=<cluster> --set suffix=<suffix>`
 - No org settings are needed for Jobs.
 

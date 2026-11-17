@@ -1,8 +1,9 @@
 # Linkerd
 
-Installed during setup when the first request names it (about 2 more minutes), or after the basics by rebuilding
-the demo cluster (`references/infra/switch-mesh.md`, about 10 minutes). Adds 0.5 GB of memory. Namespace `linkerd`.
-Needs `openssl` for the mesh's certificates.
+Installed during setup when the first request names it (about 2 more minutes; the basics then run on it), or after
+the basics with its own copy of HotROD in `hotrod-linkerd` (`references/infra/add-mesh.md`, about 4 minutes; 5 more
+to switch from Istio first). Linkerd adds about 0.3 GB of memory, in namespace `linkerd`; a copy adds about 1.1 GB.
+Needs `openssl` for the mesh's certificates. The operator can't work with Linkerd and Istio at once.
 
 ## What it shows
 
@@ -21,7 +22,8 @@ to their sandbox. As without a mesh, it routes at the destination: the sidecar i
 If it succeeds, use the mesh that's there: skip this install, don't record `mesh` or `linkerd` (teardown must not
 remove them), and tell the user the trial adds HotROD to their mesh.
 
-Run this after the kind cluster is up (`references/setup/cluster.md` §1) and before HotROD (§2). Linkerd's identity
+Run this after the kind cluster is up (`references/setup/cluster.md` §1) and before HotROD (§2), or from
+`references/infra/add-mesh.md`. Linkerd's identity
 needs a trust anchor and an issuer certificate; generate them with openssl, then install the charts with `$T/bin/hm`
 (helm with the trial's kubeconfig and cache; the chart repository is given per command, so the user's helm setup
 doesn't change).
@@ -59,6 +61,10 @@ cluster only. Record `mesh linkerd` and `namespace linkerd` under Resources.
   ```yaml
   linkerd:
     enabled: true
+  istio:
+    enabled: false   # one mesh at a time
+  trafficManager:
+    replicas: 1      # one node: the default 2 replicas don't fit
   ```
 
 - `install-operator.sh` flags: `--values "$T/operator-values.yaml"` (the DevMesh `sd-sidecar` is the proxy it
@@ -67,13 +73,13 @@ cluster only. Record `mesh linkerd` and `namespace linkerd` under Resources.
 ## Mesh check
 
 `install-operator.sh` prints `sidecars: 4/4`. Each of driver, frontend, location and route also runs
-`linkerd-proxy`:
+`linkerd-proxy`. `<ns>` is `hotrod` during setup, `hotrod-linkerd` when added after the basics:
 
 ```bash
-"$T/bin/kc" -n hotrod get pods -o jsonpath='{range .items[*]}{.metadata.name}{"  "}{.spec.initContainers[*].name} {.spec.containers[*].name}{"\n"}{end}'
+"$T/bin/kc" -n <ns> get pods -o jsonpath='{range .items[*]}{.metadata.name}{"  "}{.spec.initContainers[*].name} {.spec.containers[*].name}{"\n"}{end}'
 ```
 
-The basics then prove routing on Linkerd: the same commands and the same "done when" checks as on DevMesh.
+The first scenario then proves routing on Linkerd: the same commands and the same "done when" checks as on DevMesh.
 
 ## Tear down
 

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Register the trial cluster with Signadot, install the Signadot Operator, and restart the demo workloads
-# so they get their routing proxy. The cluster token goes from the CLI to helm through a private temp file
-# (mode 600, deleted on exit); it is never printed or passed on a command line. Safe to re-run.
+# Register the trial cluster with Signadot, install the Signadot Operator (or apply new --values to the installed
+# one), and restart the demo workloads so they get their routing proxy. The cluster token goes from the CLI to helm
+# through a private temp file (mode 600, deleted on exit); it is never printed or passed on a command line.
+# Safe to re-run.
 set -eu
 OPERATOR_VERSION=1.4.0   # the chart version the skill was verified with (see tests/signadot-trial/MAINTAINING.md in signadot/agent-skills)
 
@@ -46,9 +47,25 @@ else
 fi
 
 # 2. Install the operator (once), with the token from `cluster add`, or a new one if the cluster was registered before.
+#    If it's installed and --values is given, apply the values to it (turning a mesh on or off); --reuse-values keeps
+#    its cluster token. The manifests are compared by checksum only, so the token is never printed.
 token_source=none
+manifest() { helm get manifest signadot-operator -n signadot --kubeconfig "$KCFG" 2>/dev/null | cksum; }
 if helm status signadot-operator -n signadot --kubeconfig "$KCFG" >/dev/null 2>&1; then
   operator=already-installed
+  if [ -n "$VALUES" ]; then
+    m0=$(manifest)
+    helm upgrade signadot-operator operator --repo https://charts.signadot.com --version "$OPERATOR_VERSION" \
+      -n signadot --kubeconfig "$KCFG" --reuse-values -f "$VALUES" >"$T/logs/operator-upgrade.log" 2>&1 \
+      || { echo "error: helm upgrade failed; see $T/logs/operator-upgrade.log" >&2; exit 6; }
+    if [ "$(manifest)" = "$m0" ]; then operator=unchanged; else operator=upgraded; fi
+    if [ "$operator" = upgraded ]; then
+      for d in $("$KC" -n signadot get deploy -o name); do
+        "$KC" -n signadot rollout status "$d" --timeout=300s >/dev/null \
+          || { echo "error: $d did not roll out after the upgrade; see: $KC -n signadot get pods" >&2; exit 8; }
+      done
+    fi
+  fi
 else
   umask 077; tok=$(mktemp "$T/tmp/values.XXXXXX"); trap 'rm -f "$tok"' EXIT
   token=$addtok token_source=cluster-add

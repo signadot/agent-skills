@@ -59,7 +59,7 @@ Bump a pin deliberately: change it everywhere it appears, run the live checklist
 |---|---|---|
 | Signadot CLI | 1.9.1 | `scripts/install-cli.sh` (`VERSION`), SKILL.md, `references/setup/prerequisites.md` |
 | Signadot Operator chart | 1.4.0 | `scripts/install-operator.sh` (`OPERATOR_VERSION`) |
-| HotROD | commit `b16178651580…` | `references/setup/cluster.md` (overlay), `references/core/local-development.md`, `assets/specs/testing/playwright-job.yaml`, `assets/specs/testing/hotrod-e2e-plan.yaml` |
+| HotROD | commit `b16178651580…` | `references/setup/cluster.md` (overlay), `references/infra/add-mesh.md` (overlay), `references/core/local-development.md`, `assets/specs/testing/playwright-job.yaml`, `assets/specs/testing/hotrod-e2e-plan.yaml` |
 | HotROD sandbox images | `signadot/hotrod:f788b05…`, `:97de62bf…` | `assets/specs/core/`, `references/setup/cluster.md` (pre-pull) |
 | signadot/examples | commit `26f759be92…` | `references/setup/cluster.md` §2 |
 | Go | 1.27.1 (HotROD's `go.mod`) | SKILL.md, `references/setup/prerequisites.md`, `references/core/local-development.md` |
@@ -145,7 +145,9 @@ pin one commit instead, use a tree URL with the full 40-character SHA (a short S
    outside its working folder, and afterwards the only new thing there is `.signadot-trial`.
 2. **Existing user:** with a `~/.signadot` config and login present. The trial uses its own login in the trial folder; checksum
    `~/.signadot` before and after (`find ~/.signadot -type f -exec shasum {} + | sort | shasum`): unchanged.
-3. **Every variation:** each infra option on a fresh cluster with the basics; then data, Kafka, Temporal, RabbitMQ,
+3. **Every variation:** each infra option on a fresh cluster with the basics; then, after the default basics, the
+   meshes added next to them: Istio, Istio ambient beside it, then the switch to Linkerd. Each mesh's copy proves
+   routing, and the basics' keyed ride still reaches `fast-route` after each. Then data, Kafka, Temporal, RabbitMQ,
    Redis Streams, Jobs and Plans (Plans needs the two org settings in `references/testing/plans.md`). Each page's
    diagram puts the decision where the routing makes it: the sidecar inside the normal pod of the called service
    (DevMesh, Linkerd), the Envoy sidecar inside the caller's pod (Istio), the waypoint in front of the called

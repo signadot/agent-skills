@@ -7,8 +7,9 @@ another local connection.
 ## Order
 
 1. **Add-ons, in reverse run order.** Run the "Tear down" section of each add-on file that ran: testing
-   (Plans, then Jobs), async (the demo-app files, then Kafka, which has nothing of its own), then data. Each
-   removes its sandboxes, plugin, runner group or plan tag, and its namespace.
+   (Plans, then Jobs), async (the demo-app files, then Kafka, which has nothing of its own), data, then each mesh
+   copy added after the basics (`references/infra/add-mesh.md`, "Tear down"). Each removes its sandboxes, plugin,
+   runner group or plan tag, and its namespace.
 2. **The basics.**
 
    ```bash

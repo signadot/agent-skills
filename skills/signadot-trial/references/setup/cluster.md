@@ -60,6 +60,9 @@ there. The infra files apply the same rule to a mesh that's already installed.
 
 ## 2. HotROD (`cluster`, part 2)
 
+On Istio ambient, run the namespace commands from its file's "Overlay and operator values" first, with `<ns>` set
+to `hotrod`.
+
 ```bash
 OVERLAY=devmesh   # from the infra file: devmesh, istio, istio-ambient or linkerd
 "$T/bin/kc" create namespace hotrod --dry-run=client -o yaml | "$T/bin/kc" apply -f -
