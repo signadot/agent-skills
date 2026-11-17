@@ -114,6 +114,10 @@ file's resource flags and `trafficManager.replicas: 1` from the start. On a clus
 installed, run the infra file's helm commands again (they upgrade in place), then delete the old, larger pod so the
 new one can schedule.
 
+**Istio's pods stay `ImagePullBackOff`, with `403 Forbidden` from `registry.istio.io` in `describe pod`.** Istio's
+own registry refuses anonymous pulls. Install with the Docker Hub flags in `references/infra/istio.md`
+(`global.hub`, and `hub` for ztunnel); the helm commands upgrade in place.
+
 **Sandboxes on Istio ambient stay Not Ready with `RoutingNotReady`.** A forked service has no route object: the
 operator adds sandbox routes to HotROD's VirtualServices, so check they exist (`"$T/bin/kc" -n <ns> get
 virtualservices`, where `<ns>` is `hotrod` or `hotrod-ambient`) and that the operator values have `istio.enabled:

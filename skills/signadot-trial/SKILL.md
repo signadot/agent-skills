@@ -196,10 +196,10 @@ When the third basic is done, send its result (see "After each scenario") and, i
 6. **Automated tests** (about 8 min). Run the app's existing Playwright tests against your sandbox, then save them
    as a reusable test plan and watch it catch a bug.
 
-**On your service mesh** · each gets its own copy of the demo app next to the basics (about 1 GB each), and runs the
+**On your service mesh** · each gets its own copy of the demo app next to the basics (1–2 GB each), and runs the
 first scenario there
 
-7. **Istio** (about 4 min) · 8. **Istio ambient** (about 4 min; 2 after Istio) · 9. **Linkerd** (about 4 min)
+7. **Istio** (about 3 min) · 8. **Istio ambient** (about 3 min; 2 after Istio) · 9. **Linkerd** (about 3 min)
 
 Istio and Istio ambient can run side by side; Linkerd replaces them (I'll ask first).
 
@@ -263,9 +263,9 @@ trial log and in these files, is its file name.
 | more 5 · Redis Streams | [redis-streams](references/async/redis-streams.md) | +3 min | +0.5 GB | Docker (local image build) |
 | more 6 · automated tests, part 1 | [jobs](references/testing/jobs.md) | +4 min | +1 GB | the driver sandbox (creates it if missing) |
 | more 6 · automated tests, part 2 | [plans](references/testing/plans.md) | +4 min | — | the driver sandbox; two org settings |
-| more 7 · Istio | [istio](references/infra/istio.md) | +4 min after the basics, +2 min during setup | +1.4 GB after the basics (mesh and copy), +0.3 GB during setup | after the basics, a kind cluster the trial created |
-| more 8 · Istio ambient | [istio-ambient](references/infra/istio-ambient.md) | +4 min after the basics (+2 after Istio), +2 min during setup | +1.4 GB after the basics (+1.1 GB after Istio), +0.3 GB during setup | after the basics, a kind cluster the trial created |
-| more 9 · Linkerd | [linkerd](references/infra/linkerd.md) | +4 min after the basics (+5 to switch from Istio), +2 min during setup | +1.4 GB after the basics, +0.3 GB during setup | after the basics, a kind cluster the trial created; openssl |
+| more 7 · Istio | [istio](references/infra/istio.md) | +3 min after the basics, +2 min during setup | +1.8 GB after the basics (mesh and copy), +0.6 GB during setup | after the basics, a kind cluster the trial created |
+| more 8 · Istio ambient | [istio-ambient](references/infra/istio-ambient.md) | +3 min after the basics (+2 after Istio), +2 min during setup | +1.8 GB after the basics (+1.2 GB after Istio), +0.6 GB during setup | after the basics, a kind cluster the trial created |
+| more 9 · Linkerd | [linkerd](references/infra/linkerd.md) | +3 min after the basics (+5 with a switch from Istio), +2 min during setup | +1.8 GB after the basics, +0.6 GB during setup | after the basics, a kind cluster the trial created; openssl |
 
 ## Combining add-ons
 

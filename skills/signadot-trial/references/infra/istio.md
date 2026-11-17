@@ -1,8 +1,8 @@
 # Istio (sidecar mode)
 
 Installed during setup when the first request names it (about 2 more minutes; the basics then run on it), or after
-the basics with its own copy of HotROD in `hotrod-istio` (`references/infra/add-mesh.md`, about 4 minutes). Istio
-adds about 0.3 GB of memory, in namespace `istio-system`; a copy adds about 1.1 GB.
+the basics with its own copy of HotROD in `hotrod-istio` (`references/infra/add-mesh.md`, about 3 minutes). Istio
+adds about 0.6 GB of memory, in namespace `istio-system`; a copy adds about 1.2 GB.
 
 ## What it shows
 
@@ -26,22 +26,23 @@ Run this after the kind cluster is up (`references/setup/cluster.md` §1) and be
 whose pods have Envoy sidecars, and ambient namespaces with a waypoint. So Istio ambient can be added later without
 reinstalling. Waypoints are Gateway API resources, so the Gateway API CRDs come first. Charts go through `$T/bin/hm`
 (helm with the trial's kubeconfig and cache), with the repository given per command, so the user's helm setup
-doesn't change.
+doesn't change. The images come from Docker Hub (`global.hub`, and `hub` for ztunnel): the charts' default
+registry, `registry.istio.io`, refuses anonymous pulls.
 
 ```bash
 "$T/bin/kc" get crd gateways.gateway.networking.k8s.io >/dev/null 2>&1 \
   || "$T/bin/kc" apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.5.1/standard-install.yaml > "$T/logs/istio.log"
-R=https://blob.istio.io/istio-release/charts
+R=https://blob.istio.io/istio-release/charts H=docker.io/istio
 "$T/bin/hm" upgrade --install istio-base base --repo $R --version 1.30.8 -n istio-system --create-namespace \
   --wait >> "$T/logs/istio.log" 2>&1
 "$T/bin/hm" upgrade --install istiod istiod --repo $R --version 1.30.8 -n istio-system --set profile=ambient \
-  --set pilot.resources.requests.memory=256Mi --set pilot.resources.requests.cpu=100m \
+  --set global.hub=$H --set pilot.resources.requests.memory=256Mi --set pilot.resources.requests.cpu=100m \
   --set global.proxy.resources.requests.memory=64Mi --set global.proxy.resources.requests.cpu=10m \
   --wait >> "$T/logs/istio.log" 2>&1
 "$T/bin/hm" upgrade --install istio-cni cni --repo $R --version 1.30.8 -n istio-system --set profile=ambient \
-  --wait >> "$T/logs/istio.log" 2>&1
+  --set global.hub=$H --wait >> "$T/logs/istio.log" 2>&1
 "$T/bin/hm" upgrade --install ztunnel ztunnel --repo $R --version 1.30.8 -n istio-system \
-  --set resources.requests.memory=128Mi --set resources.requests.cpu=50m \
+  --set hub=$H --set resources.requests.memory=128Mi --set resources.requests.cpu=50m \
   --wait >> "$T/logs/istio.log" 2>&1
 "$T/bin/kc" -n istio-system get pods
 ```

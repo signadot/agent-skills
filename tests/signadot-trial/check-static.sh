@@ -114,6 +114,7 @@ has references/setup/cluster.md 'get namespace <ns>' "an existing cluster's name
 has references/infra/istio.md 'hm" status istiod -n istio-system' "an existing Istio must be detected, not reinstalled"
 has references/infra/istio-ambient.md 'references/infra/istio.md' "Istio ambient must use Istio's install, which detects an existing Istio"
 has references/infra/istio.md 'profile=ambient' "Istio must be installed with the ambient profile, so both Istio modes can run side by side"
+has references/infra/istio.md 'global.hub=$H' "Istio's images must come from Docker Hub; registry.istio.io refuses anonymous pulls"
 has scripts/install-operator.sh '--reuse-values' "upgrading the installed operator must keep its cluster token"
 has references/infra/add-mesh.md 'docker stats' "adding a mesh must check Docker's memory first"
 has references/infra/linkerd.md 'get namespace linkerd' "an existing Linkerd must be detected, not reinstalled"

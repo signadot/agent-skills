@@ -1,8 +1,8 @@
 # Linkerd
 
 Installed during setup when the first request names it (about 2 more minutes; the basics then run on it), or after
-the basics with its own copy of HotROD in `hotrod-linkerd` (`references/infra/add-mesh.md`, about 4 minutes; 5 more
-to switch from Istio first). Linkerd adds about 0.3 GB of memory, in namespace `linkerd`; a copy adds about 1.1 GB.
+the basics with its own copy of HotROD in `hotrod-linkerd` (`references/infra/add-mesh.md`, about 3 minutes, or 5
+with a switch from Istio). Linkerd adds about 0.6 GB of memory, in namespace `linkerd`; a copy adds about 1.2 GB.
 Needs `openssl` for the mesh's certificates. The operator can't work with Linkerd and Istio at once.
 
 ## What it shows

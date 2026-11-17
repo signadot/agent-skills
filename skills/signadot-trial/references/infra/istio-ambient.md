@@ -1,8 +1,8 @@
 # Istio ambient mode
 
 Installed during setup when the first request names it (about 2 more minutes; the basics then run on it), or after
-the basics with its own copy of HotROD in `hotrod-ambient` (`references/infra/add-mesh.md`, about 4 minutes, or 2
-when Istio is in already). Istio adds about 0.3 GB of memory, in namespace `istio-system`; a copy adds about 1.1 GB.
+the basics with its own copy of HotROD in `hotrod-ambient` (`references/infra/add-mesh.md`, about 3 minutes, or 2
+when Istio is in already). Istio adds about 0.6 GB of memory, in namespace `istio-system`; a copy adds about 1.2 GB.
 
 ## What it shows
 

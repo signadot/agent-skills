@@ -109,7 +109,7 @@ tests/signadot-trial/check-drift.sh    # fails when a newer CLI or operator char
 | `test-token-not-logged.sh` | The cluster token reaching a log or the output. The stub mirrors CLI 1.9.1, which prints the token on stderr; check `internal/command/cluster/add.go` when the CLI pin moves |
 | `test-config-blocks.sh` | The connection snippet losing other keys in the trial's CLI config, or not naming the trial's kubeconfig, context and cluster |
 | `test-stale-pid.sh` | Stopping a recorded PID that now belongs to another process |
-| `check-external.sh` | Moved docs pages, and pinned commits, images, releases, charts or downloads that no longer exist |
+| `check-external.sh` | Moved docs pages, and pinned commits, images (including Istio's on Docker Hub), releases, charts or downloads that no longer exist |
 | `check-drift.sh` | Newer Signadot releases than the skill was verified with |
 
 The checks look for commands and structure, never wording, so rewriting prose doesn't fail them. Add a check only

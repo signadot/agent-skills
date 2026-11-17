@@ -2,8 +2,8 @@
 
 The basics ran on Signadot's own routing (DevMesh) in `hotrod`. Each mesh the user picks after them gets its own
 namespace with its own copy of HotROD, next to the basics, and the first scenario runs again there. Nothing that's
-running is removed: the basics' sandboxes, links and pages keep working. About 4 minutes for the first mesh, and 2
-for the second Istio mode, since Istio is in by then. Each copy uses about 1.1 GB of memory.
+running is removed: the basics' sandboxes, links and pages keep working. About 3 minutes for the first mesh, and 2
+for the second Istio mode, since Istio is in by then. Each copy uses about 1.2 GB of memory.
 
 Only on a kind cluster the trial created (`created_kind_cluster: yes`); on an existing cluster, don't offer it.
 
@@ -33,8 +33,8 @@ file's steps for the pick. On "skip", record the pick as `skipped` and go on.
 docker stats --no-stream --format '{{.MemUsage}}' signadot-trial-control-plane
 ```
 
-It prints what the cluster uses and its limit, e.g. `4.3GiB / 7.7GiB`. The copy needs about 1.1 GB more, and the
-mesh about 0.3 GB if it isn't in the cluster yet. If that doesn't fit, ask one question with these choices: remove a
+It prints what the cluster uses and its limit, e.g. `4.3GiB / 7.7GiB`. The copy needs about 1.2 GB more, and the
+mesh about 0.6 GB if it isn't in the cluster yet. If that doesn't fit, ask one question with these choices: remove a
 mesh copy whose scenario is done (its "Tear down" below; its page stays), give Docker more memory, or skip this
 mesh.
 
@@ -165,8 +165,9 @@ Take them off `## Resources`. The mesh itself goes with the kind cluster at tear
 
 ## Switch the mesh family
 
-From Istio to Linkerd; going the other way, swap the families and their files. About 5 minutes. The order keeps the
-operator off a mesh before that mesh is removed.
+From Istio to Linkerd; going the other way, swap the families and their files. About 5 minutes with the new mesh's
+copy, mostly waiting for the old copies' namespaces to go. The order keeps the operator off a mesh before that mesh
+is removed.
 
 1. Tear down each Istio copy that's still there (above).
 2. Install Linkerd: `linkerd.md`'s "Install before HotROD".
@@ -184,6 +185,8 @@ operator off a mesh before that mesh is removed.
    "$T/bin/hm" uninstall ztunnel istio-cni istiod istio-base -n istio-system
    "$T/bin/kc" delete namespace istio-system
    ```
+
+   Istio's CRDs stay (the chart keeps them); nothing uses them once the operator is off Istio.
 
    (From Linkerd to Istio: `"$T/bin/hm" uninstall linkerd-control-plane linkerd-crds -n linkerd` and
    `"$T/bin/kc" delete namespace linkerd`.)
