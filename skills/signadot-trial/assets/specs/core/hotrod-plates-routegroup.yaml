@@ -1,0 +1,12 @@
+name: hotrod-plates@{suffix}
+spec:
+  cluster: "@{cluster}"
+  description: "Signadot trial: frontend and driver sandboxes tested together"
+  match:
+    any:
+    - label:
+        key: feature
+        value: hotrod-plates@{suffix}
+  endpoints:
+  - name: frontend
+    target: http://frontend.hotrod.svc:8080

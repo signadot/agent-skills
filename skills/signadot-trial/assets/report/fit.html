@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Is Signadot a good fit? · Signadot trial</title>
+<!--
+  The fit page (see references/finish/fit.md): written only at the end of a customized trial. Every status comes
+  from assets/fit/compatibility.md, never from the model. Replace each FILL comment with real content in the same
+  shape; escape <, > and & from anything copied.
+-->
+<link rel="stylesheet" href="report.css">
+<script src="report.js" defer></script>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<p class="eyebrow"><a href="index.html">Signadot trial</a></p>
+<h1>Is Signadot a good fit?</h1>
+<!-- FILL:verdict  (class and word: yes / Yes, partial / Partially, no / No)
+<div class="verdict partial"><span class="verdict-word">Partially</span>
+<p>Signadot covers your Kubernetes services on Istio, and your HTTP, gRPC and Kafka traffic, today. Two things need
+work: OpenTelemetry in the services that don't have it yet, and your SQS consumers.</p></div>
+<p class="meta"><span>From your answers in the trial · org ORG · DATE</span></p>
+-->
+</header>
+
+<main>
+<section id="stack">
+<h2>How it fits your stack</h2>
+<p class="muted">✓ supported · ⚠ supported, with work · ✗ not supported · ? not covered in the docs: ask Signadot</p>
+<!-- FILL:stack
+<div class="table-wrap"><table>
+<thead><tr><th>You said</th><th>Status</th><th>What it takes</th><th>Guide</th></tr></thead>
+<tbody>
+<tr><td>Kubernetes on EKS</td><td>✓</td><td>Install Signadot's operator with one Helm chart per cluster.</td>
+<td><a href="https://www.signadot.com/docs/installation/signadot-operator">Operator</a></td></tr>
+<tr><td>Kafka</td><td>✓</td><td>Consumers check the routing key on each message (a consumer group per sandbox).</td>
+<td><a href="https://www.signadot.com/docs/guides/set-up-message-queue-isolation/kafka">Kafka</a> · <a href="kafka.html">you saw this</a></td></tr>
+<tr><td>A few services on ECS</td><td>⚠</td><td>They can be a sandbox's dependencies through a resource plugin, but
+can't be sandboxed themselves.</td><td><a href="https://www.signadot.com/docs/concepts/resources">Resources</a></td></tr>
+</tbody></table></div>
+-->
+</section>
+
+<section id="solves">
+<h2>What it solves for you</h2>
+<!-- FILL:solves
+<div class="table-wrap"><table>
+<thead><tr><th>Your pain point</th><th>Where the trial showed it</th><th>What it means for you</th></tr></thead>
+<tbody>
+<tr><td>Waiting for a shared staging environment</td><td><a href="isolated-change.html">Test one change in isolation</a></td>
+<td>Each change gets a sandbox in one shared cluster, ready in seconds, so nobody waits for staging.</td></tr>
+</tbody></table></div>
+-->
+</section>
+
+<section id="effort">
+<h2>What an install in your cluster takes</h2>
+<!-- FILL:effort
+<ol class="flow">
+<li><strong>Install the operator</strong> in each cluster (platform team): one Helm chart.</li>
+<li><strong>Routing on Istio</strong> (platform team): enable Istio mode in the operator's values; no extra proxy.</li>
+<li><strong>Pass the routing key along</strong> (service owners): OpenTelemetry baggage in the services that don't
+have it yet.</li>
+</ol>
+-->
+</section>
+
+<section id="questions">
+<h2>Common questions</h2>
+<!-- FILL:questions
+<ul class="plain parts">
+<li><strong>What runs in our cluster, with which permissions?</strong> <a href="https://www.signadot.com/docs/installation/signadot-operator">Operator</a></li>
+<li><strong>What does it cost?</strong> <a href="https://www.signadot.com/pricing/">Pricing</a></li>
+</ul>
+-->
+</section>
+
+<nav class="foot-nav"><a href="index.html">← The trial's overview</a></nav>
+</main>
+</div>
+</body>
+</html>

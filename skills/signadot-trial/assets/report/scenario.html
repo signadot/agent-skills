@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SCENARIO · Signadot trial</title>
+<!--
+  One page per scenario: copy to <trial folder>/report/<scenario id>.html (see references/finish/report.md).
+  - Replace SCENARIO in the title with the scenario's menu name.
+  - Every page has the same four sections, in this order: 1 the demo app, 2 the change, 3 the sandbox, 4 testing
+    baseline vs sandbox (the routing, then steps the user runs and checks). Don't add, drop or reorder sections.
+  - Each slot is one comment that starts with FILL and a name. Its example is a complete page for "Test one change
+    in isolation": write every scenario to the same depth and length, with this run's real values. Replace the whole
+    comment with real content in the same shape. Keep it short: a sentence or two, then the picture, the facts or
+    the commands.
+  - Every command goes in its own <div class="cmd"> block, ready to paste: full paths, no placeholders. Say what it
+    prints.
+  - Escape <, > and & in anything copied from command output. Nothing loads from the network; report.css,
+    report.js and the screenshots in screens/ sit next to this page.
+-->
+<link rel="stylesheet" href="report.css">
+<script src="report.js" defer></script>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<p class="eyebrow"><a href="index.html">Signadot trial</a></p>
+<h1><!-- FILL:title e.g. Test one change in isolation --></h1>
+<!-- FILL:status
+<p class="meta"><span class="pill passed">passed</span><span>Scenario 1</span><span>· proven in 48 s</span>
+<span>· cluster signadot-trial · 15 Nov 2026</span></p>
+-->
+<!-- FILL:headline
+<p class="lead">A second copy of route, with one change, ran in a sandbox next to the normal app. Rides booked through
+the sandbox's link arrived in 1 second; every other ride used the normal route.</p>
+-->
+<nav class="sections"><a href="#app"><span class="step-n">1</span>The demo app</a><a href="#change"><span class="step-n">2</span>The change</a><a href="#sandbox"><span class="step-n">3</span>The sandbox</a><a href="#test"><span class="step-n">4</span>Test it yourself</a></nav>
+</header>
+
+<main>
+<section id="app">
+<h2><span class="step-n">1</span>The demo app</h2>
+<!-- FILL:app  (HotROD: this example as it is, with the changed service marked. Another demo app: the same shape, from the scenario file's "The demo app".)
+<p>HotROD is a small ride-booking app made of a few services. You request a ride on its page; it finds nearby drivers
+and shows how soon each one can arrive.</p>
+<div class="diagram">
+<svg viewBox="0 0 870 178" role="img" aria-label="HotROD's services. Your browser books a ride with frontend. Frontend asks location for the pickup and drop-off, which it keeps in MySQL, and puts a dispatch request on Kafka. Driver takes it from Kafka, finds nearby drivers in Redis, and asks route for each driver's ETA. Route is the service this scenario changes.">
+  <defs>
+    <marker id="b-line" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head" d="M0,0 L10,5 L0,10 z"/></marker>
+  </defs>
+  <rect class="box" x="10" y="96" width="120" height="54" rx="8"/><text x="70" y="119" text-anchor="middle">Your browser</text><text class="sub" x="70" y="136" text-anchor="middle">HotROD's page</text>
+  <rect class="box" x="180" y="10" width="120" height="46" rx="8"/><text x="240" y="30" text-anchor="middle">location</text><text class="sub" x="240" y="46" text-anchor="middle">pickup, drop-off</text>
+  <rect class="store" x="350" y="10" width="110" height="46" rx="8"/><text x="405" y="38" text-anchor="middle">MySQL</text>
+  <rect class="box" x="180" y="96" width="120" height="54" rx="8"/><text x="240" y="119" text-anchor="middle">frontend</text><text class="sub" x="240" y="136" text-anchor="middle">page and API</text>
+  <rect class="bus" x="350" y="96" width="110" height="54" rx="8"/><text x="405" y="119" text-anchor="middle">Kafka</text><text class="sub" x="405" y="136" text-anchor="middle">dispatch topic</text>
+  <rect class="store" x="510" y="10" width="110" height="46" rx="8"/><text x="565" y="30" text-anchor="middle">Redis</text><text class="sub" x="565" y="46" text-anchor="middle">driver positions</text>
+  <rect class="box" x="510" y="96" width="110" height="54" rx="8"/><text x="565" y="119" text-anchor="middle">driver</text><text class="sub" x="565" y="136" text-anchor="middle">finds drivers</text>
+  <rect class="box changed" x="670" y="96" width="130" height="54" rx="8"/><text class="sbxt" x="735" y="119" text-anchor="middle">route</text><text class="sub" x="735" y="136" text-anchor="middle">ETA per driver</text>
+  <text class="tag" x="735" y="168" text-anchor="middle">changed in this scenario</text>
+  <path class="line" d="M130,123 H176" marker-end="url(#b-line)"/><circle class="n" cx="153" cy="106" r="9"/><text class="n" x="153" y="110" text-anchor="middle">1</text>
+  <path class="line" d="M240,96 V60" marker-end="url(#b-line)"/><circle class="n" cx="256" cy="78" r="9"/><text class="n" x="256" y="82" text-anchor="middle">2</text>
+  <path class="line" d="M300,33 H346" marker-end="url(#b-line)"/>
+  <path class="line" d="M300,123 H346" marker-end="url(#b-line)"/><circle class="n" cx="323" cy="106" r="9"/><text class="n" x="323" y="110" text-anchor="middle">3</text>
+  <path class="line" d="M460,123 H506" marker-end="url(#b-line)"/><circle class="n" cx="483" cy="106" r="9"/><text class="n" x="483" y="110" text-anchor="middle">4</text>
+  <path class="line" d="M565,96 V60" marker-end="url(#b-line)"/>
+  <path class="line" d="M620,123 H666" marker-end="url(#b-line)"/><circle class="n" cx="643" cy="106" r="9"/><text class="n" x="643" y="110" text-anchor="middle">5</text>
+</svg>
+</div>
+<ol class="flow">
+<li>You request a ride on HotROD's page, served by <strong>frontend</strong>.</li>
+<li>frontend asks <strong>location</strong> for the pickup and drop-off, which it keeps in MySQL.</li>
+<li>frontend puts a dispatch request on <strong>Kafka</strong>.</li>
+<li><strong>driver</strong> takes the request from Kafka and finds nearby drivers in Redis.</li>
+<li>driver asks <strong>route</strong> for each driver's ETA, and the page shows them.</li>
+</ol>
+-->
+</section>
+
+<section id="change">
+<h2><span class="step-n">2</span>The change</h2>
+<!-- FILL:change
+<p>A developer changed <strong>route</strong> so that drivers arrive in seconds instead of minutes, and wants to see it
+work in the real app before merging. In the trial the change is a setting route already has, so nothing needs
+building. From <code>services/route/server.go</code>:</p>
+<pre class="code"><code>if os.Getenv("FAST_ROUTE") != "" {
+    eta = time.Second
+}</code></pre>
+<p class="muted">With your own services, the sandbox runs the image your CI builds from the pull request.</p>
+-->
+</section>
+
+<section id="sandbox">
+<h2><span class="step-n">3</span>The sandbox</h2>
+<!-- FILL:sandbox
+<p>The trial deployed the change as a sandbox with one CLI command. Signadot started a second route pod, with the
+change, next to the normal one. Nothing else was copied.</p>
+<dl class="facts">
+<dt>Runs</dt><dd>a copy of route with <code>FAST_ROUTE=1</code>: pod <code>fast-route-dep-route-…</code></dd>
+<dt>Shared</dt><dd>frontend, location, Kafka, driver, Redis, MySQL and the normal route</dd>
+<dt>Routing key</dt><dd><code>7g2k9xq4m1ab</code>: requests that carry it reach the new route</dd>
+<dt>Preview link</dt><dd><a href="https://frontend--fast-route.preview.signadot.com">https://frontend--fast-route.preview.signadot.com</a></dd>
+<dt>Also created</dt><dd>nothing else</dd>
+</dl>
+<div class="cmd"><p>The sandbox spec:</p>
+<pre><code>name: fast-route
+spec:
+  cluster: "signadot-trial"
+  description: "Signadot trial: route returns every ETA as 1 second"
+  # The change: a copy of HotROD's route Deployment, with one setting added. FAST_ROUTE makes route
+  # return every ETA as 1 second instead of minutes. Every other service stays shared.
+  forks:
+  - forkOf:
+      kind: Deployment
+      namespace: hotrod
+      name: route
+    customizations:
+      env:
+      - name: FAST_ROUTE
+        value: "1"
+  # The sandbox's preview link. Signadot turns each endpoint into
+  # https://&lt;name&gt;--&lt;sandbox name&gt;.preview.signadot.com, which forwards every request to `target`,
+  # the service's address inside the cluster, with this sandbox's routing key added.
+  defaultRouteGroup:
+    endpoints:
+    - name: frontend
+      target: http://frontend.hotrod.svc:8080</code></pre></div>
+<ul class="plain parts">
+<li><code>forks</code>: what to copy (the route Deployment) and what's different in the copy.</li>
+<li><code>defaultRouteGroup</code>: the preview link. It's the same app as <code>target</code>, reached through
+Signadot, which adds the routing key:</li>
+</ul>
+<p class="linkmap"><code>https://frontend--fast-route.preview.signadot.com</code><span class="arrow">→</span>
+<span>Signadot adds the routing key</span><span class="arrow">→</span><code>http://frontend.hotrod.svc:8080</code></p>
+<details class="hood"><summary>Under the hood: the commands the trial ran (optional, for a closer look or for CI)</summary>
+<div class="cmd"><p>Create it (safe to run again):</p>
+<pre><code>/Users/me/project/.signadot-trial/bin/sd sandbox apply -f /Users/me/project/.agents/skills/signadot-trial/assets/specs/core/fast-route.yaml --set cluster=signadot-trial --set suffix=</code></pre></div>
+<div class="cmd"><p>See its pod, <code>fast-route-dep-route-…</code>, next to the normal route pod:</p>
+<pre><code>kubectl --kubeconfig /Users/me/project/.signadot-trial/kubeconfig -n hotrod get pods</code></pre></div>
+<div class="cmd"><p>See the sandbox, its routing key and its link (also at
+<a href="https://app.signadot.com/sandboxes">app.signadot.com/sandboxes</a>):</p>
+<pre><code>/Users/me/project/.signadot-trial/bin/sd sandbox get fast-route</code></pre></div>
+</details>
+<p class="muted">Docs: <a href="https://www.signadot.com/docs/reference/sandboxes/spec">Sandbox spec</a>.</p>
+-->
+</section>
+
+<section id="test">
+<h2><span class="step-n">4</span>Test it yourself: baseline vs sandbox</h2>
+<!-- FILL:routing  (the diagram as references/finish/report.md "The diagram" says, then how the routing works and the proof)
+<p>Both kinds of request use the same app. Only requests that carry the sandbox's routing key reach the new route.</p>
+<div class="diagram">
+<svg viewBox="0 0 870 300" role="img" aria-label="Two rides through HotROD. The ride from the baseline link doesn't carry the sandbox's routing key: it goes through the shared frontend, Kafka and driver into the normal route's pod, whose sidecar passes it to the normal route, and it arrives in 23m14s. The ride from the sandbox link carries the key through the same shared services; in the normal route's pod, the sidecar reads it and sends the call to the sandbox's route, and it arrives in 1s.">
+  <defs>
+    <marker id="a-line" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head" d="M0,0 L10,5 L0,10 z"/></marker>
+    <marker id="a-base" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head base" d="M0,0 L10,5 L0,10 z"/></marker>
+    <marker id="a-key" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head key" d="M0,0 L10,5 L0,10 z"/></marker>
+  </defs>
+  <rect class="box" x="10" y="60" width="140" height="54" rx="8"/><text x="80" y="83" text-anchor="middle">Baseline link</text><text class="sub" x="80" y="100" text-anchor="middle">a key no sandbox owns</text>
+  <rect class="box key" x="10" y="206" width="140" height="54" rx="8"/><text class="sbxt" x="80" y="229" text-anchor="middle">Sandbox link</text><text class="sub" x="80" y="246" text-anchor="middle">adds the sandbox's key</text>
+  <rect class="box" x="190" y="10" width="110" height="46" rx="8"/><text x="245" y="30" text-anchor="middle">location</text><text class="sub" x="245" y="46" text-anchor="middle">shared</text>
+  <rect class="box" x="190" y="133" width="110" height="54" rx="8"/><text x="245" y="156" text-anchor="middle">frontend</text><text class="sub" x="245" y="173" text-anchor="middle">shared</text>
+  <rect class="bus" x="340" y="133" width="110" height="54" rx="8"/><text x="395" y="156" text-anchor="middle">Kafka</text><text class="sub" x="395" y="173" text-anchor="middle">dispatch topic</text>
+  <rect class="store" x="490" y="10" width="110" height="46" rx="8"/><text x="545" y="38" text-anchor="middle">Redis</text>
+  <rect class="box" x="490" y="133" width="110" height="54" rx="8"/><text x="545" y="156" text-anchor="middle">driver</text><text class="sub" x="545" y="173" text-anchor="middle">shared</text>
+  <rect class="pod" x="626" y="120" width="238" height="80" rx="10"/><text class="sub" x="634" y="112">pod of the normal route</text>
+  <rect class="router" x="638" y="146" width="72" height="28" rx="14"/><text class="small" x="674" y="164" text-anchor="middle">sidecar</text><text class="sub" x="674" y="191" text-anchor="middle">reads the key</text>
+  <rect class="box" x="736" y="133" width="120" height="54" rx="8"/><text x="796" y="156" text-anchor="middle">route</text><text class="sub" x="796" y="173" text-anchor="middle">normal · ETA 23m14s</text>
+  <rect class="outline" x="726" y="212" width="140" height="82" rx="10"/>
+  <rect class="box sbx" x="736" y="220" width="120" height="48" rx="8"/><text class="sbxt" x="796" y="240" text-anchor="middle">route (new)</text><text class="sub" x="796" y="257" text-anchor="middle">ETA 1s</text>
+  <text class="tag" x="796" y="285" text-anchor="middle">sandbox fast-route</text>
+  <path class="line" d="M245,133 V60" marker-end="url(#a-line)"/>
+  <path class="line" d="M545,133 V60" marker-end="url(#a-line)"/>
+  <path class="lane base" d="M150,87 C172,87 168,153 186,153" marker-end="url(#a-base)"/>
+  <path class="lane base" d="M300,153 H336" marker-end="url(#a-base)"/>
+  <path class="lane base" d="M450,153 H486" marker-end="url(#a-base)"/>
+  <path class="lane base" d="M600,153 H634" marker-end="url(#a-base)"/>
+  <path class="lane base" d="M710,153 H732" marker-end="url(#a-base)"/>
+  <path class="lane key" d="M150,233 C172,233 168,167 186,167" marker-end="url(#a-key)"/>
+  <path class="lane key" d="M300,167 H336" marker-end="url(#a-key)"/>
+  <path class="lane key" d="M450,167 H486" marker-end="url(#a-key)"/>
+  <path class="lane key" d="M600,167 H634" marker-end="url(#a-key)"/>
+  <path class="lane key" d="M710,167 C724,167 716,244 732,244" marker-end="url(#a-key)"/>
+</svg>
+<p class="key-legend"><span><span class="sw base"></span>request without the sandbox's routing key</span>
+<span><span class="sw key"></span>request with the sandbox's routing key</span>
+<span><span class="sw new"></span>the new version, in the sandbox</span></p>
+</div>
+<div class="how">
+<p><span class="step-n">1</span><span><strong>Set where the request starts.</strong> The sandbox link adds
+<code>baggage: sd-routing-key=7g2k9xq4m1ab</code> to every request. The Chrome extension does the same for any page, and
+any HTTP client can send the header. <a href="https://www.signadot.com/docs/guides/developer-environments/access-sandboxes">Ways to send it</a></span></p>
+<p><span class="step-n">2</span><span><strong>Passed along.</strong> OpenTelemetry in each HotROD service carries the
+key from frontend, through the Kafka message, to driver's call to route.
+<a href="https://www.signadot.com/docs/guides/set-up-context-propagation">Context propagation</a></span></p>
+<p><span class="step-n">3</span><span><strong>Routed.</strong> The sidecar in the normal route's pod reads the key and
+forwards calls with fast-route's key to the sandbox's route; all others go to the normal route.
+<a href="https://www.signadot.com/docs/guides/request-routing">Request routing</a></span></p>
+</div>
+<p class="proof"><strong>What the trial saw:</strong> the ride through the sandbox link was served by sandbox
+fast-route at the route step and arrived in 1s; the other was served by the normal route and arrived in 23m14s.</p>
+-->
+<!-- FILL:tryit  (the steps the user runs: the baseline flow, the sandbox flow, then how to check which version handled each. From the scenario file's "Try it yourself".)
+<h3 class="try-title">Try it</h3>
+<ol class="try">
+<li><h4>Request a ride on the baseline</h4>
+<p class="link"><a href="https://frontend--hotrod-baseline.preview.signadot.com">https://frontend--hotrod-baseline.preview.signadot.com</a></p>
+<p>Choose a pickup and drop-off and request a ride. ETAs are in minutes, like 23m14s: the routing key this link adds
+belongs to no sandbox, so every request uses the normal services.</p></li>
+<li><h4>Request a ride through your sandbox</h4>
+<p class="link"><a href="https://frontend--fast-route.preview.signadot.com">https://frontend--fast-route.preview.signadot.com</a></p>
+<p>The same app, with the sandbox's routing key on every request. Every ETA is 1 second.</p></li>
+<li><h4>Check which route answered</h4>
+<p>Each route pod logs <code>Finding route</code> for every ETA it works out. Run these in two terminals, then request
+rides on both links: baseline rides appear only in the first, sandbox rides only in the second.</p>
+<div class="cmd"><p>The normal route:</p>
+<pre><code>kubectl --kubeconfig /Users/me/project/.signadot-trial/kubeconfig -n hotrod logs -f deploy/route -c hotrod | grep --line-buffered 'Finding route'</code></pre></div>
+<div class="cmd"><p>The sandbox's route:</p>
+<pre><code>kubectl --kubeconfig /Users/me/project/.signadot-trial/kubeconfig -n hotrod logs -f deploy/fast-route-dep-route-a1b2c3d4 -c hotrod | grep --line-buffered 'Finding route'</code></pre></div></li>
+<li><h4>Send the routing key yourself (optional)</h4>
+<p>Signadot's local connection makes cluster addresses like <code>http://frontend.hotrod.svc:8080</code> work on your
+laptop. The trial connected without sudo, so first:</p>
+<div class="cmd"><p>Once: reconnect with sudo (it asks for your password). If your agent is still running scenarios, tell it.</p>
+<pre><code>/Users/me/project/.signadot-trial/bin/sd local disconnect &amp;&amp; /Users/me/project/.signadot-trial/bin/sd local connect</code></pre></div>
+<div class="cmd"><p>Check: prints <code>200</code> ("Could not resolve host" means the reconnect hasn't happened).</p>
+<pre><code>curl -sS -o /dev/null -w '%{http_code}\n' http://frontend.hotrod.svc:8080/</code></pre></div>
+<div class="cmd"><p>Request a ride with the key. Prints <code>{}</code>:</p>
+<pre><code>curl -sS -X POST http://frontend.hotrod.svc:8080/dispatch -H 'baggage: sd-routing-key=7g2k9xq4m1ab' -H 'Content-Type: application/json' -d '{"SessionID":4242,"RequestID":1,"PickupLocationID":1,"DropoffLocationID":123}'</code></pre></div>
+<div class="cmd"><p>A few seconds later, read its messages. Prints a line like <code>Driver T738719C arriving in 1s</code>
+(run it again if it prints nothing):</p>
+<pre><code>curl -sS 'http://frontend.hotrod.svc:8080/notifications?sessionID=4242&amp;cursor=0' | grep -o 'Driver [^"]*'</code></pre></div>
+<p>Without the <code>baggage</code> header (and with another <code>SessionID</code>), the ETA is back in minutes.</p></li>
+</ol>
+<p class="muted">Docs: <a href="https://www.signadot.com/docs/tutorials/quickstart/first-sandbox">Your first sandbox</a> ·
+<a href="https://www.signadot.com/docs/guides/developer-environments/access-sandboxes">Ways to reach a sandbox</a></p>
+-->
+</section>
+
+<nav class="foot-nav"><a href="index.html">← All scenarios</a></nav>
+</main>
+</div>
+</body>
+</html>

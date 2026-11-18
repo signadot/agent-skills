@@ -1,0 +1,26 @@
+name: location-db@{suffix}
+spec:
+  cluster: "@{cluster}"
+  description: "Signadot trial (database per sandbox): location service on its own database with different data"
+  resources:
+  - name: locationdb
+    plugin: hotrod-trial-db@{suffix}
+  forks:
+  - forkOf:
+      kind: Deployment
+      namespace: hotrod
+      name: location
+    customizations:
+      env:
+      - name: MYSQL_DBNAME
+        valueFrom:
+          resource:
+            name: locationdb
+            outputKey: provision.dbname
+  # The sandbox's preview link. Signadot turns each endpoint into
+  # https://<name>--<sandbox name>.preview.signadot.com, which forwards every request to `target`,
+  # the service's address inside the cluster, with this sandbox's routing key added.
+  defaultRouteGroup:
+    endpoints:
+    - name: frontend
+      target: http://frontend.hotrod.svc:8080

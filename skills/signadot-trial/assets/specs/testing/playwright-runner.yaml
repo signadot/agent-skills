@@ -1,0 +1,9 @@
+name: hotrod-playwright@{suffix}
+spec:
+  cluster: "@{cluster}"
+  namespace: signadot-tests
+  jobTimeout: 30m
+  image: mcr.microsoft.com/playwright:v1.45.1-jammy
+  scaling:
+    manual:
+      desiredPods: 1

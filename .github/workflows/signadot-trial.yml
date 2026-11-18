@@ -1,0 +1,32 @@
+name: signadot-trial
+
+on:
+  pull_request:
+    paths:
+      - "skills/signadot-trial/**"
+      - "tests/signadot-trial/**"
+      - ".github/workflows/signadot-trial.yml"
+  schedule:
+    - cron: "17 6 * * 1"   # Mondays: catch moved docs pages, deleted images and new releases
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install shellcheck and PyYAML
+        run: sudo apt-get update -q && sudo apt-get install -yq shellcheck python3-yaml
+      - name: Checks
+        run: bash tests/signadot-trial/run.sh
+
+  drift:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Newer CLI or operator than the skill pins
+        run: bash tests/signadot-trial/check-drift.sh

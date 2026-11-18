@@ -1,0 +1,20 @@
+name: fast-route-@{mesh}@{suffix}
+spec:
+  cluster: "@{cluster}"
+  description: "Signadot trial: route returns every ETA as 1 second, on a service mesh"
+  # The same change as the first scenario, in the HotROD copy that runs on the mesh (namespace hotrod-<mesh>):
+  # a copy of route with FAST_ROUTE=1, so every ETA comes back as 1 second. Every other service stays shared.
+  forks:
+  - forkOf:
+      kind: Deployment
+      namespace: hotrod-@{mesh}
+      name: route
+    customizations:
+      env:
+      - name: FAST_ROUTE
+        value: "1"
+  # The sandbox's preview link, into this copy's frontend.
+  defaultRouteGroup:
+    endpoints:
+    - name: frontend
+      target: http://frontend.hotrod-@{mesh}.svc:8080

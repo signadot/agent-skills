@@ -1,0 +1,15 @@
+name: temporal-tools@{suffix}
+spec:
+  cluster: "@{cluster}"
+  description: "Signadot trial: preview links to the Temporal UI and the transfer app (no sandbox is attached)"
+  # Matches no sandbox, so requests through these links reach the baseline. Preview links open in any browser signed
+  # in to the org, with no sudo connection, including on WSL, where cluster addresses never open in the browser.
+  match:
+    label:
+      key: signadot-trial
+      value: baseline-only
+  endpoints:
+  - name: temporal-ui
+    target: http://temporal-ui-service.temporal.svc:80
+  - name: transfer-app
+    target: http://temporal-py-client-ui.temporal.svc:8080
