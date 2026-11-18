@@ -82,7 +82,8 @@ If you change one of these in Signadot, search this skill for it first.
 - **CLI output the skill parses** (with sed, not jq): the `Organization:` line of `auth status`; `"routingKey"` in
   `sandbox get -o json`; `"name"` and `"operator":{"version"}` in `cluster list -o json`; `"token"` in
   `cluster token create -o json`; `token='…'` in `cluster add`; `"portforward":{"localAddress"}` in
-  `local status -o json`; `"id"` in `plan create` and `plan run` JSON.
+  `local status -o json`; `"id"` in `plan create` and `plan run` JSON (a failing `plan run` prints its JSON on
+  stderr in CLI 1.9.1, so the skill captures `2>&1`).
 - **Config:** the `local.connections` block (`type: PortForward`, `kubeContext`, `kubeConfig`).
 - **Specs:** sandbox `forks`, `customizations.images|env`, `local` mappings, `resources`, `labels`; route group
   `match.any.label` and `endpoints`; resource plugin `runner`, `create`, `delete`, outputs; job runner group;
@@ -92,7 +93,11 @@ If you change one of these in Signadot, search this skill for it first.
   `trafficManager.replicas`.
 - **Dashboard and signup:** the signup page's Sign Up tab and "I've verified my email" button; the organization
   form's fields, "How did you hear about us" and Terms box; Platform → Managed Runners → cluster → Plan Runners;
-  Settings → Plan Runner Actions → run-container → Allowed images; Settings → Clusters.
+  Settings → Plan Runner Actions → run-container → Allowed images (Add saves at once; Apply stays greyed out);
+  Settings → Clusters.
+- **Demo images:** the RabbitMQ demo's published images are arm64-only, so on amd64 the skill builds them locally;
+  arm64 (Apple Silicon) pulls them as published. If `signadot/examples` publishes multi-arch images, the build in
+  `references/async/rabbitmq.md` can go.
 - **Docs pages** linked from each file's Docs section (a check confirms they resolve).
 
 ## Checks
@@ -151,12 +156,18 @@ pin one commit instead, use a tree URL with the full 40-character SHA (a short S
    Redis Streams, Jobs and Plans (Plans needs the two org settings in `references/testing/plans.md`). Each page's
    diagram puts the decision where the routing makes it: the sidecar inside the normal pod of the called service
    (DevMesh, Linkerd), the Envoy sidecar inside the caller's pod (Istio), the waypoint in front of the called
-   service (ambient), nothing for messages and workflows. For Temporal, Redis Streams and RabbitMQ, the agent asks
-   in chat for the sudo reconnect when it shows the page, checks the link, and the link then opens in a browser.
+   service (ambient), nothing for messages and workflows. For Temporal, Redis Streams and RabbitMQ, the demo app's
+   UI opens through its tools preview link, with no sudo reconnect.
 4. **Resume and retry:** stop mid-run and resume; rerun a variation's Set up (it must succeed twice).
 5. **Teardown:** org lists are clean, the kind cluster is gone, `~/.kube/config` and the kube context are unchanged,
    the trial log is renamed, and a new "try Signadot" starts fresh.
 6. **Another agent:** repeat the default path with a second coding agent product.
+7. **WSL:** the default path and one demo-app add-on on Windows with WSL2 and Docker Desktop. Preflight shows
+   `wsl: yes`; pages and the login link open in the Windows browser (`explorer.exe`), not a Linux browser inside
+   WSL; every link the user is asked to open is a preview link; RabbitMQ's images build for amd64.
+8. **Apple Silicon Mac:** the default path and RabbitMQ on an arm64 Mac. RabbitMQ pulls its published images with no
+   local build; the local-development edit loop starts the new binary (no "Killed: 9") and the next keyed ride
+   reaches it.
 
 Change signals worth watching: CLI releases (`https://api.github.com/repos/signadot/cli/releases/latest`), the
 operator chart index (`https://charts.signadot.com/index.yaml`), the docs release notes

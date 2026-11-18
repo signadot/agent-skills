@@ -131,6 +131,7 @@ Signadot, which adds the routing key:</li>
 </ul>
 <p class="linkmap"><code>https://frontend--fast-route.preview.signadot.com</code><span class="arrow">→</span>
 <span>Signadot adds the routing key</span><span class="arrow">→</span><code>http://frontend.hotrod.svc:8080</code></p>
+<details class="hood"><summary>Under the hood: the commands the trial ran (optional, for a closer look or for CI)</summary>
 <div class="cmd"><p>Create it (safe to run again):</p>
 <pre><code>/Users/me/project/.signadot-trial/bin/sd sandbox apply -f /Users/me/project/.agents/skills/signadot-trial/assets/specs/core/fast-route.yaml --set cluster=signadot-trial --set suffix=</code></pre></div>
 <div class="cmd"><p>See its pod, <code>fast-route-dep-route-…</code>, next to the normal route pod:</p>
@@ -138,6 +139,7 @@ Signadot, which adds the routing key:</li>
 <div class="cmd"><p>See the sandbox, its routing key and its link (also at
 <a href="https://app.signadot.com/sandboxes">app.signadot.com/sandboxes</a>):</p>
 <pre><code>/Users/me/project/.signadot-trial/bin/sd sandbox get fast-route</code></pre></div>
+</details>
 <p class="muted">Docs: <a href="https://www.signadot.com/docs/reference/sandboxes/spec">Sandbox spec</a>.</p>
 -->
 </section>

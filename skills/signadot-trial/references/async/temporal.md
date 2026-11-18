@@ -57,7 +57,21 @@ The worker restarts a few times until the Temporal server is up; that's expected
 "$T/bin/sd" sandbox get temporal-worker<suffix> -o json | sed -n 's/.*"routingKey": *"\([^"]*\)".*/\1/p' | head -1
 ```
 
-Record `sandbox temporal-worker<suffix>` under Resources. Wait about 15 seconds for both workers to refresh their
+Record `sandbox temporal-worker<suffix>` under Resources.
+
+Give the Temporal UI and the transfer app preview links, so they open in the user's browser without the sudo
+connection (and on WSL, where cluster addresses never open in the browser):
+
+```bash
+"$T/bin/sd" routegroup apply -f "$S/assets/specs/async/temporal-tools.yaml" --set cluster=<cluster> --set suffix=<suffix>
+"$T/bin/sd" routegroup get temporal-tools<suffix> -o json | grep -oE '"url": *"https://[^"]+"'
+```
+
+Record `routegroup temporal-tools<suffix>` under Resources, and the `temporal-ui` and `transfer-app` links as
+`link-temporal-ui:` and `link-baseline:`. The transfer-app link adds the route group's key, which belongs to no
+sandbox, so the normal worker runs its transfers; the page shows that key instead of "undefined".
+
+Wait about 15 seconds for both workers to refresh their
 routing rules, then start one transfer without the key and one with it:
 
 ```bash
@@ -117,22 +131,20 @@ specs: assets/specs/async/temporal-worker.yaml
 identity-baseline: <the normal worker's identity>
 identity-sandbox: <the sandbox worker's identity>
 links: https://www.signadot.com/docs/tutorials/testing-temporal-workers
-link-baseline: http://temporal-py-client-ui.temporal.svc:8080 (no routing key; needs the laptop's connection)
+link-baseline: <the transfer-app link of temporal-tools<suffix>> (its key belongs to no sandbox)
 link-sandbox: <the sandbox's preview link>
-link-temporal-ui: http://temporal-ui-service.temporal.svc (needs the laptop's connection)
+link-temporal-ui: <the temporal-ui link of temporal-tools<suffix>>
 try: start a transfer from each link, then open it in the Temporal UI and see which worker ran each step
 ```
 
 ## Try it yourself
 
-The transfer app's baseline and the Temporal UI are cluster addresses: they open only with the sudo connection
-(`references/finish/report.md`, "Try it": the reconnect goes first in the steps, and you ask for it in chat when
-you show the page, then check the links, "After each scenario").
+Every link is a preview link (`link-baseline`, the sandbox's link, `link-temporal-ui`): no sudo connection.
 
-- **Baseline:** start a transfer from the transfer app at its cluster address,
-  http://temporal-py-client-ui.temporal.svc:8080: no key is added, so the page shows "Routing Key: undefined".
+- **Baseline:** start a transfer from the transfer app's baseline link (`transfer-app--temporal-tools<suffix>`): it
+  adds a routing key that belongs to no sandbox, so the normal worker runs it.
 - **Sandbox:** start a transfer from the sandbox's preview link: the page shows the sandbox's routing key.
-- **Check:** open the Temporal UI, http://temporal-ui-service.temporal.svc: both transfers are on the one
+- **Check:** open the Temporal UI through its preview link: both transfers are on the one
   `money-transfer` task queue. Open each; its completed steps list the worker that ran them (Identity): the normal
   worker for the first, the sandbox's (`…temporal-worker<suffix>-dep-temporal-worker-…`) for the second. A
   "Workflow Task Failed … cannot handle routing key" event is the other worker handing a step back. In a terminal:
@@ -142,6 +154,7 @@ you show the page, then check the links, "After each scenario").
 
 ```bash
 "$T/bin/sd" sandbox delete temporal-worker<suffix>
+"$T/bin/sd" routegroup delete temporal-tools<suffix>
 "$T/bin/kc" delete namespace temporal
 ```
 

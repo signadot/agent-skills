@@ -49,7 +49,20 @@ as `references/setup/cluster.md` §3 says. Record `namespace redis-streams-demo`
 "$T/bin/sd" sandbox get redis-streams-consumer<suffix> -o json | sed -n 's/.*"routingKey": *"\([^"]*\)".*/\1/p' | head -1
 ```
 
-Record `sandbox redis-streams-consumer<suffix>` under Resources. Wait about 10 seconds for the consumers to pick up
+Record `sandbox redis-streams-consumer<suffix>` under Resources.
+
+Give the producer's page a baseline preview link, so it opens in the user's browser without the sudo connection
+(and on WSL, where cluster addresses never open in the browser):
+
+```bash
+"$T/bin/sd" routegroup apply -f "$S/assets/specs/async/redis-streams-tools.yaml" --set cluster=<cluster> --set suffix=<suffix>
+"$T/bin/sd" routegroup get redis-streams-tools<suffix> -o json | grep -oE '"url": *"https://[^"]+"' | head -1
+```
+
+Record `routegroup redis-streams-tools<suffix>` under Resources and the link as `link-baseline:`. Its key belongs to
+no sandbox, so the baseline consumer processes what it publishes; the trail shows that key instead of `""`.
+
+Wait about 10 seconds for the consumers to pick up
 the new routing rules, then publish one entry without the key and one with it:
 
 ```bash
@@ -92,19 +105,17 @@ proof: one stream; a consumer group per version; each processed only the entries
 commands: docker build + kind load; kubectl apply -f k8s/; sd sandbox apply -f assets/specs/async/redis-streams-consumer.yaml …; curl …/api/publish
 specs: assets/specs/async/redis-streams-consumer.yaml
 links: https://www.signadot.com/docs/tutorials/testing-redis-streams
-link-baseline: http://producer.redis-streams-demo.svc:4000 (no routing key; needs the laptop's connection)
+link-baseline: <the redis-streams-tools<suffix> preview link> (its key belongs to no sandbox)
 link-sandbox: <the sandbox's preview link>
 try: publish a message from each link and compare the trails; look at the consumer groups with XINFO GROUPS
 ```
 
 ## Try it yourself
 
-The producer's baseline is a cluster address: it opens only with the sudo connection
-(`references/finish/report.md`, "Try it": the reconnect goes first in the steps, and you ask for it in chat when
-you show the page, then check the link, "After each scenario").
+Both links are preview links (`link-baseline`, the sandbox's link): no sudo connection.
 
-- **Baseline:** publish a message from the producer's cluster address, http://producer.redis-streams-demo.svc:4000:
-  the trail shows `routingKey: ""`, and `consumer (baseline)` processes it with processor v1.
+- **Baseline:** publish a message from the baseline link: the trail shows a routing key that belongs to no sandbox,
+  and `consumer (baseline)` processes it with processor v1.
 - **Sandbox:** publish one from the sandbox's preview link: the trail shows the sandbox's routing key, and
   `consumer (sandbox=redis-streams-consumer<suffix>)` processes it with processor v2, in upper case.
 - **Check:** the trail on the page shows which consumer processed each message. See both consumer groups on the
@@ -117,6 +128,7 @@ you show the page, then check the link, "After each scenario").
 
 ```bash
 "$T/bin/sd" sandbox delete redis-streams-consumer<suffix>
+"$T/bin/sd" routegroup delete redis-streams-tools<suffix>
 "$T/bin/kc" delete namespace redis-streams-demo
 ```
 

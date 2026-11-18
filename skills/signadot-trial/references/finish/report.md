@@ -18,12 +18,16 @@ mkdir -p "$T/report/screens" && cp "$S/assets/report/report.css" "$S/assets/repo
    isolation": write every scenario to the same depth, with this run's values. See "Writing a scenario page".
 3. **The overview:** copy `assets/report/index.html` to `$T/report/index.html` again and fill it from the trial log,
    so it's always current (see "The overview page").
-4. **Open the scenario page** with `open` (macOS) or `xdg-open` (Linux), or give the user its path. Then show the
+4. **Open the scenario page** with `open` (macOS), `xdg-open` (Linux), or `explorer.exe "$(wslpath -w <page>)"` when
+   preflight shows `wsl: yes`, and give the user its path too. Then show the
    result in chat and ask before the next scenario (SKILL.md, "After each scenario").
-5. **Make its cluster links work.** When the page's steps open a cluster address (one ending in `.svc`: the
-   Temporal UI and transfer app, the Redis Streams producer, RabbitMQ's management UI) and the trial's connection is
-   `connect_mode: unprivileged`, that link won't open in the user's browser yet: cluster names resolve on the laptop
-   only with the sudo connection. Don't leave it to the page: in the result message, before the question about the
+5. **Make its cluster links work.** Prefer preview links: every demo app's UI has one (the `*-tools` route groups in
+   the Temporal, RabbitMQ and Redis Streams files), and they open in any browser signed in to the org with no setup.
+   Only when a step the user is meant to open has no preview link and is a cluster address (one ending in `.svc`),
+   and the trial's connection is `connect_mode: unprivileged`, that link won't open in the user's browser yet:
+   cluster names resolve on the laptop only with the sudo connection. On WSL (`wsl: yes`) they never open in the
+   browser, even with sudo: give it a preview link instead (a route group like the `*-tools` specs) and skip the
+   rest of this step. Otherwise, don't leave it to the page: in the result message, before the question about the
    next scenario, add a step for the user: "To open <the link> in your browser, run this once in your own terminal
    (it asks for your sudo password), then tell me:" with the reconnect command,
    `<trial folder>/bin/sd local disconnect && <trial folder>/bin/sd local connect`. When they reply, check the link
@@ -87,8 +91,10 @@ addresses, replace them. Link docs pages as HTML (drop `.md`).
   group, the local process; "nothing else" when there is none). Then the spec (cluster and suffix filled in,
   comments kept), a short list of what its parts mean, and, when the spec has `defaultRouteGroup`, the `linkmap`
   line (the real preview link → "Signadot adds the routing key" → `target`). Then command blocks: the command that
-  created it, see its pods, see the sandbox and its key. End with the docs link for what it uses (the sandbox spec,
-  resource plugins, route groups, local sandboxes).
+  created it, see its pods, see the sandbox and its key, inside the template's collapsed `<details class="hood">`
+  ("Under the hood"): the trial already ran them, so they're for looking closer or reproducing it in CI, not steps
+  the user must take. Say so in its summary. End with the docs link for what it uses (the sandbox spec, resource
+  plugins, route groups, local sandboxes).
 - **routing:** one sentence, the diagram (see "The diagram") and its legend; then the `how` strip, three short
   cards: *1, set where the request starts* (how this scenario's requests got the key: the preview link, a job or
   plan runner, a header; and the Chrome extension or any HTTP client), *2, passed along* (how the key travels in
@@ -97,7 +103,8 @@ addresses, replace them. Link docs pages as HTML (drop `.md`).
   log, and the screenshot if there is one.
 - **tryit:** the numbered steps from the scenario file's "Try it yourself", always in this order: first, only when a
   step uses a cluster address and the connection is `connect_mode: unprivileged`, **Before you start**: the
-  reconnect and its check (see "Try it"); then the baseline flow; the sandbox flow; checking which version handled
+  reconnect and its check (see "Try it"; with every link a preview link, only an optional step needs it, so it goes
+inside that step); then the baseline flow; the sandbox flow; checking which version handled
   each; then the optional extras. A live view the user should watch while running the flows (RabbitMQ's consumer
   logs) goes before the flows. Jobs and Plans test with runs instead of links: their flows are runs against
   different sandboxes. Each step: a short title (`<h4>`), the link or the command blocks, and what the
@@ -203,7 +210,9 @@ line instead.
 routing key of the sandbox or route group to every request made through them. That includes a baseline link: it
 adds the key of a route group with no sandbox in it, so no sandbox claims those requests. Say so ("the routing key
 this link adds belongs to no sandbox"); never write that the baseline link adds no key. When the app shows the key
-it received, use the app's cluster address for the baseline instead, which adds none (Temporal, Redis Streams).
+it received (Temporal, Redis Streams), say the baseline page shows that unclaimed key. Use the `*-tools` route
+groups' links for demo apps' baselines and UIs, never their cluster addresses: those need the sudo connection, and
+never open in the browser on WSL.
 Read a link with `"$T/bin/sd" sandbox get <name> -o json | grep -oE '"url": *"https://[^"]+"' | head -1` (or
 `routegroup get`), and record both in the scenario's entry as `link-baseline:` and `link-sandbox:`.
 
@@ -216,9 +225,9 @@ Read a link with `"$T/bin/sd" sandbox get <name> -o json | grep -oE '"url": *"ht
 | kafka, jobs | `baseline_url` | sandbox `driver-plates<suffix>` | plates start with `SD-` only through the sandbox |
 | plans | `baseline_url` | sandboxes `driver-plates<suffix>` and `broken-route<suffix>` | rides through the broken one don't complete: the regression the plan caught |
 | istio, istio-ambient, linkerd | route group `hotrod-baseline-<mesh><suffix>` | sandbox `fast-route-<mesh><suffix>` | as isolated-change, in the mesh's copy of HotROD |
-| temporal | the transfer app's cluster address, `http://temporal-py-client-ui.temporal.svc:8080` (no key; needs the connection) | sandbox `temporal-worker<suffix>`; plus the Temporal UI, `http://temporal-ui-service.temporal.svc` (needs the connection) | the transfer page shows "Routing Key: undefined" on the baseline and the sandbox's key through its link; in the Temporal UI, each transfer's completed steps list the worker that ran them (Identity): `1@temporal-worker-…` or the sandbox's `1@temporal-worker<suffix>-dep-temporal-worker-…`; a "Workflow Task Failed … cannot handle routing key" event is the other worker handing a step back (say so on the page) |
-| redis-streams | the producer's cluster address, `http://producer.redis-streams-demo.svc:4000` (no key; needs the connection) | sandbox `redis-streams-consumer<suffix>` | each message's trail: `routingKey: ""` and `consumer (baseline)` with processor v1 on the baseline; the sandbox's key and `consumer (sandbox=…)` with processor v2, in upper case, through its link |
-| rabbitmq | — (the app has no page of its own) | RabbitMQ's management UI, `http://rabbitmq.rabbitmq-demo.svc:15672`, user `guest` / `guest` (the demo's default; needs the connection) | Queues: `consumer-baseline` and `consumer-trial<suffix>`, both bound with `#` to the `orders_exchange` exchange; every order reaches both, and each consumer processes only its own (the logs show PROCESSING, and SKIP or `process=False` for the rest) |
+| temporal | the `transfer-app` link of route group `temporal-tools<suffix>` (its key belongs to no sandbox) | sandbox `temporal-worker<suffix>`; plus the Temporal UI, the `temporal-ui` link of `temporal-tools<suffix>` | the transfer page shows the unclaimed key on the baseline and the sandbox's key through its link; in the Temporal UI, each transfer's completed steps list the worker that ran them (Identity): `1@temporal-worker-…` or the sandbox's `1@temporal-worker<suffix>-dep-temporal-worker-…`; a "Workflow Task Failed … cannot handle routing key" event is the other worker handing a step back (say so on the page) |
+| redis-streams | route group `redis-streams-tools<suffix>` (its key belongs to no sandbox) | sandbox `redis-streams-consumer<suffix>` | each message's trail: the unclaimed key and `consumer (baseline)` with processor v1 on the baseline; the sandbox's key and `consumer (sandbox=…)` with processor v2, in upper case, through its link |
+| rabbitmq | — (the app has no page of its own) | RabbitMQ's management UI, route group `rabbitmq-tools<suffix>`, user `guest` / `guest` (the demo's default) | Queues: `consumer-baseline` and `consumer-trial<suffix>`, both bound with `#` to the `orders_exchange` exchange; every order reaches both, and each consumer processes only its own (the logs show PROCESSING, and SKIP or `process=False` for the rest) |
 
 ## The overview page
 

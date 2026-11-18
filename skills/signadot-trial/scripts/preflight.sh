@@ -6,7 +6,7 @@ set -eu
 if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then
   echo "Usage: preflight.sh"
   echo "Prints trial_dir, os, arch, docker, docker_mem_gb, tool versions (kubectl kind helm git curl go), lsof, unzip,"
-  echo "signadot, signadot_login, local_connect, kube_context, kube_contexts, port_8083, apparmor_userns, trial_log."
+  echo "signadot, signadot_login, local_connect, kube_context, kube_contexts, port_8083, apparmor_userns, wsl, trial_log."
   exit 0
 fi
 
@@ -21,11 +21,18 @@ first_line() { head -1 | tr -d '\r'; }
 kv os "$(uname -s | tr '[:upper:]' '[:lower:]')"
 case "$(uname -m)" in x86_64|amd64) kv arch amd64 ;; arm64|aarch64) kv arch arm64 ;; *) kv arch "$(uname -m)" ;; esac
 
-# Docker: installed, running, and how much memory it can give the cluster.
+# WSL: Linux inside Windows. Browsers run on the Windows side, so cluster names never resolve in them, and pages open
+# with explorer.exe rather than xdg-open.
+wsl=no; case "$(cat /proc/version 2>/dev/null)" in *[Mm]icrosoft*|*WSL*) wsl=yes ;; esac
+
+# Docker: installed, running, and how much memory it can give the cluster. On WSL, Docker Desktop leaves a shim that
+# says to turn on WSL integration; report that instead of "stopped".
 if ! command -v docker >/dev/null 2>&1; then
   kv docker missing; kv docker_mem_gb unknown
 elif mem=$(docker info --format '{{.MemTotal}}' 2>/dev/null) && [ -n "$mem" ]; then
   kv docker running; kv docker_mem_gb "$(awk -v b="$mem" 'BEGIN { printf "%.1f", b / 1073741824 }')"
+elif [ "$wsl" = yes ] && docker info 2>&1 | grep -qi 'WSL integration'; then
+  kv docker wsl-integration-off; kv docker_mem_gb unknown
 else
   kv docker stopped; kv docker_mem_gb unknown
 fi
@@ -98,4 +105,5 @@ fi
 case "$(cat /proc/sys/kernel/apparmor_restrict_unprivileged_userns 2>/dev/null)" in
   1) kv apparmor_userns restricted ;; 0) kv apparmor_userns unrestricted ;; *) kv apparmor_userns n/a ;;
 esac
+kv wsl "$wsl"
 if [ -f "$T/trial-log.md" ]; then kv trial_log present; else kv trial_log absent; fi

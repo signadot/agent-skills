@@ -67,7 +67,8 @@ the full link as text, never only a "click here".
   up in; you don't need to do anything unless it asks you to sign in"). Open the link there, check that the page
   shows the same code, and click Confirm. If that browser shows a different Signadot account, stop and tell the
   user.
-- **If you can't:** also open the link with the system's own `open` (macOS) or `xdg-open` (Linux), not the shims;
+- **If you can't:** also open the link with the system's own `open` (macOS), `xdg-open` (Linux) or `explorer.exe
+  "<link>"` (WSL, where `xdg-open` would start a Linux browser that isn't signed in), not the shims;
   it usually lands in the browser they signed up in, and it does nothing harmful when there's no desktop. Send the
   message below and end your turn. Check the login only after the user says they've confirmed: some agents show a
   message only when the turn ends, so never wait or poll before the user has seen the link.

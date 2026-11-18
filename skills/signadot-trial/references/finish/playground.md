@@ -37,7 +37,7 @@ shadow the `sd` find-and-replace tool some people use.
 
 ## 3. The closing message
 
-Open the overview page (`open` or `xdg-open`), then send a short message: no scenario summaries and no lists of
+Open the overview page (`open`, `xdg-open`, or `explorer.exe "$(wslpath -w <page>)"` on WSL), then send a short message: no scenario summaries and no lists of
 things to try, since the pages have them.
 
 ```markdown

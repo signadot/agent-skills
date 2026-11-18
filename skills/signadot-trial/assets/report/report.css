@@ -182,6 +182,9 @@ summary { cursor: pointer; color: var(--muted); font-size: 13px; }
 
 /* Commands to copy into a terminal. report.js adds the Copy button; without it they stay selectable. */
 .cmd { margin: 0 0 14px; }
+details.hood { margin: 12px 0 14px; border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; }
+details.hood > summary { cursor: pointer; font-weight: 600; }
+details.hood[open] > summary { margin-bottom: 10px; }
 .cmd > p { margin: 0 0 4px; }
 .cmd pre { position: relative; margin: 0; padding: 10px 76px 10px 12px; font-size: 13px; }
 .copy { position: absolute; top: 6px; right: 6px; font: 600 12px -apple-system, BlinkMacSystemFont, "Segoe UI",

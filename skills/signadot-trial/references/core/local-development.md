@@ -33,20 +33,23 @@ Build with Go if preflight shows 1.27.1 or newer (HotROD's `go.mod` asks for 1.2
 and build caches in the trial folder, writable so teardown can delete them:
 
 ```bash
-cd "$T/hotrod" && GOPATH="$T/go" GOCACHE="$T/go/cache" GOFLAGS=-modcacherw GOTOOLCHAIN=local \
-  go build -o "$T/bin/hotrod" ./cmd/hotrod
+cd "$T/hotrod" && mkdir -p .trial-bin && GOPATH="$T/go" GOCACHE="$T/go/cache" GOFLAGS=-modcacherw GOTOOLCHAIN=local \
+  go build -o .trial-bin/hotrod ./cmd/hotrod && mv -f .trial-bin/hotrod "$T/bin/hotrod"
 ```
 
 Otherwise build in a container as the user, with a module cache so rebuilds take about a second. `<os>` is
 `darwin` or `linux` and `<arch>` is `amd64` or `arm64`, from preflight:
 
 ```bash
-cd "$T/hotrod" && docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/src" -w /src -e CGO_ENABLED=0 \
+cd "$T/hotrod" && mkdir -p .trial-bin && docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/src" -w /src -e CGO_ENABLED=0 \
   -e GOCACHE=/src/.trial-cache/build -e GOMODCACHE=/src/.trial-cache/mod -e GOFLAGS=-modcacherw -e GOOS=<os> -e GOARCH=<arch> \
-  golang:1.27.1 go build -o /src/.trial-bin/hotrod ./cmd/hotrod && cp .trial-bin/hotrod "$T/bin/hotrod"
+  golang:1.27.1 go build -o /src/.trial-bin/hotrod ./cmd/hotrod && mv -f .trial-bin/hotrod "$T/bin/hotrod"
 ```
 
-Record the container build under Fallbacks. Done when `"$T/bin/hotrod" --help` runs.
+Both build to a staging path and then move the binary into place with `mv`, never `cp`. On Linux, `cp` over a
+running executable fails with "Text file busy"; on macOS (Apple Silicon), `cp` rewrites the signed binary in place and
+the next start can be killed at launch ("Killed: 9"). `mv` replaces the file, so it's safe on both, even while the old
+process is still running. Record the container build under Fallbacks. Done when `"$T/bin/hotrod" --help` runs.
 
 ## Run
 
@@ -97,8 +100,12 @@ exporting traces to `jaeger.hotrod` are harmless: there is no tracing backend in
 especially), routing to the local process can take a few seconds to apply after the sandbox is ready: if the route
 hop still shows `baseline`, book another keyed ride.
 
-Then show the edit loop: rebuild (same build command as above), stop the route process (the stop command above, or
-just its `route-local` PID), start it again with the start command, and time it. Done when rebuild plus restart takes a few seconds, with no image build or deploy.
+Then show the edit loop, and time it: run the same build command again (it builds to the staging path and moves
+the binary into place), stop the route process (the stop command above, or just its `route-local` PID), and start it
+again with the start command under Run.
+
+Done when build plus restart takes a few seconds, with no image build or deploy, and the next keyed ride reaches the
+new process (`Finding route` in `$T/logs/route-local.log`).
 
 ## Record
 
@@ -123,10 +130,12 @@ try: edit <T>/hotrod/services/route/server.go, rebuild, restart, and book a ride
 - **Sandbox:** request a ride on the sandbox's link: ETAs in seconds, from route on this computer.
 - **Check:** follow `Finding route` in the local process's log, `tail -f <T>/logs/route-local.log | grep --line-buffered 'Finding route'`,
   and in the normal route (`deploy/route`): sandbox rides appear only in the local log.
-- **More:** change the ETA again in `<T>/hotrod/services/route/server.go`, rebuild and restart the process (the
-  commands under Set up and Run), and request another ride on the sandbox's link. The `signadot-validate` agent
-  skill runs the same loop for your own services. If the process or the Redis port-forward stopped (after a
-  reboot), start them again with the commands under Run.
+- **More:** the edit loop, led by the agent. Put a prompt the user can give their agent first, for example: "Change
+  route so ETAs are between 10 and 20 seconds, then rebuild, restart it and prove it with a ride through the
+  sandbox's link." The agent edits `<T>/hotrod/services/route/server.go` and runs the loop under Prove it. That's
+  the same loop the `signadot-validate` agent skill runs for the user's own services. Then, collapsed as a fallback
+  for doing it by hand, the commands: the build command, the stop command and the start command. If the process or the Redis port-forward stopped (after a reboot), the agent starts them again with the
+  commands under Run.
 
 ## Tear down
 

@@ -93,7 +93,7 @@ one.
 | Kind | What | If it's missing |
 |---|---|---|
 | Must have | macOS or Linux, a shell, Docker running with enough memory (about 4 GB for the basics, more per add-on), internet access, curl, a browser the user can use for signup | Stop. Say what's missing and how to get it. |
-| Must have for one scenario | lsof (local-development), unzip (jobs); usually preinstalled | The user installs it with their package manager, or skip that scenario. |
+| Must have for one scenario | lsof (local-development); usually preinstalled | The user installs it with their package manager, or skip that scenario. `unzip` helps the jobs proof but isn't needed: it falls back to a container. |
 | Install with consent | kubectl, kind, helm, git | Show the install command from [references/setup/prerequisites.md](references/setup/prerequisites.md) in the plan; its OK covers it. |
 | Installed by the trial | Signadot CLI 1.9.1 or newer, into `$T/bin` | `scripts/install-cli.sh` (covered by the plan's OK) |
 | Optional | Go 1.27.1 or newer | local-development builds in a `golang` container instead. |
@@ -259,7 +259,7 @@ trial log and in these files, is its file name.
 | more 1 · database per sandbox | [sandbox-database](references/data/sandbox-database.md) | +3 min | — | — |
 | more 2 · Kafka | [kafka](references/async/kafka.md) | +2 min | — | the driver sandbox (creates it if missing) |
 | more 3 · Temporal | [temporal](references/async/temporal.md) | +6 min | +1 GB | Docker (local image build) |
-| more 4 · RabbitMQ | [rabbitmq](references/async/rabbitmq.md) | +3 min | +0.5 GB | — |
+| more 4 · RabbitMQ | [rabbitmq](references/async/rabbitmq.md) | +3 min | +0.5 GB | on amd64, Docker (local image build) |
 | more 5 · Redis Streams | [redis-streams](references/async/redis-streams.md) | +3 min | +0.5 GB | Docker (local image build) |
 | more 6 · automated tests, part 1 | [jobs](references/testing/jobs.md) | +4 min | +1 GB | the driver sandbox (creates it if missing) |
 | more 6 · automated tests, part 2 | [plans](references/testing/plans.md) | +4 min | — | the driver sandbox; two org settings |

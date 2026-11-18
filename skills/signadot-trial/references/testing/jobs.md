@@ -65,6 +65,14 @@ tar -xzf report.tar.gz
 for z in playwright-report/data/*.zip; do unzip -p "$z"; done | grep -aoE '(SD-)?T7[0-9]{5}C' | sort -u
 ```
 
+Without `unzip` (preflight shows `unzip: missing`), read the same zips in a container instead of asking the user to
+install it with sudo; Docker is already there:
+
+```bash
+docker run --rm -v "$T/artifacts/job/playwright-report/data:/d:ro" busybox sh -c 'for z in /d/*.zip; do unzip -p "$z"; done' \
+  | grep -aoE '(SD-)?T7[0-9]{5}C' | sort -u
+```
+
 Done when the job is `Succeeded` and the plates in the traces all start with `SD-`: the tests ran through
 `driver-plates<suffix>`. The job's dashboard page is `https://app.signadot.com/testing/jobs/<job name>`.
 

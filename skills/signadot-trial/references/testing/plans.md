@@ -32,7 +32,9 @@ in to the trial org), or give the user these steps:
    row shows "1/1 runner ready", usually within a minute.
 2. **Allow the Playwright image:** on the same page, open Settings → Plan Runner Actions → Configure → under
    `run-container`, expand Allowed images. If `mcr.microsoft.com/playwright:*` is already listed, change nothing;
-   otherwise add it and press Apply.
+   otherwise type it and press **Add**. Add saves it straight away; Apply stays greyed out because nothing is left to
+   save, so tell the user that's expected. If the dashboard rejects the wildcard, add the exact image the Plan uses,
+   `mcr.microsoft.com/playwright:v1.45.1-jammy`.
 
 On Linux, if preflight shows `apparmor_userns: restricted` (Ubuntu 23.10 or newer), plan steps fail at start with
 "operation not permitted" until the user changes a kernel setting that needs sudo (troubleshooting.md, Testing).
@@ -40,7 +42,9 @@ Say so before they choose Plans. Requirements: https://www.signadot.com/docs/ref
 
 Record what you changed as `org_setting plan-runner <cluster>` and, only if you added it,
 `org_setting allowed-image mcr.microsoft.com/playwright:*` under Resources, so teardown lists them for the user to
-revert. Done when a Plan run doesn't fail with "no plan runner group on cluster" or an image-policy error.
+revert. Done when `plan create` (below) succeeds: it's the first command that checks the image, and fails with
+"not in this org's allowed-images list" until setting 2 is saved. A run then fails with "no plan runner group on
+cluster" until setting 1 is ready.
 
 ## Set up
 
@@ -63,7 +67,7 @@ Resources.
 Against the driver sandbox:
 
 ```bash
-"$T/bin/sd" plan run --tag hotrod-e2e<suffix> --param sandbox=driver-plates<suffix> --timeout 10m -o json > "$T/logs/plan-driver.json"
+"$T/bin/sd" plan run --tag hotrod-e2e<suffix> --param sandbox=driver-plates<suffix> --timeout 10m -o json > "$T/logs/plan-driver.json" 2>&1
 ```
 
 Then against a sandbox with a deliberate bug (`route` pointed at a Redis that doesn't exist). This run is meant to
@@ -71,18 +75,20 @@ fail, so `plan run` exits non-zero; that's the regression being caught, not a pr
 
 ```bash
 "$T/bin/sd" sandbox apply -f "$S/assets/specs/testing/broken-route.yaml" --set cluster=<cluster> --set suffix=<suffix>
-"$T/bin/sd" plan run --tag hotrod-e2e<suffix> --param sandbox=broken-route<suffix> --timeout 10m -o json > "$T/logs/plan-broken.json"
+"$T/bin/sd" plan run --tag hotrod-e2e<suffix> --param sandbox=broken-route<suffix> --timeout 10m -o json > "$T/logs/plan-broken.json" 2>&1
 ```
 
 Record `sandbox broken-route<suffix>` under Resources. If local-development ran, also run it against the service on this computer:
 
 ```bash
-"$T/bin/sd" plan run --tag hotrod-e2e<suffix> --param sandbox=local-route<suffix> --timeout 10m -o json > "$T/logs/plan-local.json"
+"$T/bin/sd" plan run --tag hotrod-e2e<suffix> --param sandbox=local-route<suffix> --timeout 10m -o json > "$T/logs/plan-local.json" 2>&1
 ```
 
 ## Prove it
 
 Each run's execution ID is the first `"id"` in its JSON (`sed -n 's/^  "id": *"\([^"]*\)".*/\1/p' <file> | head -1`).
+Capture both streams (`2>&1`, as above): CLI 1.9.1 prints a failing run's JSON on stderr, so with stdout alone the
+broken-route run's file is empty.
 For each one:
 
 ```bash
@@ -98,7 +104,8 @@ Done when:
 - the run against `local-route<suffix>` is `completed` with exit code `0`, and `$T/logs/route-local.log` shows the
   in-cluster test's requests (`Finding route`) reaching the process on this computer.
 
-If a run is `failed` but its exit code is `0`, the tests passed and only uploading the report failed (its error says
+A failed run may have no `exit_code` output (`get-output` says "output not found"); its Phase and the test log carry
+the proof. If a run is `failed` but its exit code is `0`, the tests passed and only uploading the report failed (its error says
 "artifact upload failed"); run it again.
 
 For the page's diagram: `plan(runner) → frontend → … → route(broken-route<suffix>) ✗` next to `plan(runner) → frontend →

@@ -59,7 +59,7 @@ for f in "$S"/scripts/*.sh; do
 done
 pf=$(bash "$S/scripts/preflight.sh")
 for k in trial_dir os arch docker docker_mem_gb kubectl kind helm git curl go lsof unzip signadot signadot_login \
-         local_connect kube_context kube_contexts port_8083 apparmor_userns trial_log; do
+         local_connect kube_context kube_contexts port_8083 apparmor_userns wsl trial_log; do
   echo "$pf" | grep -q "^$k: " || bad "preflight: no key $k"
 done
 

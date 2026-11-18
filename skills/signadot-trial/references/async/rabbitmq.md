@@ -29,12 +29,18 @@ The page's four sections come from these (`references/finish/report.md`, "Writin
 
 ## Costs
 
-About 3 minutes (image pulls on first run). About 0.5 GB of memory. Namespace `rabbitmq-demo`.
+About 3 minutes (image pulls on first run; on amd64, a local image build of about 1 minute instead). About 0.5 GB of
+memory. Namespace `rabbitmq-demo`.
 
 ## Before you start
 
-The demo comes from `signadot/examples` in `$T/examples`, fetched at a pinned commit by `references/setup/cluster.md`
-§2.
+- The demo comes from `signadot/examples` in `$T/examples`, fetched at a pinned commit by
+  `references/setup/cluster.md` §2.
+- Its published images (`ghcr.io/emminex23/rabbitmq-publisher` and `-consumer`) exist only for arm64. On arm64
+  (preflight `arch: arm64`, such as an Apple Silicon Mac) they pull and run as they are: skip the build lines below.
+  On amd64 they fail with `ImagePullBackOff` ("no match"), so build both from the demo's source and load them into
+  the kind node (no registry needed); on an existing (non-kind) cluster, use that cluster's way of loading local
+  images. Record `rabbitmq-images: built (amd64)` under Fallbacks.
 
 ## Set up
 
@@ -42,11 +48,18 @@ Start this as soon as the cluster is up, so the images pull while you do the bas
 
 ```bash
 cd "$T/examples/rabbitmq-signadot-demo"
+# amd64 only: build the two images and load them into kind
+docker build -q -t rabbitmq-consumer:trial consumer > "$T/logs/rabbitmq-build.log" 2>&1
+docker build -q -t rabbitmq-publisher:trial publisher >> "$T/logs/rabbitmq-build.log" 2>&1
+kind load docker-image rabbitmq-consumer:trial rabbitmq-publisher:trial --name signadot-trial
 "$T/bin/kc" apply -f k8s/namespace.yaml
 "$T/bin/kc" apply -n rabbitmq-demo -f k8s/rabbitmq.yaml -f k8s/redis.yaml
 "$T/bin/kc" -n rabbitmq-demo wait --for=condition=ready pod -l app=rabbitmq --timeout=300s
 "$T/bin/kc" -n rabbitmq-demo wait --for=condition=ready pod -l app=redis --timeout=120s
 "$T/bin/kc" apply -n rabbitmq-demo -f k8s/publisher.yaml -f k8s/consumer.yaml
+# amd64 only: use the images built above
+"$T/bin/kc" -n rabbitmq-demo set image deploy/consumer consumer=rabbitmq-consumer:trial
+"$T/bin/kc" -n rabbitmq-demo set image deploy/publisher publisher=rabbitmq-publisher:trial
 "$T/bin/kc" -n rabbitmq-demo wait --for=condition=available deploy --all --timeout=300s
 ```
 
@@ -62,6 +75,16 @@ as `references/setup/cluster.md` §3 says. Record `namespace rabbitmq-demo` unde
 
 Record `sandbox rabbitmq-consumer<suffix>` under Resources. Wait about 10 seconds after it's ready: the consumers
 refresh their routing rules every 10 seconds.
+
+Give the management UI a preview link, so it opens in the user's browser without the sudo connection (and on WSL,
+where cluster addresses never open in the browser):
+
+```bash
+"$T/bin/sd" routegroup apply -f "$S/assets/specs/async/rabbitmq-tools.yaml" --set cluster=<cluster> --set suffix=<suffix>
+"$T/bin/sd" routegroup get rabbitmq-tools<suffix> -o json | grep -oE '"url": *"https://[^"]+"' | head -1
+```
+
+Record `routegroup rabbitmq-tools<suffix>` under Resources and the link as `link-rabbitmq-ui:`.
 
 Publish one order without the key and one with it:
 
@@ -104,16 +127,15 @@ proof: one broker and exchange, a queue per consumer; the sandbox's consumer pro
 commands: kubectl apply (rabbitmq-signadot-demo); sd sandbox apply -f assets/specs/async/rabbitmq-consumer.yaml …; curl …/publish
 specs: assets/specs/async/rabbitmq-consumer.yaml
 links: https://www.signadot.com/docs/tutorials/testing-rabbitmq-microservices
-link-rabbitmq-ui: http://rabbitmq.rabbitmq-demo.svc:15672 (guest / guest; opens once the laptop has the sudo connection)
+link-rabbitmq-ui: <the rabbitmq-tools<suffix> preview link> (guest / guest)
 try: publish more orders with and without the key and watch both consumer logs
 ```
 
 ## Try it yourself
 
-The management UI and the publisher are cluster addresses: they open only with the sudo connection
-(`references/finish/report.md`, "Try it": the reconnect goes first in the steps, and you ask for it in chat when you
-show the page, then check the link, "After each scenario"):
-`curl -sS -o /dev/null -w '%{http_code}\n' http://rabbitmq.rabbitmq-demo.svc:15672/` prints `200`.
+The management UI opens through its preview link (`link-rabbitmq-ui`), in any browser signed in to the org: no
+sudo connection. Only the optional `curl` to the publisher uses a cluster address; put the reconnect inside that
+step (`references/finish/report.md`, "Try it").
 
 Put the live view first on the page, so the user watches the consumers while publishing:
 
@@ -121,11 +143,11 @@ Put the live view first on the page, so the user watches the consumers while pub
   `kubectl --kubeconfig <T>/kubeconfig -n rabbitmq-demo logs -f deploy/consumer -c consumer | grep --line-buffered -E 'PROCESSING|SKIP|ACCEPT'`
   and the same for the sandbox's, `deploy/rabbitmq-consumer<suffix>-dep-consumer-…`, with
   `grep --line-buffered -E 'PROCESSING|process='`.
-- **Open the management UI,** http://rabbitmq.rabbitmq-demo.svc:15672, and sign in with the demo's default user,
+- **Open the management UI** through its preview link, and sign in with the demo's default user,
   `guest` / `guest`. Under Queues: `consumer-baseline` (the normal consumer's) and `consumer-trial<suffix>` (the
   sandbox's). Under Exchanges, `orders_exchange` shows both bound with `#`.
 - **Baseline:** in the UI, open Exchanges → `orders_exchange` → Publish message; Routing key `orders`, Payload
-  `{"order_id":"ui-1","amount":10}`, no headers; Publish. Or, in a terminal,
+  `{"order_id":"ui-1","amount":10}`, no headers; Publish. Or, in a terminal with the sudo connection,
   `curl -sS -X POST http://publisher.rabbitmq-demo.svc:8080/publish -H 'Content-Type: application/json' -d '{"order_id":"cli-1","amount":10}'`.
   The baseline consumer logs `ACCEPT (no routing key)` and `PROCESSING ORDER ui-1`; the sandbox's logs
   `process=False`.
@@ -142,6 +164,7 @@ Put the live view first on the page, so the user watches the consumers while pub
 
 ```bash
 "$T/bin/sd" sandbox delete rabbitmq-consumer<suffix>
+"$T/bin/sd" routegroup delete rabbitmq-tools<suffix>
 "$T/bin/kc" delete namespace rabbitmq-demo
 ```
 

@@ -5,14 +5,21 @@ fill the plan and to decide what's missing; SKILL.md's Prerequisites table says 
 
 What each key decides:
 
+- `wsl: yes`: Linux inside Windows (WSL2), where the user's browser runs on the Windows side. Open pages and links
+  with `explorer.exe "$(wslpath -w <file>)"` (a file) or `explorer.exe "<url>"` (a link), never `xdg-open`, which
+  starts a Linux browser inside WSL instead. Cluster addresses (`.svc`) never open in that browser, even with the
+  sudo connection, so use preview links (see `references/finish/report.md`, "App links").
+- `docker: wsl-integration-off`: Docker Desktop is installed on Windows but not connected to this WSL distro. Ask
+  the user to turn it on: Docker Desktop → Settings → Resources → WSL integration → this distro → Apply & restart.
 - `os`, `docker`, `curl`: must haves. On anything but macOS or Linux, stop. If Docker is stopped, ask the user to
   start Docker Desktop, OrbStack, Colima or the Docker service.
 - `docker_mem_gb`: about 4 GB for the basics; add each add-on's figure from the SKILL.md index. See "Docker memory"
   below.
 - `kubectl`, `kind`, `helm`, `git`: show the install command below in the plan; its OK covers running it.
-- `lsof` (local-development checks its port with it) and `unzip` (the jobs proof reads the test traces with it):
-  present on macOS and most Linux desktops. If one is missing, the user installs it with their package manager (it
-  needs sudo), or skip that scenario.
+- `lsof` (local-development checks its port with it): present on macOS and most Linux desktops. If it's missing,
+  the user installs it with their package manager (it needs sudo), or skip that scenario.
+- `unzip`: the jobs proof reads the test traces with it, and falls back to a `busybox` container when it's missing
+  (`references/testing/jobs.md`). Don't ask the user to install it.
 - `signadot`: `scripts/install-cli.sh` installs CLI 1.9.1 into `$T/bin`, or reuses theirs if it's 1.9.1 or newer.
 - `go`: 1.27.1 or newer builds local-development's service directly; otherwise it builds in a `golang` container.
 - `apparmor_userns: restricted`: Plans can't run until the user changes a kernel setting (troubleshooting.md,
