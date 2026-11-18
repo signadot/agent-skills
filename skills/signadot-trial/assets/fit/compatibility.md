@@ -1,6 +1,6 @@
 # Signadot compatibility matrix
 
-The trial's fit summary (`references/finish/fit.md`) takes every status from this file, never from the agent's own
+The trial's fit page (`references/finish/fit.md`) takes every status from this file, never from the agent's own
 knowledge. Each row cites the published page it's based on. Refresh it when the docs change (MAINTAINING.md, "What's
 pinned"); a Signadot reviewer owns the statuses, especially the "Gaps / unclear" section at the end.
 

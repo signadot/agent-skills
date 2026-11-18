@@ -165,8 +165,8 @@ summary { cursor: pointer; color: var(--muted); font-size: 13px; }
   .box, .row, .diagram { break-inside: avoid; }
 }
 
-/* "Open the demo app": the two links, highlighted at the top of every page. */
-.urls { margin: 16px 0 0; padding: 18px 20px; border: 2px solid var(--sbx); border-radius: var(--radius);
+/* "Open the demo app": the baseline and sandbox links, on the overview below the scenarios. */
+.urls { margin: 40px 0 0; padding: 18px 20px; border: 1px solid var(--border); border-radius: var(--radius);
   background: var(--surface); box-shadow: var(--shadow); }
 .urls h2 { margin: 0 0 6px; padding: 0; border: 0; font-size: 18px; }
 .urls > p { margin: 0 0 12px; }
@@ -196,3 +196,24 @@ details.hood[open] > summary { margin-bottom: 10px; }
 @media print { .copy { display: none; } .urls { border-width: 1px; } }
 .foot-note { margin-top: 32px; font-size: 14px; }
 .more { margin: 12px 0 0; }
+
+/* "Is Signadot a good fit?": highlighted under the overview's header, and the verdict on the fit page. */
+.fit { margin: 16px 0 0; padding: 18px 20px; border: 2px solid var(--sbx); border-radius: var(--radius);
+  background: var(--surface); box-shadow: var(--shadow); }
+.fit h2 { margin: 0 0 10px; padding: 0; border: 0; font-size: 18px; }
+.verdict { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 10px 16px; margin: 6px 0 12px; }
+.verdict p { flex: 1 1 320px; margin: 2px 0 0; }
+.verdict-word { flex: none; font-size: 20px; font-weight: 700; line-height: 1.2; padding: 6px 16px;
+  border-radius: 999px; }
+.verdict.yes .verdict-word { color: var(--ok); background: var(--ok-bg); }
+.verdict.partial .verdict-word { color: var(--skip); background: var(--skip-bg); }
+.verdict.no .verdict-word { color: var(--fail); background: var(--fail-bg); }
+.btn { display: inline-block; padding: 8px 16px; border-radius: 8px; background: var(--accent); color: var(--surface);
+  font-weight: 600; text-decoration: none; }
+.btn:hover, .btn:focus-visible { opacity: .9; }
+ul.checklist { list-style: none; margin: 4px 0 12px; padding: 0; }
+ul.checklist li { position: relative; padding: 8px 0 8px 28px; border-bottom: 1px solid var(--border); }
+ul.checklist li:last-child { border-bottom: 0; }
+ul.checklist li::before { content: ""; position: absolute; left: 2px; top: 12px; width: 14px; height: 14px;
+  border: 2px solid var(--sbx); border-radius: 3px; }
+@media print { .fit { border-width: 1px; } .btn { color: var(--accent); background: none; padding: 0; } }

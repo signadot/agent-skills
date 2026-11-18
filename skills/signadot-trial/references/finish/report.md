@@ -231,18 +231,30 @@ Read a link with `"$T/bin/sd" sandbox get <name> -o json | grep -oE '"url": *"ht
 
 ## The overview page
 
-Keep it short, so the trial reads as simple: the links, the list of scenarios, and how to look at the cluster. The
-detail is on the scenario pages; teardown and next steps are for the agent to offer in chat, not for this page.
+Keep it short, so the trial reads as simple: what the trial did, whether Signadot is a good fit, the list of
+scenarios, the demo app's links, and how to look at the cluster. The detail is on the scenario pages; teardown and
+next steps are for the agent to offer in chat, not for this page.
 
 - **title:** e.g. "Your Signadot trial: 3 scenarios proven, 1 to go", or "…: 3 of 3 scenarios proven" when nothing
   is to go.
-- **summary:** pills with counts (passed, failed, to go), then org, cluster and date.
-- **urls:** the baseline link, then each scenario's sandbox link with what to look for (see "App links").
+- **summary:** pills with counts (passed, failed, to go), then org, cluster and date. Nothing else under the title:
+  no links.
+- **overview:** two or three plain sentences: what the trial set up (HotROD and any other demo app, the cluster, the
+  mesh if any), how many scenarios ran, and what they showed about Signadot, one short clause per scenario that
+  passed (a sandbox runs only the changed services; the key decides the version over HTTP, through Kafka, through
+  Temporal; two changes previewed through one link; a laptop process in the cluster's traffic; a database per
+  sandbox; tests run against a sandbox and caught a regression). Facts from the trial log, not claims: no sales
+  lines, nothing about speed or cost the trial didn't measure.
+- **fit** ("Is Signadot a good fit?"), right under the header:
+  - **Customized path,** once `fit.html` exists (`references/finish/fit.md`): the first version, with the verdict
+    word and class from the trial log's `## Fit` (`verdict:`), its two-sentence summary, and the button to
+    `fit.html`. Until the fit page exists, leave the section out.
+  - **Standard path:** the second version, the fit checklist, as it is.
 - **scenarios:** one `ROW` per scenario that ran or is to go, in run order, linking its page, with a one-sentence
   result and its time; one that hasn't run yet gets the `next` pill and no link. Then the `MORE` line while
-  something on the menu of more scenarios hasn't been tried.
-- **fit summary:** once `fit.html` exists (`references/finish/fit.md`), a link to it right under the summary pills:
-  "How Signadot fits your stack".
+  something on the menu hasn't been tried.
+- **urls** ("Open the demo app"), below the scenarios: the baseline link, then each scenario's sandbox link with
+  what to look for (see "App links").
 - **Look at the cluster yourself** (a fixed section): replace `TRIAL_FOLDER` with the trial folder's full path. It
   tells the user why `kubectx` doesn't show the trial's cluster and how to see it.
 

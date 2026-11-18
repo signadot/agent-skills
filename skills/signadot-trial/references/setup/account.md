@@ -2,16 +2,23 @@
 
 ## 1. Account (`account`) ★
 
-About 3–4 minutes, mostly the user. Start by asking, in one message:
+The trial needs a Signadot account: its CLI and the operator in the cluster connect to an org in it. Ask in one
+message, as formatted text, and end your turn:
 
-- how they'd like to sign up: with an email address, with Google or GitHub, or by signing in to an org they already
-  have (if preflight shows `signadot_login: <org>`, offer that org by name);
-- for a new account: the organization name, and their first and last name.
+```markdown
+**The trial needs a Signadot account.** Which applies to you?
 
-If they use an org they already have, skip to §2. Tell them in one line that the trial's names get a short suffix
-(SKILL.md, "Existing org") and that teammates can see the trial's sandboxes in the dashboard.
+1. **Create a new account.** It's free and takes about 2 minutes in your browser.
+2. **I already have an account.** I'll connect the trial to it straight away.
+```
 
-**If you can drive a browser the user can see and type into:**
+If preflight shows `signadot_login: <org>`, add to option 2: "(this computer is signed in to `<org>`)". Record
+`account: new` or `account: existing` under Run.
+
+### Option 1: create a new account
+
+**If you can drive a browser the user can see and type into,** ask for the organization name and their first and
+last name in one line, then:
 
 1. Open `https://www.signadot.com/signup`. It opens on the Sign Up tab.
 2. Type the email, or let the user choose Google or GitHub sign-in. Then hand over: "Please type a password in the
@@ -22,17 +29,29 @@ If they use an org they already have, skip to §2. Tell them in one line that th
    `Signadot trial agent skill` in "How did you hear about us". Tick the Terms box only if the user said so;
    otherwise ask them to tick it. Submit.
 
-**If you can't drive a browser,** give the user these steps in one message:
+**If you can't drive a browser,** send this and end your turn:
 
-1. Open https://www.signadot.com/signup and sign up with your email (or Google/GitHub).
-2. Type a password, then click the link in the verification email, and go back to the signup tab and click "I've
-   verified my email".
-3. Create the organization "<org>" with your first and last name, put "Signadot trial agent skill" under "How did you
-   hear about us", accept the Terms, and submit.
-4. Tell me when you see the dashboard.
+```markdown
+**Create your Signadot account:**
 
-Done when the dashboard's Overview page loads. Record the step, and under User actions: "Typed the signup password
-and clicked the verification link".
+1. Open https://www.signadot.com/signup and sign up with your email, Google or GitHub.
+2. With an email: type a password, click the link in the verification email, then go back to the signup tab and
+   click "I've verified my email".
+3. Create your organization (any name works, for example "Acme trial") with your first and last name. Put
+   "Signadot trial agent skill" under "How did you hear about us", accept the Terms, and submit.
+
+**Tell me when you see the Signadot dashboard,** and I'll connect the trial to your new account.
+```
+
+When they reply, go to §2.
+
+### Option 2: I already have an account
+
+Go straight to §2. Tell them in one line that the trial's names get a short suffix (SKILL.md, "Existing org") and
+that teammates can see the trial's sandboxes in the dashboard.
+
+For a new account: done when the dashboard's Overview page loads. Record the step, and under User actions: "Typed
+the signup password and clicked the verification link".
 
 Keep this browser session open: the CLI login (§2) is confirmed in it, and the preview URL (multi-service-preview) opens in it.
 
@@ -65,22 +84,27 @@ the full link as text, never only a "click here".
 
 - **If you can drive the browser from §1:** say so in the same message ("I'm confirming it in the browser you signed
   up in; you don't need to do anything unless it asks you to sign in"). Open the link there, check that the page
-  shows the same code, and click Confirm. If that browser shows a different Signadot account, stop and tell the
-  user.
+  shows the same code, and click Confirm. If the page then asks to sign in, ask the user to sign in there (never
+  type a password yourself): the login completes only after that. If that browser shows a different Signadot
+  account, stop and tell the user.
 - **If you can't:** also open the link with the system's own `open` (macOS), `xdg-open` (Linux) or `explorer.exe
   "<link>"` (WSL, where `xdg-open` would start a Linux browser that isn't signed in), not the shims;
   it usually lands in the browser they signed up in, and it does nothing harmful when there's no desktop. Send the
-  message below and end your turn. Check the login only after the user says they've confirmed: some agents show a
-  message only when the turn ends, so never wait or poll before the user has seen the link.
+  message below and end your turn. Check the login only after the user says they've confirmed and signed in: some
+  agents show a message only when the turn ends, so never wait or poll before the user has seen the link.
+
+Confirming the code isn't the last step: after Confirm, the page asks the user to sign in (unless that browser is
+already signed in), and the CLI is logged in only once they have. Say so, as a numbered step:
 
 ```markdown
-**One step for you: connect the trial to your Signadot account.** Open this link in the browser where you signed
-up, check that the page shows the code **WXYZ-1234**, and click **Confirm**:
+**Connect the trial to your Signadot account.** This lets the trial's own copy of the Signadot CLI work in your
+org; nothing on your computer outside the trial folder changes.
 
-https://app.signadot.com/…
-
-This lets the trial's own copy of the Signadot CLI work in your new org; nothing on your computer outside the trial
-folder changes. If the page asks you to sign in, use the account you just created. Tell me when you've confirmed.
+1. Open this link: https://app.signadot.com/…
+2. Check that the page shows the code **WXYZ-1234**, and click **Confirm**.
+3. Sign in with your Signadot account if the page asks you to. The connection completes only after you've signed
+   in.
+4. Tell me when you've done both.
 ```
 
 Then check that the login finished:
@@ -89,7 +113,7 @@ Then check that the login finished:
 "$T/bin/sd" auth status | grep -E "^(Status|Organization)"   # repeat every few seconds for up to a minute
 ```
 
-If it isn't `Authenticated` after the user confirmed, look at `login.log`: if the login stopped (the code expired,
+If it isn't `Authenticated` after the user confirmed and signed in, look at `login.log`: if the login stopped (the code expired,
 or it was confirmed in the wrong account), run the login commands again and send the new link and code the same way.
 
 Done when it shows `Authenticated` and `Organization: <org>`. Signadot derives the org's short name from the name

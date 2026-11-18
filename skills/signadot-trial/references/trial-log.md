@@ -26,12 +26,14 @@ cli_on_path: no
 versions: cli 1.9.1, operator 1.4.0, kind v0.33.0
 selection: isolated-change, multi-service-preview, local-development, sandbox-database, kafka
 path: customized
-answers-runs: eks, some services not on kubernetes
+pace: step
+account: new
+answers-runs: EKS with Istio; a few services on ECS
+answers-messaging: HTTP, gRPC, Kafka, SQS
+answers-tracing: OpenTelemetry in some services
+answers-testing: shared staging cluster; shared Postgres with seeded data
+answers-pains: waiting for staging, flaky end-to-end tests
 answers-mesh: istio
-answers-messaging: http, grpc, kafka, sqs
-answers-tracing: opentelemetry in some services
-answers-data: shared databases; tests need seeded data
-answers-pains: shared staging, late end-to-end tests
 first-change: route
 started: 2026-11-15T10:02:11Z
 finished:

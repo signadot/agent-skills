@@ -12,8 +12,8 @@ or `.github/`.
 - `scripts/`: four bash 3.2 scripts for steps that run on every trial (preflight, CLI install, operator install,
   booking a ride). No jq, python or node.
 - `assets/`: Signadot specs (`@{suffix}` and `@{cluster}` are filled with `--set`), the local-development patch,
-  the report templates in `assets/report/` (the overview page, the scenario page, the fit summary and their shared
-  CSS), and `assets/fit/compatibility.md`, the matrix the fit summary takes every status from.
+  the report templates in `assets/report/` (the overview page, the scenario page, the fit page and their shared
+  CSS), and `assets/fit/compatibility.md`, the matrix the fit page takes every status from.
 - `tests/signadot-trial/`: this file and the checks (below).
 
 Nothing else belongs in the skill folder: everything there is installed for every user, and a check fails on any
@@ -164,11 +164,16 @@ pin one commit instead, use a tree URL with the full 40-character SHA (a short S
 5. **Teardown:** org lists are clean, the kind cluster is gone, `~/.kube/config` and the kube context are unchanged,
    the trial log is renamed, and a new "try Signadot" starts fresh.
 6. **Another agent:** repeat the default path with a second coding agent product.
-7. **Customized path:** "try Signadot", choose Customize, answer the six questions with a mesh and two brokers (one
-   with a demo, one without). The plan installs the mesh during setup and names the broker without a demo; after
-   the basics the menu shows only the relevant add-ons; the hand-off writes `fit.html` with every status from the
-   matrix and a guide link per row, then asks "anything else?". Ask about pricing and a competitor: the answers
-   cite `/pricing/` and `/comparison/<tool>/`. The agent never reads files outside its working folder.
+7. **Customized path:** "try Signadot", choose "I already have an account" and then, on a second run, "Create a new
+   account": each gets the matching steps, and the login message says to sign in after Confirm. Choose Customize and
+   answer the five questions in your own words, with a mesh and two brokers (one with a demo, one without). The plan
+   installs the mesh during setup, suggests the right add-ons, names the broker without a demo, and asks "step by
+   step or all at once". Step by step: what's left after each scenario is a list, one per line. All at once: no
+   pauses except the steps only the user can do, then a summary. The hand-off writes `fit.html` ("Is Signadot a
+   good fit?", a verdict and every status from the matrix with a guide link per row), the overview shows the
+   verdict with a button to it, then it asks "anything else?". Ask about pricing and a competitor: the answers cite
+   `/pricing/` and `/comparison/<tool>/`. On the standard path there's no fit page; the overview shows the fit
+   checklist. The agent never reads files outside its working folder.
 8. **WSL:** the default path and one demo-app add-on on Windows with WSL2 and Docker Desktop. Preflight shows
    `wsl: yes`; pages and the login link open in the Windows browser (`explorer.exe`), not a Linux browser inside
    WSL; every link the user is asked to open is a preview link; RabbitMQ's images build for amd64.

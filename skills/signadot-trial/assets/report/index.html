@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Your Signadot trial</title>
 <!--
-  The overview page: links to one page per scenario (see references/finish/report.md). Rebuild it from this
-  template after each scenario, so it's always current.
+  The overview page (see references/finish/report.md): what the trial did, whether Signadot is a good fit, one row
+  per scenario, and the demo app's links. Rebuild it from this template after each scenario, so it's always current.
   - Replace TRIAL_FOLDER with the trial folder's full path. If the trial used an existing local cluster, name its
     context in that section and drop the sentence about kind.
   - Each slot is one comment that starts with FILL and a name, holding example markup. Replace the whole comment with
@@ -28,29 +28,41 @@
   <p class="meta"><span class="pill passed">3 passed</span><span class="pill next">1 to go</span>
   <span>· org ORG · cluster CLUSTER · DATE</span></p>
 -->
-<p class="intro">Signadot gives every change its own lightweight sandbox inside one shared Kubernetes cluster. A
-sandbox runs only the services you changed. Requests that carry its routing key go to those services, and everything
-else uses the shared baseline, so you test against real dependencies without copying the whole stack. Each scenario
-below has its own page with what was tested, the proof, and what it means for your team.</p>
+<!-- FILL:overview  (2 or 3 sentences: what the trial set up and ran, and what it showed; see report.md)
+<p class="intro">This trial set up HotROD, a small ride-booking app, in a Kubernetes cluster on your computer with
+Signadot installed, and ran 3 scenarios. They showed that a sandbox runs only the services you change, next to the
+shared app; that a routing key on a request decides which version handles it, over HTTP and through Kafka; and that
+two changes can be previewed together through one link.</p>
+-->
 </header>
 
-<!-- FILL:urls
-<section class="urls">
-<h2>Open the demo app</h2>
-<p>Open these in the browser where you're signed in to Signadot. The baseline is the normal app; each sandbox link
-adds that sandbox's routing key to every request, so you see the changed version.</p>
-<div class="url-pair">
-  <div class="url base"><h4>Baseline: the normal app</h4>
-    <p class="link"><a href="https://frontend--hotrod-baseline.preview.signadot.com">https://frontend--hotrod-baseline.preview.signadot.com</a></p>
-    <p>No sandbox is attached, so every request uses the shared, unchanged services.</p></div>
-  <div class="url sbx"><h4>Your sandboxes</h4>
-    <p class="link"><a href="https://frontend--fast-route.preview.signadot.com">https://frontend--fast-route.preview.signadot.com</a></p>
-    <p>Test one change in isolation: every ETA is 1 second.</p>
-    <p class="link"><a href="https://frontend--hotrod-plates.preview.signadot.com">https://frontend--hotrod-plates.preview.signadot.com</a></p>
-    <p>Test a change that spans two services: plates start with SD- and are highlighted.</p></div>
-</div>
-<p class="note">These are Signadot preview links: they go through Signadot's servers to the app in your cluster, and
-work for anyone signed in to your Signadot org.</p>
+<!-- FILL:fit  (keep one of the two versions below; see report.md, "The overview page")
+<section id="fit" class="fit">
+<h2>Is Signadot a good fit?</h2>
+<div class="verdict partial"><span class="verdict-word">Partially</span>
+<p>Signadot covers your Kubernetes services on Istio, and your HTTP, gRPC and Kafka traffic, today. Two things need
+work: OpenTelemetry in the services that don't have it yet, and your SQS consumers.</p></div>
+<p><a class="btn" href="fit.html">See the full fit analysis</a></p>
+</section>
+
+<section id="fit" class="fit">
+<h2>Is Signadot a good fit?</h2>
+<p>Signadot is likely a good fit if these describe your team:</p>
+<ul class="checklist">
+<li><strong>Your services run on Kubernetes:</strong> EKS, GKE, OpenShift or your own clusters. Sandboxes run inside
+your cluster; there's no hosted option. <a href="https://www.signadot.com/docs/installation/signadot-operator">Install</a></li>
+<li><strong>They talk over HTTP or gRPC, or through a queue or workflow engine Signadot supports:</strong> Kafka,
+RabbitMQ, SQS and SNS, Google Pub/Sub, Redis Streams, Temporal or Sidekiq.
+<a href="https://www.signadot.com/docs/guides/set-up-message-queue-isolation">Message queues</a></li>
+<li><strong>Requests can carry a header from service to service:</strong> OpenTelemetry already does it; otherwise
+a custom header. No tracing backend is needed.
+<a href="https://www.signadot.com/docs/guides/set-up-context-propagation">Context propagation</a></li>
+<li><strong>No service mesh, or Istio or Linkerd.</strong>
+<a href="https://www.signadot.com/docs/guides/request-routing">Request routing</a></li>
+<li><strong>Your team waits for a shared staging environment, or finds problems late:</strong> the scenarios below
+show what changes.</li>
+</ul>
+<p class="muted">For an answer for your own stack, choose "Customize" when you start a trial.</p>
 </section>
 -->
 <main>
@@ -77,6 +89,26 @@ work for anyone signed in to your Signadot org.</p>
 agent to run any of them.</p>
 /MORE -->
 </section>
+
+<!-- FILL:urls
+<section class="urls">
+<h2>Open the demo app</h2>
+<p>Open these in the browser where you're signed in to Signadot. The baseline is the normal app; each sandbox link
+adds that sandbox's routing key to every request, so you see the changed version.</p>
+<div class="url-pair">
+  <div class="url base"><h4>Baseline: the normal app</h4>
+    <p class="link"><a href="https://frontend--hotrod-baseline.preview.signadot.com">https://frontend--hotrod-baseline.preview.signadot.com</a></p>
+    <p>No sandbox is attached, so every request uses the shared, unchanged services.</p></div>
+  <div class="url sbx"><h4>Your sandboxes</h4>
+    <p class="link"><a href="https://frontend--fast-route.preview.signadot.com">https://frontend--fast-route.preview.signadot.com</a></p>
+    <p>Test one change in isolation: every ETA is 1 second.</p>
+    <p class="link"><a href="https://frontend--hotrod-plates.preview.signadot.com">https://frontend--hotrod-plates.preview.signadot.com</a></p>
+    <p>Test a change that spans two services: plates start with SD- and are highlighted.</p></div>
+</div>
+<p class="note">These are Signadot preview links: they go through Signadot's servers to the app in your cluster, and
+work for anyone signed in to your Signadot org.</p>
+</section>
+-->
 
 <section id="cluster">
 <h2>Look at the cluster yourself</h2>

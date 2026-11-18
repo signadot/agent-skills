@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>How Signadot fits your stack · Signadot trial</title>
+<title>Is Signadot a good fit? · Signadot trial</title>
 <!--
-  The fit summary (see references/finish/fit.md): written at the end of a customized trial, or after the six
-  questions on the standard path. Every status comes from assets/fit/compatibility.md, never from the model.
-  Replace each FILL comment with real content in the same shape; escape <, > and & from anything copied.
+  The fit page (see references/finish/fit.md): written only at the end of a customized trial. Every status comes
+  from assets/fit/compatibility.md, never from the model. Replace each FILL comment with real content in the same
+  shape; escape <, > and & from anything copied.
 -->
 <link rel="stylesheet" href="report.css">
 <script src="report.js" defer></script>
@@ -16,18 +16,19 @@
 <div class="wrap">
 <header class="hero">
 <p class="eyebrow"><a href="index.html">Signadot trial</a></p>
-<h1>How Signadot fits your stack</h1>
-<!-- FILL:headline
-<p class="lead">Signadot covers most of your stack today. Two things need work: OpenTelemetry in the services that
-don't have it yet, and your SQS consumers.</p>
+<h1>Is Signadot a good fit?</h1>
+<!-- FILL:verdict  (class and word: yes / Yes, partial / Partially, no / No)
+<div class="verdict partial"><span class="verdict-word">Partially</span>
+<p>Signadot covers your Kubernetes services on Istio, and your HTTP, gRPC and Kafka traffic, today. Two things need
+work: OpenTelemetry in the services that don't have it yet, and your SQS consumers.</p></div>
 <p class="meta"><span>From your answers in the trial · org ORG · DATE</span></p>
 -->
 </header>
 
 <main>
 <section id="stack">
-<h2>Your stack</h2>
-<p class="muted">✓ supported · ⚠ supported, with work · ✗ not supported · ? not documented: ask Signadot</p>
+<h2>How it fits your stack</h2>
+<p class="muted">✓ supported · ⚠ supported, with work · ✗ not supported · ? not covered in the docs: ask Signadot</p>
 <!-- FILL:stack
 <div class="table-wrap"><table>
 <thead><tr><th>You said</th><th>Status</th><th>What it takes</th><th>Guide</th></tr></thead>
@@ -36,15 +37,17 @@ don't have it yet, and your SQS consumers.</p>
 <td><a href="https://www.signadot.com/docs/installation/signadot-operator">Operator</a></td></tr>
 <tr><td>Kafka</td><td>✓</td><td>Consumers check the routing key on each message (a consumer group per sandbox).</td>
 <td><a href="https://www.signadot.com/docs/guides/set-up-message-queue-isolation/kafka">Kafka</a> · <a href="kafka.html">you saw this</a></td></tr>
+<tr><td>A few services on ECS</td><td>⚠</td><td>They can be a sandbox's dependencies through a resource plugin, but
+can't be sandboxed themselves.</td><td><a href="https://www.signadot.com/docs/concepts/resources">Resources</a></td></tr>
 </tbody></table></div>
 -->
 </section>
 
-<section id="pains">
-<h2>What slows your team down</h2>
-<!-- FILL:pains
+<section id="solves">
+<h2>What it solves for you</h2>
+<!-- FILL:solves
 <div class="table-wrap"><table>
-<thead><tr><th>Pain</th><th>Where the trial showed it</th><th>What it means for you</th></tr></thead>
+<thead><tr><th>Your pain point</th><th>Where the trial showed it</th><th>What it means for you</th></tr></thead>
 <tbody>
 <tr><td>Waiting for a shared staging environment</td><td><a href="isolated-change.html">Test one change in isolation</a></td>
 <td>Each change gets a sandbox in one shared cluster, ready in seconds, so nobody waits for staging.</td></tr>
@@ -65,7 +68,7 @@ have it yet.</li>
 </section>
 
 <section id="questions">
-<h2>What your platform team will ask</h2>
+<h2>Common questions</h2>
 <!-- FILL:questions
 <ul class="plain parts">
 <li><strong>What runs in our cluster, with which permissions?</strong> <a href="https://www.signadot.com/docs/installation/signadot-operator">Operator</a></li>
@@ -74,16 +77,7 @@ have it yet.</li>
 -->
 </section>
 
-<section id="open">
-<h2>Open questions for Signadot</h2>
-<!-- FILL:open
-<ul class="plain parts">
-<li>NATS: the docs have a guide, but we use JetStream with pull consumers. Is that covered?</li>
-</ul>
--->
-</section>
-
-<nav class="foot-nav"><a href="index.html">← All scenarios</a></nav>
+<nav class="foot-nav"><a href="index.html">← The trial's overview</a></nav>
 </main>
 </div>
 </body>

@@ -35,15 +35,16 @@ scenario list are current. Keep it to what that section lists: no next steps, se
 Don't change the user's PATH or shell profile, and don't suggest putting `<T>/bin` on PATH: its `sd` wrapper would
 shadow the `sd` find-and-replace tool some people use.
 
-## 3. Fit summary and questions
+## 3. Summary, fit and questions
 
 Before the closing message:
 
-1. **Customized path** (`path: customized`): write and open the fit summary (`references/finish/fit.md`), and give
-   its three-line summary in chat. **Standard path:** offer it once: "Want a quick fit check for your stack? Six
-   questions, then a page you can share with your platform team." On a yes, ask the questions
-   (`references/setup/customize.md` §2), then write the fit summary.
-2. Ask: "Is there anything else you'd like to know about Signadot? For example how it would work on your stack, what
+1. **All at once** (`pace: all`): the summary from SKILL.md, "After each scenario": one line per scenario with what
+   it proved and its preview link. Then the menu items they didn't pick, as a list, in case they want more.
+2. **Customized path** (`path: customized`): write and open the fit page (`references/finish/fit.md`), and give its
+   three-line summary in chat. The standard path doesn't get a fit page; its overview already has the fit
+   checklist.
+3. Ask: "Is there anything else you'd like to know about Signadot? For example how it would work on your stack, what
    it costs, or how it compares with other tools." Answer each question as `references/finish/questions.md` says:
    from the current docs, pricing and comparison pages, with citations. When they have no more, send the closing
    message.

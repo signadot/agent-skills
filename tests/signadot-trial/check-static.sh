@@ -66,8 +66,11 @@ done
 # 6. Report templates: every slot report.md fills, the stylesheet and copy script next to the pages, and nothing
 #    that loads from the network.
 R=$S/assets/report
-for k in title summary urls scenarios; do
+for k in title summary overview fit scenarios urls; do
   grep -q "<!-- FILL:$k" "$R/index.html" || bad "overview template: no FILL:$k slot"
+done
+for k in verdict stack solves effort questions; do
+  grep -q "<!-- FILL:$k" "$R/fit.html" || bad "fit template: no FILL:$k slot"
 done
 for k in title status headline app change sandbox routing tryit; do
   grep -q "<!-- FILL:$k" "$R/scenario.html" || bad "scenario template: no FILL:$k slot"
@@ -86,7 +89,7 @@ for f in core/isolated-change core/multi-service-preview core/local-development 
   echo "$t" | grep -q '^- \*\*Sandbox:' || bad "$f.md: Try it yourself has no Sandbox step"
   echo "$t" | grep -q '^- \*\*Check:' || bad "$f.md: Try it yourself has no Check step"
 done
-for f in "$R/index.html" "$R/scenario.html"; do
+for f in "$R/index.html" "$R/scenario.html" "$R/fit.html"; do
   grep -q '<link rel="stylesheet" href="report.css">' "$f" || bad "${f#"$S"/}: must use report.css next to it"
   grep -q '<script src="report.js" defer></script>' "$f" || bad "${f#"$S"/}: must load report.js (the Copy buttons)"
   grep -iE '<script' "$f" | grep -vq '<script src="report.js" defer></script>' && bad "${f#"$S"/}: runs a script other than report.js"
@@ -119,7 +122,10 @@ has scripts/install-operator.sh '--reuse-values' "upgrading the installed operat
 has references/infra/add-mesh.md 'docker stats' "adding a mesh must check Docker's memory first"
 has references/infra/linkerd.md 'get namespace linkerd' "an existing Linkerd must be detected, not reinstalled"
 has references/setup/customize.md "Never read the user's repos" "customizing must ask, never read the user's code, other projects or the agent's memory"
-has references/finish/fit.md 'assets/fit/compatibility.md' "the fit summary must take every status from the compatibility matrix"
+has references/finish/fit.md 'assets/fit/compatibility.md' "the fit page must take every status from the compatibility matrix"
+has references/finish/fit.md 'Only on the customized path' "only a customized trial writes the fit page"
+has references/setup/account.md 'The connection completes only after you' "the login message must say the user signs in after confirming the code"
+has SKILL.md 'step by step' "the plan must ask for the pace: step by step or all at once"
 has references/finish/questions.md 'docs/llms.txt' "answers must come from the current docs, not the agent's training"
 has references/finish/questions.md 'Cite every claim' "answers must cite their sources"
 has references/async/rabbitmq.md 'orders_exchange' "the RabbitMQ demo's exchange is orders_exchange (orders is RabbitMQ's own routing key)"
