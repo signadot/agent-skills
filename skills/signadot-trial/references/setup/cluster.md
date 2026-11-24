@@ -101,7 +101,9 @@ bash "$S/scripts/install-operator.sh" --trial-dir "$T" --cluster "signadot-trial
 
 It registers the cluster in the org, installs the operator (namespace `signadot`) with the cluster token passed
 privately, waits until Signadot sees it, and restarts HotROD's four services so they get the routing proxy. Done when
-it prints `operator_version: …` and `sidecars: 4/4`. Record the operator version under Run. If `sidecars` is short,
+it prints `operator_version: …` and `sidecars: 4/4`. Record the operator version under Run. Then open the
+cluster's dashboard page, `https://app.signadot.com/cluster/<cluster>`, once in the user's browser, and link it in
+your progress line ("Signadot sees your cluster: <link>"; SKILL.md, "Dashboard links"). If `sidecars` is short,
 see troubleshooting.md. It's safe to re-run: it skips what's already done. The script installs the chart version the
 skill was verified with; for installing the operator on a cluster of their own, the user follows
 https://www.signadot.com/docs/installation/signadot-operator.md.

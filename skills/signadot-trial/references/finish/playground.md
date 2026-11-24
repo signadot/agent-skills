@@ -41,9 +41,10 @@ Before the closing message:
 
 1. **All at once** (`pace: all`): the summary from SKILL.md, "After each scenario": one line per scenario with what
    it proved and its preview link. Then the menu items they didn't pick, as a list, in case they want more.
-2. **Customized path** (`path: customized`): write and open the fit page (`references/finish/fit.md`), and give its
-   three-line summary in chat. The standard path doesn't get a fit page; its overview already has the fit
-   checklist.
+2. **The fit page:** if they answered the stack questions (`answers-*` lines under Run), write and open it
+   (`references/finish/fit.md`), and give its three-line summary in chat. If they didn't, offer once: "Want a page on
+   whether Signadot fits your stack? Five quick questions." On a yes, ask them (`references/setup/customize.md` §2),
+   then write it. On a no, the overview keeps the fit checklist.
 3. Ask: "Is there anything else you'd like to know about Signadot? For example how it would work on your stack, what
    it costs, or how it compares with other tools." Answer each question as `references/finish/questions.md` says:
    from the current docs, pricing and comparison pages, with citations. When they have no more, send the closing
@@ -51,15 +52,25 @@ Before the closing message:
 
 ## 4. The closing message
 
-Open the overview page (`open`, `xdg-open`, or `explorer.exe "$(wslpath -w <page>)"` on WSL), then send a short message: no scenario summaries and no lists of
-things to try, since the pages have them.
+Open the overview page (`open`, `xdg-open`, or `explorer.exe "$(wslpath -w <page>)"` on WSL), then send a short
+message: the report, one next step on their own service, and teardown. No scenario summaries and no lists of things
+to try, since the pages have them.
 
 ```markdown
 **Your Signadot trial is done:** 4 of 4 scenarios passed. The report is open in your browser, with a page for each
 scenario: `/Users/me/project/.signadot-trial/report/index.html`
 
-Everything stays running so you can explore. When you're done, ask me to tear down the Signadot trial.
+**Next: try it on one of your own services.** Install Signadot's operator on a dev cluster
+(https://www.signadot.com/docs/installation/signadot-operator), then add the `signadot-validate` skill to your agent
+(`npx skills add signadot/agent-skills --skill signadot-validate`) and ask it to validate a change to one service:
+the same change, run and prove loop you saw with route. Your platform team provides the cluster and the operator;
+each service passes the routing key along, which OpenTelemetry already does.
+
+Everything here stays running so you can explore. When you're done, ask me to tear down the Signadot trial.
 ```
+
+Keep the "Next" paragraph as it is; if they answered the stack questions, add one clause from the fit page's
+biggest piece of work ("for you, mostly adding OpenTelemetry to the services that don't have it yet").
 
 If the user stopped early, say how many of the chosen scenarios ran and that "continue the trial" runs the rest.
 Then stop. Run `references/finish/teardown.md` only when the user asks.

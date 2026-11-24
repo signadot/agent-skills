@@ -52,6 +52,24 @@ request without the key reaches the normal frontend and driver. Route and locati
 Give the user the preview URL: anyone signed in to the org can open it, book a ride, and see the highlighted plate.
 It needs no header or proxy.
 
+### Three rides, one app
+
+Now show that both scenarios' changes share one copy of the app. `fast-route<suffix>` from the first scenario is
+still running, so book the same ride three times, with no key, with the first scenario's key (the trial log's
+`routing-key:` under `## Scenario isolated-change`), and with the route group's key:
+
+```bash
+bash "$S/scripts/ride.sh" --proxy <proxy>
+bash "$S/scripts/ride.sh" --proxy <proxy> --key <fast-route routing key>
+bash "$S/scripts/ride.sh" --proxy <proxy> --key <route group routing key>
+```
+
+Done when the three answers differ only where each key's sandboxes are: no key, a normal plate and an ETA in
+minutes; the fast-route key, a normal plate and ETA `1s`; the route group's key, an `SD-` plate and an ETA in
+minutes. Put them in the result as a small table (key · plate · ETA · which versions answered), and say it in one
+line: three versions of the app, one cluster, nothing copied. If `fast-route<suffix>` is gone (the first scenario
+failed or was torn down), skip this and say so.
+
 ## Record
 
 ```markdown
@@ -63,6 +81,7 @@ sandbox: bundle <sandbox bundle>, plate SD-<plate> highlighted
 hops-baseline: frontend(baseline) → kafka → driver(baseline) → route(baseline)
 hops-sandbox: frontend(frontend-highlight<suffix>) → <hops line from the keyed ride>
 proof: one routing key reached both sandboxes; preview <preview URL>
+three-rides: no key <plate> <ETA>; fast-route <plate> 1s; route group SD-<plate> <ETA>
 commands: sd sandbox apply -f assets/specs/core/driver-plates.yaml …; sd sandbox apply -f assets/specs/core/frontend-highlight.yaml …; sd routegroup apply -f assets/specs/core/hotrod-plates-routegroup.yaml …
 specs: assets/specs/core/driver-plates.yaml, assets/specs/core/frontend-highlight.yaml, assets/specs/core/hotrod-plates-routegroup.yaml
 screenshot: screens/multi-service-preview.png (only if you took one)

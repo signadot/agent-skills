@@ -1,6 +1,6 @@
 # Test one service change in isolation
 
-Always runs. About 1 minute. `<cluster>`, `<suffix>` and `<proxy>` as in SKILL.md.
+Always runs, first, and always changes route. About 1 minute. `<cluster>`, `<suffix>` and `<proxy>` as in SKILL.md.
 
 ## What it shows
 
@@ -28,27 +28,6 @@ Introduce the terms in one line each: a **sandbox** runs only the services you c
 
 `sandbox apply` waits until the sandbox is ready. The second command prints its routing key. Record
 `sandbox fast-route<suffix>` under Resources.
-
-### Choose the change
-
-The baseline tour (SKILL.md) lets the user pick route (the default, above) or driver. For driver, run the driver
-sandbox instead. It's the one the two-service scenario uses, so that scenario then reuses it:
-
-```bash
-"$T/bin/sd" sandbox apply -f "$S/assets/specs/core/driver-plates.yaml" --set cluster=<cluster> --set suffix=<suffix>
-"$T/bin/sd" sandbox get driver-plates<suffix> -o json | sed -n 's/.*"routingKey": *"\([^"]*\)".*/\1/p' | head -1
-```
-
-Record `sandbox driver-plates<suffix>` and `first-change: driver` under Run. What changes on the page and in the
-proof:
-
-- **The change:** a new driver image adds an `SD-` prefix to every licence plate (from the two-service scenario's
-  file).
-- **Routing:** driver takes its work from Kafka, so no sidecar decides. Both drivers read every dispatch message,
-  and each processes only the ones that carry its key (the Kafka add-on shows this in detail). Draw it as the Kafka
-  row in `references/finish/report.md`, "The diagram".
-- **Prove it:** the same two rides. Done when the ride without the key has a plate like `T7…C` and every hop
-  `baseline`, and the ride with the key has an `SD-` plate and the hop `driver driver-plates<suffix>`.
 
 ## Prove it
 

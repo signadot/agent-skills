@@ -12,6 +12,9 @@ mkdir -p "$T/report/screens" && cp "$S/assets/report/report.css" "$S/assets/repo
 
 ## After each scenario
 
+The result is already in chat by now: SKILL.md, "After each scenario", sends it as soon as the scenario is proven,
+before this.
+
 1. **Screenshot,** if you can drive a browser (see "Screenshots").
 2. **Its page:** `cp "$S/assets/report/scenario.html" "$T/report/<scenario id>.html"`, replace `SCENARIO` in the
    `<title>`, and fill every `FILL:` slot. The template's examples are a finished page for "Test one change in
@@ -19,8 +22,8 @@ mkdir -p "$T/report/screens" && cp "$S/assets/report/report.css" "$S/assets/repo
 3. **The overview:** copy `assets/report/index.html` to `$T/report/index.html` again and fill it from the trial log,
    so it's always current (see "The overview page").
 4. **Open the scenario page** with `open` (macOS), `xdg-open` (Linux), or `explorer.exe "$(wslpath -w <page>)"` when
-   preflight shows `wsl: yes`, and give the user its path too. Then show the
-   result in chat and ask before the next scenario (SKILL.md, "After each scenario").
+   preflight shows `wsl: yes`, and give the user its path, with the questions prompt and what's next (SKILL.md,
+   "After each scenario").
 5. **Make its cluster links work.** Prefer preview links: every demo app's UI has one (the `*-tools` route groups in
    the Temporal, RabbitMQ and Redis Streams files), and they open in any browser signed in to the org with no setup.
    Only when a step the user is meant to open has no preview link and is a cluster address (one ending in `.svc`),
@@ -159,7 +162,7 @@ The template's diagram is the finished one for isolated-change. Keep its layout 
 | Scenario | Copies below the row | Where the decision is made (the `how` strip's third card) |
 |---|---|---|
 | isolated-change | route | the sidecar in the normal route's pod forwards calls with the key to the copy |
-| multi-service-preview | frontend and driver, one outline per sandbox, under the route group's name | the sidecar in the normal frontend's pod (the link's requests arrive there); driver's copy takes only the Kafka messages that carry the key, and the normal driver skips them |
+| multi-service-preview (its "What the trial saw" also gives the three rides: no key, fast-route's key, the route group's key) | frontend and driver, one outline per sandbox, under the route group's name | the sidecar in the normal frontend's pod (the link's requests arrive there); driver's copy takes only the Kafka messages that carry the key, and the normal driver skips them |
 | local-development | route, as `box local`, "on your computer" | the sidecar in the normal route's pod forwards calls with the key through Signadot's connection to the process on the user's computer |
 | sandbox-database | location, with its own database (a `store` inside the outline) | the sidecar in the normal location's pod; the resource plugin created the database with the sandbox and removes it with it |
 | kafka | driver | no router: both messages go into the one topic; each driver reads the key on every message and processes only its own |
@@ -246,10 +249,10 @@ next steps are for the agent to offer in chat, not for this page.
   sandbox; tests run against a sandbox and caught a regression). Facts from the trial log, not claims: no sales
   lines, nothing about speed or cost the trial didn't measure.
 - **fit** ("Is Signadot a good fit?"), right under the header:
-  - **Customized path,** once `fit.html` exists (`references/finish/fit.md`): the first version, with the verdict
+  - **Once `fit.html` exists** (`references/finish/fit.md`, only when they answered the stack questions): the first version, with the verdict
     word and class from the trial log's `## Fit` (`verdict:`), its two-sentence summary, and the button to
-    `fit.html`. Until the fit page exists, leave the section out.
-  - **Standard path:** the second version, the fit checklist, as it is.
+    `fit.html`.
+  - **Otherwise:** the second version, the fit checklist, as it is.
 - **scenarios:** one `ROW` per scenario that ran or is to go, in run order, linking its page, with a one-sentence
   result and its time; one that hasn't run yet gets the `next` pill and no link. Then the `MORE` line while
   something on the menu hasn't been tried.

@@ -34,7 +34,6 @@ answers-tracing: OpenTelemetry in some services
 answers-testing: shared staging cluster; shared Postgres with seeded data
 answers-pains: waiting for staging, flaky end-to-end tests
 answers-mesh: istio
-first-change: route
 started: 2026-11-15T10:02:11Z
 finished:
 

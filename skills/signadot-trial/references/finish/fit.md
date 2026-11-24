@@ -1,10 +1,11 @@
 # Is Signadot a good fit?
 
-Only on the customized path (`path: customized`): at the hand-off, write one more page that answers "Is Signadot a
+Only when the user answered the stack questions (`answers-*` lines under Run, from
+`references/setup/customize.md`): at the hand-off, write one more page that answers "Is Signadot a
 good fit?" for the stack the user described: a verdict, how it fits their stack, what it solves for them, what an
 install in their own cluster would take, and the common questions. The person reading it may be the developer who
-ran the trial or a platform lead deciding on it. Be plain and factual: no sales lines. The standard path doesn't get
-this page; its overview shows a short fit checklist instead (`references/finish/report.md`, "The overview page").
+ran the trial or a platform lead deciding on it. Be plain and factual: no sales lines. Without answers there's no
+page; the overview shows a short fit checklist instead (`references/finish/report.md`, "The overview page").
 
 ## Rules
 

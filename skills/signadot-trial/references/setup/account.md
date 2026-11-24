@@ -2,18 +2,13 @@
 
 ## 1. Account (`account`) ★
 
-The trial needs a Signadot account: its CLI and the operator in the cluster connect to an org in it. Ask in one
-message, as formatted text, and end your turn:
+The trial needs a Signadot account: its CLI and the operator in the cluster connect to an org in it. The plan asks
+which applies (SKILL.md, "The plan"): **1. Create a new account** or **2. I already have an account**, recorded as
+`account: new` or `account: existing`. If the reply didn't say, ask that one question now, with both options, and
+end your turn.
 
-```markdown
-**The trial needs a Signadot account.** Which applies to you?
-
-1. **Create a new account.** It's free and takes about 2 minutes in your browser.
-2. **I already have an account.** I'll connect the trial to it straight away.
-```
-
-If preflight shows `signadot_login: <org>`, add to option 2: "(this computer is signed in to `<org>`)". Record
-`account: new` or `account: existing` under Run.
+If they said "customize", add the five stack questions after this step's message
+(`references/setup/customize.md` §1).
 
 ### Option 1: create a new account
 
@@ -21,10 +16,10 @@ If preflight shows `signadot_login: <org>`, add to option 2: "(this computer is 
 last name in one line, then:
 
 1. Open `https://www.signadot.com/signup`. It opens on the Sign Up tab.
-2. Type the email, or let the user choose Google or GitHub sign-in. Then hand over: "Please type a password in the
-   browser window and press Continue. Then open the verification email and click the link. Tell me when you've done
-   that."
-3. When they confirm, click "I've verified my email" in the original tab; it doesn't refresh by itself.
+2. Suggest Google or GitHub sign-in first: no password and no verification email. With an email instead, type it,
+   then hand over: "Please type a password in the browser window and press Continue. Then open the verification
+   email and click the link. Tell me when you've done that."
+3. With an email, when they confirm, click "I've verified my email" in the original tab; it doesn't refresh by itself.
 4. On "Create a new Organization", fill Organization Name, First Name and Last Name, and put
    `Signadot trial agent skill` in "How did you hear about us". Tick the Terms box only if the user said so;
    otherwise ask them to tick it. Submit.
@@ -34,10 +29,10 @@ last name in one line, then:
 ```markdown
 **Create your Signadot account:**
 
-1. Open https://www.signadot.com/signup and sign up with your email, Google or GitHub.
-2. With an email: type a password, click the link in the verification email, then go back to the signup tab and
-   click "I've verified my email".
-3. Create your organization (any name works, for example "Acme trial") with your first and last name. Put
+1. Open https://www.signadot.com/signup and sign up with **Google or GitHub**: it's quickest, with no password or
+   verification email. (With an email instead: type a password, click the link in the verification email, then go
+   back to the signup tab and click "I've verified my email".)
+2. Create your organization (any name works, for example "Acme trial") with your first and last name. Put
    "Signadot trial agent skill" under "How did you hear about us", accept the Terms, and submit.
 
 **Tell me when you see the Signadot dashboard,** and I'll connect the trial to your new account.

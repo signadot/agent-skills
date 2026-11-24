@@ -9,7 +9,9 @@ The page's four sections come from these (`references/finish/report.md`, "Writin
 
 - **The demo app:** HotROD; route is the changed service, and it runs on this computer.
 - **The change:** one line in route's code (`services/route/server.go`, the trial's patch) makes ETAs seconds
-  instead of minutes. Route is built and run on this computer; nothing is built into an image or deployed.
+  instead of minutes. Then a second change, made during the scenario by the agent or the user (ETAs between 10 and
+  20 seconds), is rebuilt, restarted and proven in seconds. Route is built and run on this computer; nothing is
+  built into an image or deployed.
 - **The sandbox:** a local sandbox: no pod in the cluster. It maps the cluster's route to the route process on this
   computer (port 8083), which uses the cluster's Redis. Also created: that local process and, with the no-sudo
   connection, a port-forward to Redis.
@@ -26,7 +28,8 @@ SKILL.md's flow starts this in the background right after the CLI is installed, 
 mkdir -p "$T/hotrod" && cd "$T/hotrod"
 [ -d .git ] || { git init -q && git remote add origin https://github.com/signadot/hotrod.git; }
 git fetch -q --depth 1 origin b16178651580a8ba3ceb45ac7c59f4579611b0b3 && git checkout -q FETCH_HEAD
-git apply --reverse --check "$S/assets/patches/route-eta.patch" 2>/dev/null || git apply "$S/assets/patches/route-eta.patch"
+git apply --reverse --check "$S/assets/patches/route-eta.patch" 2>/dev/null || grep -q '(20-10) + 10' services/route/server.go \
+  || git apply "$S/assets/patches/route-eta.patch"
 ```
 
 Build with Go if preflight shows 1.27.1 or newer (HotROD's `go.mod` asks for 1.27.1). The variables keep Go's module
@@ -100,12 +103,37 @@ exporting traces to `jaeger.hotrod` are harmless: there is no tracing backend in
 especially), routing to the local process can take a few seconds to apply after the sandbox is ready: if the route
 hop still shows `baseline`, book another keyed ride.
 
-Then show the edit loop, and time it: run the same build command again (it builds to the staging path and moves
-the binary into place), stop the route process (the stop command above, or just its `route-local` PID), and start it
-again with the start command under Run.
+### Change the code and prove it again
 
-Done when build plus restart takes a few seconds, with no image build or deploy, and the next keyed ride reaches the
-new process (`Finding route` in `$T/logs/route-local.log`).
+The loop a developer runs with their agent: change the code, rebuild, restart, and prove the change through the
+cluster with a keyed ride, with no image build or deploy. The `signadot-validate` agent skill runs the same loop on
+their own services.
+
+**Step by step,** first offer the user the change to make themselves, as they would ask their agent, in the result
+message after the proof above:
+
+```markdown
+Route is running on your computer, and the cluster sends it only rides with your key. Now change its code the way
+you would with your own service: send me this prompt, or edit it.
+
+> Change route so every ETA is between 10 and 20 seconds, then rebuild, restart it and prove it with a keyed ride.
+
+Or say "go on" and I'll make that change myself.
+```
+
+**All at once,** or on "go on", make that change yourself. Either way, time it from the edit to the proof:
+
+1. **Edit** `$T/hotrod/services/route/server.go`: in `FindRoute`, change the ETA line to
+   `eta := time.Duration((rand.Float64()*(20-10) + 10) * float64(time.Second))`. Show the user the changed line. (If
+   they asked for a different change, make theirs, and adapt the check in step 4.)
+2. **Build** with the same build command as Set up (it builds to the staging path and moves the binary into place).
+3. **Restart:** stop the route process (the stop command above, or just its `route-local` PID), then start it again
+   with the start command under Run.
+4. **Prove it:** `bash "$S/scripts/ride.sh" --proxy <proxy> --key <local-route routing key>`.
+
+Done when the keyed ride's ETA is between 10 and 20 seconds with the hop `route local-route<suffix>`, the new
+process logs it (`Finding route` in `$T/logs/route-local.log`), and edit to proof took seconds. Then send the
+scenario's result: the first proof, the change, and the timed loop.
 
 ## Record
 
@@ -117,7 +145,8 @@ baseline: ETA <minutes>
 sandbox: ETA <seconds>
 hops-baseline: <hops line>
 hops-sandbox: <hops line, route served by local-route<suffix>; draw it as a "box local">
-proof: route ran on this computer for keyed requests; rebuild and restart took <n> s
+proof: route ran on this computer for keyed requests; after the code change, the keyed ride's ETA was <10–20 s> and edit to proof took <n> s
+change: <the changed line, or the user's own change>
 commands: sd sandbox apply -f assets/specs/core/local-route.yaml …; sd sandbox get-env local-route<suffix>; hotrod route
 specs: assets/specs/core/local-route.yaml, assets/patches/route-eta.patch
 links: https://www.signadot.com/docs/tutorials/quickstart/local-development
@@ -130,11 +159,10 @@ try: edit <T>/hotrod/services/route/server.go, rebuild, restart, and book a ride
 - **Sandbox:** request a ride on the sandbox's link: ETAs in seconds, from route on this computer.
 - **Check:** follow `Finding route` in the local process's log, `tail -f <T>/logs/route-local.log | grep --line-buffered 'Finding route'`,
   and in the normal route (`deploy/route`): sandbox rides appear only in the local log.
-- **More:** the edit loop, led by the agent. Put a prompt the user can give their agent first, for example: "Change
-  route so ETAs are between 10 and 20 seconds, then rebuild, restart it and prove it with a ride through the
-  sandbox's link." The agent edits `<T>/hotrod/services/route/server.go` and runs the loop under Prove it. That's
-  the same loop the `signadot-validate` agent skill runs for the user's own services. Then, collapsed as a fallback
-  for doing it by hand, the commands: the build command, the stop command and the start command. If the process or the Redis port-forward stopped (after a reboot), the agent starts them again with the
+- **More:** another change, led by the agent. Put a prompt the user can give their agent first, for example: "Change
+  route so every ETA is exactly 42 seconds, then rebuild, restart it and prove it with a ride through the sandbox's
+  link." That's the same loop the `signadot-validate` agent skill runs for the user's own services. Then, collapsed
+  as a fallback for doing it by hand, the commands: the build command, the stop command and the start command. If the process or the Redis port-forward stopped (after a reboot), the agent starts them again with the
   commands under Run.
 
 ## Tear down

@@ -142,8 +142,14 @@ The CLI records the branch, so `npx skills update` in the same folder later pick
 pin one commit instead, use a tree URL with the full 40-character SHA (a short SHA fails):
 `npx skills add https://github.com/signadot/agent-skills/tree/<full commit SHA>/skills/signadot-trial`.
 
-1. **Default path:** "try Signadot", default choices, a new org. The first message is the plan (the three basics),
-   the basics run one by one with a menu of more after them, and progress lines show no file names or step IDs. The basics pass; each scenario's page opens after it and the trial waits before the next one; the hand-off
+1. **Default path:** "try Signadot", default choices, a new org. The first message is the plan (the three basics,
+   one line on what else there is, the account question and the "customize" offer), and the first result comes
+   after three replies: the plan, signup done, login confirmed. The tour doesn't wait; the first scenario changes
+   route; its result is in chat before its page, with how the key traveled and the sandbox's dashboard link; then
+   the menu and the pace. After the two-service scenario, the three rides give three different answers; the third
+   scenario changes route's code (ETAs of 10–20 s) and proves it, timed. The closing message gives the next step
+   (an operator on a dev cluster and `signadot-validate`). The cluster's dashboard page opens once, when it
+   connects. Progress lines show no file names or step IDs. The basics pass; each scenario's page opens after it and the trial waits before the next one; the hand-off
    lists what's running; the first sandbox's preview link gives 1s ETAs and the baseline link doesn't; every page has the
    same four sections (the demo app, the change, the sandbox, test it yourself), every try-it step works as written
    (baseline flow, sandbox flow, the check shows which version handled each), and command blocks copy. After the page's sudo reconnect,
@@ -164,16 +170,16 @@ pin one commit instead, use a tree URL with the full 40-character SHA (a short S
 5. **Teardown:** org lists are clean, the kind cluster is gone, `~/.kube/config` and the kube context are unchanged,
    the trial log is renamed, and a new "try Signadot" starts fresh.
 6. **Another agent:** repeat the default path with a second coding agent product.
-7. **Customized path:** "try Signadot", choose "I already have an account" and then, on a second run, "Create a new
-   account": each gets the matching steps, and the login message says to sign in after Confirm. Choose Customize and
-   answer the five questions in your own words, with a mesh and two brokers (one with a demo, one without). The plan
-   installs the mesh during setup, suggests the right add-ons, names the broker without a demo, and asks "step by
-   step or all at once". Step by step: what's left after each scenario is a list, one per line. All at once: no
-   pauses except the steps only the user can do, then a summary. The hand-off writes `fit.html` ("Is Signadot a
-   good fit?", a verdict and every status from the matrix with a guide link per row), the overview shows the
-   verdict with a button to it, then it asks "anything else?". Ask about pricing and a competitor: the answers cite
-   `/pricing/` and `/comparison/<tool>/`. On the standard path there's no fit page; the overview shows the fit
-   checklist. The agent never reads files outside its working folder.
+7. **Customized path:** reply to the plan with "customize" and "I already have an account", then, on a second run,
+   "create a new account": each gets the matching steps, with the five questions in the same message, and the login
+   message says to sign in after Confirm. Answer the questions in your own words, with a mesh and two brokers (one
+   with a demo, one without). After the first scenario, the menu suggests the right add-ons and the mesh, names the
+   broker without a demo, and asks "step by step or all at once". Step by step: what's left after each scenario is a
+   list, one per line. All at once: no pauses except the steps only the user can do, then a summary. The hand-off
+   writes `fit.html` ("Is Signadot a good fit?", a verdict and every status from the matrix with a guide link per
+   row), the overview shows the verdict with a button to it, then it asks "anything else?". Ask about pricing and a
+   competitor: the answers cite `/pricing/` and `/comparison/<tool>/`. Without answers, the hand-off offers the
+   questions once, and the overview shows the fit checklist. The agent never reads files outside its working folder.
 8. **WSL:** the default path and one demo-app add-on on Windows with WSL2 and Docker Desktop. Preflight shows
    `wsl: yes`; pages and the login link open in the Windows browser (`explorer.exe`), not a Linux browser inside
    WSL; every link the user is asked to open is a preview link; RabbitMQ's images build for amd64.
