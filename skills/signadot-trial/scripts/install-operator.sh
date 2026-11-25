@@ -9,8 +9,10 @@ OPERATOR_VERSION=1.4.0   # the chart version the skill was verified with (see te
 usage() {
   echo "Usage: install-operator.sh --trial-dir <dir> --cluster <name> [--values <file>] [--namespace hotrod]"
   echo "       [--workloads driver,frontend,location,route] [--proxy sd-sidecar|istio-proxy|linkerd-proxy|none]"
+  echo "       [--register-only]   register the cluster in the org and stop (run right after login)"
+  echo "Exit 9: the org's cluster limit is reached (see references/troubleshooting.md, \"Cluster limit\")."
 }
-T="" CLUSTER="" VALUES="" NS=hotrod WORKLOADS=driver,frontend,location,route PROXY=sd-sidecar
+T="" CLUSTER="" VALUES="" NS=hotrod WORKLOADS=driver,frontend,location,route PROXY=sd-sidecar REGONLY=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --trial-dir) T=$2; shift 2 ;;
@@ -19,6 +21,7 @@ while [ $# -gt 0 ]; do
     --namespace) NS=$2; shift 2 ;;
     --workloads) WORKLOADS=$2; shift 2 ;;
     --proxy) PROXY=$2; shift 2 ;;
+    --register-only) REGONLY=1; shift ;;
     -h|--help) usage; exit 0 ;;
     *) usage >&2; exit 2 ;;
   esac
@@ -40,11 +43,17 @@ if echo "$clusters" | tr -d ' \n' | grep -q "\"name\":\"$CLUSTER\""; then
 else
   if ! addout=$("$SD" cluster add --name "$CLUSTER" 2>&1); then
     echo "$addout" | sed "s/token='[^']*'/token='<redacted>'/g" > "$T/logs/cluster-add.log"
+    if grep -qi 'limit reached' "$T/logs/cluster-add.log"; then
+      echo "error: the org's cluster limit is reached, so $CLUSTER can't be registered; see $T/logs/cluster-add.log" >&2
+      echo "earlier trial clusters in the org: $(echo "$clusters" | grep -oE '"name": *"signadot-trial[^"]*"' | sed 's/.*"\([^"]*\)"$/\1/' | tr '\n' ' ')" >&2
+      exit 9
+    fi
     echo "error: signadot cluster add failed; see $T/logs/cluster-add.log" >&2; exit 4
   fi
   addtok=$(echo "$addout" | sed -n "s/.*token='\([^']*\)'.*/\1/p" | head -1); addout=""
   registered=added
 fi
+if [ "$REGONLY" = 1 ]; then echo "cluster: $CLUSTER ($registered)"; exit 0; fi
 
 # 2. Install the operator (once), with the token from `cluster add`, or a new one if the cluster was registered before.
 #    If it's installed and --values is given, apply the values to it (turning a mesh on or off); --reuse-values keeps

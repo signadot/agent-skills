@@ -1,7 +1,8 @@
 # Teardown
 
 Only when the user asks. Before starting, list what will be removed (from the trial log's `## Resources`) and what
-stays, and get a yes. Never touch anything the trial log doesn't list: not the user's own login or `~/.signadot`, not
+stays, and get a yes. If their request already says to remove everything ("tear it all down", "yes, remove
+everything"), that's the yes: list what you're removing as you go instead of asking again. Never touch anything the trial log doesn't list: not the user's own login or `~/.signadot`, not
 another local connection.
 
 ## Order
@@ -23,8 +24,10 @@ another local connection.
    "$T/bin/sd" routegroup delete hotrod-baseline<suffix>
    ```
 
-3. **The connection,** only if it's the trial's: when `"$T/bin/sd" local status` shows
-   `cluster signadot-trial<suffix>`, run `"$T/bin/sd" local disconnect`. Leave any other connection alone.
+3. **The connection,** only if it's the trial's, and before the cluster goes: when `"$T/bin/sd" local status` shows
+   `cluster signadot-trial<suffix>`, run `"$T/bin/sd" local disconnect`. Leave any other connection alone. (After
+   the kind cluster is deleted, `local status` errors with `context "kind-signadot-trial" does not exist`; that's
+   expected, so don't run it again.)
 4. **The cluster.**
    - If the trial created the kind cluster (`created_kind_cluster: yes`):
      `kind delete cluster --name signadot-trial --kubeconfig "$T/kubeconfig"`.
@@ -44,10 +47,12 @@ another local connection.
 6. **Retire the trial log,** so a later trial starts fresh instead of resuming this one:
 
    ```bash
-   mv "$T/trial-log.md" "$T/trial-log.torn-down-$(date +%Y%m%d-%H%M%S).md"
+   mv "$T/trial-log.md" "$T/trial-log.torn-down-$(date -u +%Y%m%d-%H%M%SZ).md"
    ```
 
-7. **The trial folder,** only on a separate yes. It holds the CLI, the trial's login and connection settings, the
+7. **The trial folder,** only on a separate yes. If they keep it, remove the stale `route-local.pid` and
+   `redis-pf.pid` files, and tell them where the report is (`<trial folder>/report/index.html`) and that they can ask
+   you to delete the folder later. It holds the CLI, the trial's login and connection settings, the
    HotROD build, the report and the logs. Offer to copy the report somewhere first. Use the literal path preflight
    printed (for example `/Users/me/project/.signadot-trial`), never a variable that could be empty:
 
@@ -55,14 +60,17 @@ another local connection.
    chmod -R u+w "/Users/me/project/.signadot-trial" && rm -rf "/Users/me/project/.signadot-trial"
    ```
 
-Locally built demo images stay in Docker on the host (for example `temporal-money-transfer:v1.0`); mention
-`docker image rm <image>` if the user wants the space back.
+Images the trial pulled or built stay in Docker on the host: the `golang:1.27.1` image when route was built in a
+container (about 900 MB), and locally built demo images (for example `temporal-money-transfer:v1.0`). Mention
+`docker image rm <image>` for each if the user wants the space back.
 
 ## Left for the user
 
-Tell them, as a short list:
+Tell them, as a short list, the cluster first:
 
-- Remove the cluster registration in the dashboard: Settings → Clusters → `signadot-trial<suffix>`.
+- **Delete the cluster's registration** at `https://app.signadot.com/cluster/signadot-trial<suffix>` (or Settings →
+  Clusters). The CLI can't remove it, and until it's gone it holds one of the org's clusters: a free org allows one,
+  so the next trial can't start.
 - If testing ran: revert the org settings recorded as `org_setting` (the plan runner on the cluster and the allowed
   Playwright image), if they don't want them.
 - The org and the account stay. The trial's CLI login was in the trial folder; to use Signadot from their own CLI,

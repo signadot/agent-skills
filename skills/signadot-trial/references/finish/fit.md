@@ -22,14 +22,17 @@ page; the overview shows a short fit checklist instead (`references/finish/repor
 
 ## The verdict
 
-One word, from the statuses of the rows (not from how the trial went):
+One word, from the statuses of the stack rows (not from how the trial went). Count the rows that are ✓ or ⚠:
 
-- **Yes:** every item they named is ✓ or ⚠. The ⚠ work goes under "What an install in your cluster takes".
-- **Partially:** their services run on Kubernetes, but at least one item they named is ✗ or ?.
+- **Yes:** the services they'd test run on Kubernetes, and about 80% or more of the rows are ✓ or ⚠. A minority gap
+  (a few services on ECS, one queue with no guide) doesn't change that: name each ✗, ? and ⚠ row in the summary
+  and in "What an install in your cluster takes", as what isn't covered or needs extra work.
+- **Partially:** the services they'd test run on Kubernetes, but fewer than about 80% of the rows are ✓ or ⚠.
 - **No:** the services they'd test don't run on Kubernetes (Signadot runs sandboxes inside a Kubernetes cluster;
-  the matrix's "Fully hosted" and "VMs / ECS / Lambda" rows), or every item they named is ✗.
+  the matrix's "Fully hosted" and "VMs / ECS / Lambda" rows), or almost nothing they named is covered.
 
-Then two sentences: what's covered today, and the biggest gap or piece of work, by name.
+Then two sentences: what's covered today, and what isn't or needs work, by name (for a Yes: "Yes, with two
+things to plan for: …").
 
 ## The page
 

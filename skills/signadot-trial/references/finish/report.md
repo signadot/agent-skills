@@ -22,7 +22,7 @@ before this.
 3. **The overview:** copy `assets/report/index.html` to `$T/report/index.html` again and fill it from the trial log,
    so it's always current (see "The overview page").
 4. **Open the scenario page** with `open` (macOS), `xdg-open` (Linux), or `explorer.exe "$(wslpath -w <page>)"` when
-   preflight shows `wsl: yes`, and give the user its path, with the questions prompt and what's next (SKILL.md,
+   preflight shows `wsl: yes` (it exits with code 1 even when it worked; ignore that), and give the user its path, with the questions prompt and what's next (SKILL.md,
    "After each scenario").
 5. **Make its cluster links work.** Prefer preview links: every demo app's UI has one (the `*-tools` route groups in
    the Temporal, RabbitMQ and Redis Streams files), and they open in any browser signed in to the org with no setup.
@@ -139,7 +139,8 @@ The template's diagram is the finished one for isolated-change. Keep its layout 
     Linkerd, title the pod "pod of the normal route, with Linkerd's proxy".
   - **Istio sidecar mode, source side:** the caller's Envoy sidecar decides, so the `router` ("Envoy") goes inside
     the caller's `pod` instead, and the normal route is a plain box. For route, replace the template's driver, its
-    line to Redis, the route pod (rectangle, title, sidecar and route box) and the lanes from driver on with:
+    line to Redis, the route pod (rectangle, title, sidecar and route box) and the lanes from driver on with the
+    block below (keep the template's Redis box; the new line meets it):
 
     ```html
     <rect class="pod" x="480" y="120" width="200" height="80" rx="10"/><text class="sub" x="672" y="112" text-anchor="end">pod of driver, the caller</text>
@@ -257,7 +258,8 @@ next steps are for the agent to offer in chat, not for this page.
   result and its time; one that hasn't run yet gets the `next` pill and no link. Then the `MORE` line while
   something on the menu hasn't been tried.
 - **urls** ("Open the demo app"), below the scenarios: the baseline link, then each scenario's sandbox link with
-  what to look for (see "App links").
+  what to look for (see "App links"). A mesh copy's baseline link goes in the sandboxes column, labelled "The
+  <mesh> copy's baseline: ETAs in minutes".
 - **Look at the cluster yourself** (a fixed section): replace `TRIAL_FOLDER` with the trial folder's full path. It
   tells the user why `kubectx` doesn't show the trial's cluster and how to see it.
 

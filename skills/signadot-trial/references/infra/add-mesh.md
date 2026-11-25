@@ -83,7 +83,8 @@ user to run `"$T/bin/sd" local connect` again in their own terminal.
 
 ## 5. Mesh check and baseline link
 
-Run the mesh file's "Mesh check" with `-n hotrod-<mesh>`. Then the copy's baseline link, a route group that matches
+Run the mesh file's "Mesh check" with `-n hotrod-<mesh>`. A check that reads sandbox routes (Istio's count of
+Signadot's rules in route's VirtualService) only shows them once §6's sandbox exists: run that part after it. Then the copy's baseline link, a route group that matches
 no sandbox:
 
 ```bash

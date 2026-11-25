@@ -7,7 +7,8 @@ What each key decides:
 
 - `wsl: yes`: Linux inside Windows (WSL2), where the user's browser runs on the Windows side. Open pages and links
   with `explorer.exe "$(wslpath -w <file>)"` (a file) or `explorer.exe "<url>"` (a link), never `xdg-open`, which
-  starts a Linux browser inside WSL instead. Cluster addresses (`.svc`) never open in that browser, even with the
+  starts a Linux browser inside WSL instead. `explorer.exe` exits with code 1 even when it opens the page, so ignore its
+  exit code; the user sees the page, and you give the path or link in chat anyway. Cluster addresses (`.svc`) never open in that browser, even with the
   sudo connection, so use preview links (see `references/finish/report.md`, "App links").
 - `docker: wsl-integration-off`: Docker Desktop is installed on Windows but not connected to this WSL distro. Ask
   the user to turn it on: Docker Desktop → Settings → Resources → WSL integration → this distro → Apply & restart.
@@ -25,7 +26,8 @@ What each key decides:
 - `apparmor_userns: restricted`: Plans can't run until the user changes a kernel setting (troubleshooting.md,
   Testing). Mention it when they pick automated tests.
 - `trial_dir`: the trial folder `T`. Use this absolute path in every command.
-- `signadot_login`: the org the user's own CLI is logged in to, if any. The trial never uses or changes that login
+- `signadot_login`: the org the user's own CLI is logged in to, if any (`unknown` when they have no Signadot CLI
+  yet: say nothing about it). The trial never uses or changes that login
   (it has its own in `$T/home`), but the account step offers that org as an alternative to signing up.
 - `local_connect`: a connection is running. `(trial)` means it is the trial's own from an earlier run; otherwise see
   "Another local connection is running" in SKILL.md.

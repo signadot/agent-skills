@@ -147,7 +147,7 @@ pin one commit instead, use a tree URL with the full 40-character SHA (a short S
    after three replies: the plan, signup done, login confirmed. The tour doesn't wait; the first scenario changes
    route; its result is in chat before its page, with how the key traveled and the sandbox's dashboard link; then
    the menu and the pace. After the two-service scenario, the three rides give three different answers; the third
-   scenario changes route's code (ETAs of 10–20 s) and proves it, timed. The closing message gives the next step
+   scenario changes route's code (ETAs of 50–60 s, outside the patch's 3–45 s) and proves it, timed. The closing message gives the next step
    (an operator on a dev cluster and `signadot-validate`). The cluster's dashboard page opens once, when it
    connects. Progress lines show no file names or step IDs. The basics pass; each scenario's page opens after it and the trial waits before the next one; the hand-off
    lists what's running; the first sandbox's preview link gives 1s ETAs and the baseline link doesn't; every page has the

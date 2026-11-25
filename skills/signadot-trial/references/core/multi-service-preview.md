@@ -116,4 +116,4 @@ Kafka and the automated tests reuse `driver-plates<suffix>`, so delete it only a
 ## Docs
 
 https://www.signadot.com/docs/tutorials/multi-pr-feature-testing.md. The tutorial builds images for each pull
-request; the trial uses prebuilt ones.
+request; the trial uses prebuilt ones. Route groups: https://www.signadot.com/docs/reference/route-groups/spec.md.

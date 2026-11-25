@@ -53,9 +53,23 @@ the CLI looks for the workload in another cluster. Fix the `local:` block, then 
 baseline started before the operator was installed, so it has no routing proxy. Restart it:
 `"$T/bin/kc" -n <ns> rollout restart deploy`; the sandbox turns Ready within seconds.
 
-**An apply fails with a limit, such as "can't go over" a number of clusters or sandboxes.** The org is at one of its
-plan's limits, which is likely in an existing org. Delete sandboxes or clusters it no longer needs, or ask the user
-which to remove; see https://www.signadot.com/docs/guides/admin/quotas-limits.md.
+**Cluster limit** (`install-operator.sh` exits 9; `cluster-add.log` says "Limit reached: Clusters (numClusters), 1
+allowed"). The org can't register another cluster; a free org allows one. The script lists earlier trial clusters
+(`signadot-trial-…`). The CLI can't delete a cluster, so ask the user one question, with these choices:
+
+1. **An earlier trial's cluster:** if that trial is still running on another computer, tear it down there ("tear
+   down the Signadot trial"); otherwise delete its sandboxes and route groups (`"$T/bin/sd" sandbox list`, names
+   ending in its suffix) and have the user delete the cluster at `https://app.signadot.com/cluster/<its name>`.
+2. **Another cluster they still use:** ask their Signadot admin to raise the limit, or stop the trial here.
+
+When they say it's done, run the `--register-only` command again (`references/setup/account.md` §2).
+
+**An apply fails with another limit, such as a number of sandboxes.** The org is at one of its plan's limits, which
+is likely in an existing org. Delete sandboxes it no longer needs, or ask the user which to remove; see
+https://www.signadot.com/docs/guides/admin/quotas-limits.md.
+
+**The login says "The device code has expired".** The user took longer than a few minutes to confirm. Run the login
+commands again and send the new link and code (`references/setup/account.md` §2).
 
 **A sandbox doesn't become ready.** Read `status.message`, then `describe` its pod (fork pods are named
 `<sandbox>-dep-<workload>-…`). HotROD's sandbox images are amd64; on Apple Silicon they run under emulation, which

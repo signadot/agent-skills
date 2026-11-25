@@ -132,7 +132,7 @@ The "Tell the user" column is how each step appears in your progress lines.
 | 2 | `cli` | Installing the Signadot CLI | `bash $S/scripts/install-cli.sh --trial-dir $T [--reuse <their signadot>]` | `sd`, `kc` and `hm` exist; then start local-development's "Set up" (fetch, patch, build) in the background |
 | 3 | `cluster` (in the background) | Creating a local Kubernetes cluster with the demo app | [references/setup/cluster.md](references/setup/cluster.md) §1–2, with a mesh file's install if the first request named a mesh | HotROD ready |
 | 4 | `account` ★ | Creating your Signadot account | [references/setup/account.md](references/setup/account.md) §1 | the dashboard loads |
-| 5 | `login` | Logging the trial's CLI in to your org | [references/setup/account.md](references/setup/account.md) §2 | `sd auth status` shows the trial org |
+| 5 | `login` | Logging the trial's CLI in to your org | [references/setup/account.md](references/setup/account.md) §2 | `sd auth status` shows the trial org, and the trial's cluster is registered (`--register-only`; a cluster limit is caught here) |
 | 6 | `operator` | Installing Signadot in the cluster | [references/setup/cluster.md](references/setup/cluster.md) §3 (`scripts/install-operator.sh`) | `sidecars` shows all workloads; the cluster's dashboard page opened once and linked in chat (see "Dashboard links") |
 | 7 | `connect` | Connecting this computer to the cluster | [references/setup/cluster.md](references/setup/cluster.md) §4 | the frontend answers 200 through the connection |
 | 8 | `baseline` | Booking a ride on the unchanged app | [references/setup/cluster.md](references/setup/cluster.md) §5 (`scripts/ride.sh`, then the baseline link) | a plate and an ETA, every hop `baseline`; `baseline_url` recorded; the baseline tour sent |
@@ -147,7 +147,8 @@ the first scenario straight away; pause only after a scenario. If your shell can
 run it in the foreground and show progress.
 
 **Existing org.** If the user signs in to an org they already have, every org-scoped name gets the suffix
-`-<4 random lowercase letters or digits>` (empty for an org the trial created). Record it as `suffix:` and pass
+`-<4 random lowercase letters or digits>` (empty for an org the trial created). Create it as soon as the plan's
+reply says they have an account (before the login, which mentions it), and record it as `suffix:` and pass
 `--set suffix=<suffix>` to every spec. The Signadot cluster is named `signadot-trial<suffix>`; the kind cluster stays
 `signadot-trial`.
 
@@ -199,6 +200,9 @@ You'll get the scenarios that fit your stack and a page on whether Signadot is a
 Reply "go ahead" with 1 or 2 (and "customize" if you'd like).
 ```
 
+- **Installs:** the "kind and helm are missing, so I'll install them: `…`" sentence only when something is missing,
+  with the real command. "About 6 minutes" is for a first run; say "a few minutes" when preflight's tools and Docker
+  images are already there from an earlier trial.
 - **Cluster:** if preflight lists local clusters, add: (say "use `<context>`" to use your local cluster instead).
 - **Memory:** if `docker_mem_gb` is under 4, say so and how to raise it before asking for the OK.
 - **First request named more:** add one line, e.g. "Kafka is included, as you asked; it runs after the basics.", or
@@ -215,7 +219,9 @@ Reply "go ahead" with 1 or 2 (and "customize" if you'd like).
 The add-ons and meshes, numbered after the basics. Shown after the first scenario ("After the first scenario"), and
 after the basics for what's not picked yet ("After the basics"). Each option says what it sets up, what it proves, and what it
 needs or changes, so the user can choose without asking. Always one numbered item per line, never several on one
-line.
+line. When the numbers aren't consecutive (suggested items, what's left), write them as bullets with the number in
+bold (`- **5. Kafka** …`), never as a markdown numbered list: chat apps renumber a numbered list (4, 5, 9, 10 shows as
+4, 5, 6, 7), so the numbers would stop matching the menu.
 
 ```markdown
 **Add-ons** · optional · each runs on its own, with its own page
@@ -304,8 +310,8 @@ Reply with the add-ons you'd like (numbers, "all", or "none for now") and "step 
 ```
 
 - **If they answered the stack questions:** in place of the full menu, the add-ons their answers point to
-  ([references/setup/customize.md](references/setup/customize.md) §3), with their menu numbers and explainers, under
-  "**Suggested for your stack**", then what the trial can't demo ("**Not in the demo, covered on the fit page:**
+  ([references/setup/customize.md](references/setup/customize.md) §3), as bullets with their menu numbers in bold and
+  their explainers, under "**Suggested for your stack**", then what the trial can't demo ("**Not in the demo, covered on the fit page:**
   SQS"), then "Or anything else from the full menu: say "show the full menu"." If they named a mesh, suggest it
   (it runs after the basics, in its own copy of the demo app).
 - **First request named more:** list it as already picked.
@@ -345,8 +351,8 @@ the questions prompt and what's left, and wait for the user's answer.
 **What changed:** the sandbox `fast-route` runs a second copy of route with `FAST_ROUTE=1`, next to the normal one.
 **How I verified it:** the same ride, twice. Without the routing key: the normal route, ETA 23m14s. With it: the
 sandbox's route, ETA 1s. Every other service answered as the normal version both times.
-**How the key got there:** the preview link added it as OpenTelemetry `baggage`; each service passed it on, over
-HTTP and inside the Kafka message, to the sidecar in front of route. Your services need to pass it along the same
+**How the key got there:** the ride carried it as OpenTelemetry `baggage`, as the preview link adds it; each service
+passed it on, over HTTP and inside the Kafka message, to the sidecar in front of route. Your services need to pass it along the same
 way (OpenTelemetry does it). MySQL and Redis stayed shared: a sandbox reads and writes the shared data unless it
 gets its own (the database add-on shows that).
 **Review it:** book a ride through https://frontend--fast-route.preview.signadot.com (every ETA is 1 second); the
@@ -367,7 +373,8 @@ Any questions about what just happened, or how Signadot did it?
 Say "go on" for the next one, "skip", "all at once" to run the rest without stopping, or "stop here".
 ```
 
-- Keep the result to those four short lines. "How the key got there" is for the first two basics (for the
+- Keep the result to those four short lines, plus anything the scenario file asks for in the result (the
+  two-service scenario's three-rides table). "How the key got there" is for the first two basics (for the
   two-service scenario: the route group's link added one key, and driver read it from the Kafka message); later
   scenarios say how the key traveled in their own words in "How I verified it" only when it's new (a message header,
   a workflow header).
@@ -385,7 +392,7 @@ Say "go on" for the next one, "skip", "all at once" to run the rest without stop
 **All at once.** Before each scenario, its progress line (see "Showing progress"); after it, write its page as
 usual and send one line: `✓ <menu name> · <the proving values> · <its page>` (or `✗` and what was seen), then go on.
 At the hand-off, before anything else, send the summary: one line per scenario with what it proved and its preview
-link, the overview page, and then the questions prompt.
+link, and the overview page (`references/finish/playground.md` §3).
 
 ## Dashboard links
 

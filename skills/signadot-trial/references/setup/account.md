@@ -99,7 +99,7 @@ org; nothing on your computer outside the trial folder changes.
 2. Check that the page shows the code **WXYZ-1234**, and click **Confirm**.
 3. Sign in with your Signadot account if the page asks you to. The connection completes only after you've signed
    in.
-4. Tell me when you've done both.
+4. Tell me when you've done both. The code expires after a few minutes; if it does, tell me and I'll send a new one.
 ```
 
 Then check that the login finished:
@@ -108,10 +108,22 @@ Then check that the login finished:
 "$T/bin/sd" auth status | grep -E "^(Status|Organization)"   # repeat every few seconds for up to a minute
 ```
 
-If it isn't `Authenticated` after the user confirmed and signed in, look at `login.log`: if the login stopped (the code expired,
-or it was confirmed in the wrong account), run the login commands again and send the new link and code the same way.
+If it isn't `Authenticated` after the user confirmed and signed in, or they say the code expired, look at
+`login.log`: if the login stopped ("The device code has expired", or it was confirmed in the wrong account), run the
+login commands again and send the new link and code the same way, in a short message that says the old one expired.
 
 Done when it shows `Authenticated` and `Organization: <org>`. Signadot derives the org's short name from the name
 typed, for example "Acme Trial" becomes `acmetrial`; use the short name from here on. Record the step with the org.
-Never print the token line from `auth status` in your messages or the trial log. Command reference:
+Never print the token line from `auth status` in your messages or the trial log.
+
+**Register the trial's cluster now,** before the rest of setup, so an org that's at its cluster limit is caught
+straight away rather than after the cluster is built (an org on the free plan allows one cluster, and an earlier
+trial's registration may still hold it):
+
+```bash
+bash "$S/scripts/install-operator.sh" --trial-dir "$T" --cluster <cluster> --register-only
+```
+
+It prints `cluster: <cluster> (added)` (or `(existing)` on a resumed trial). Exit 9 means the cluster limit is
+reached: follow `references/troubleshooting.md`, "Cluster limit", before going on. Command reference:
 https://www.signadot.com/docs/reference/cli/auth.md.
