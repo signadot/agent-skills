@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your Signadot trial</title>
+<!--
+  The overview page (see references/finish/report.md): what the trial did, whether Signadot is a good fit, one row
+  per scenario, and the demo app's links. Rebuild it from this template after each scenario, so it's always current.
+  - Replace TRIAL_FOLDER with the trial folder's full path. If the trial used an existing local cluster, name its
+    context in that section and drop the sentence about kind.
+  - Each slot is one comment that starts with FILL and a name, holding example markup. Replace the whole comment with
+    real content in the same shape.
+  - Copy the ROW block once per scenario that ran or is to go, in run order, then the MORE line if anything is left
+    to try. Keep this page short: the detail is on each scenario's page.
+  - Every command goes in its own <div class="cmd"> block, ready to paste: full paths, no placeholders.
+  - Escape <, > and & in anything copied from command output. Nothing loads from the network.
+-->
+<link rel="stylesheet" href="report.css">
+<script src="report.js" defer></script>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<p class="eyebrow">Signadot trial</p>
+<h1><!-- FILL:title e.g. Your Signadot trial: 3 scenarios proven, 1 to go --></h1>
+<!-- FILL:summary
+  <p class="meta"><span class="pill passed">3 passed</span><span class="pill next">1 to go</span>
+  <span>· org ORG · cluster CLUSTER · DATE</span></p>
+-->
+<!-- FILL:overview  (2 or 3 sentences: what the trial set up and ran, and what it showed; see report.md)
+<p class="intro">This trial set up HotROD, a small ride-booking app, in a Kubernetes cluster on your computer with
+Signadot installed, and ran 3 scenarios. They showed that a sandbox runs only the services you change, next to the
+shared app; that a routing key on a request decides which version handles it, over HTTP and through Kafka; and that
+two changes can be previewed together through one link.</p>
+-->
+</header>
+
+<!-- FILL:fit  (keep one of the two versions below; see report.md, "The overview page")
+<section id="fit" class="fit">
+<h2>Is Signadot a good fit?</h2>
+<div class="verdict partial"><span class="verdict-word">Partially</span>
+<p>Signadot covers your Kubernetes services on Istio, and your HTTP, gRPC and Kafka traffic, today. Two things need
+work: OpenTelemetry in the services that don't have it yet, and your SQS consumers.</p></div>
+<p><a class="btn" href="fit.html">See the full fit analysis</a></p>
+</section>
+
+<section id="fit" class="fit">
+<h2>Is Signadot a good fit?</h2>
+<p>Signadot is likely a good fit if these describe your team:</p>
+<ul class="checklist">
+<li><strong>Your services run on Kubernetes:</strong> EKS, GKE, OpenShift or your own clusters. Sandboxes run inside
+your cluster; there's no hosted option. <a href="https://www.signadot.com/docs/installation/signadot-operator">Install</a></li>
+<li><strong>They talk over HTTP or gRPC, or through a queue or workflow engine Signadot supports:</strong> Kafka,
+RabbitMQ, SQS and SNS, Google Pub/Sub, Redis Streams, Temporal or Sidekiq.
+<a href="https://www.signadot.com/docs/guides/set-up-message-queue-isolation">Message queues</a></li>
+<li><strong>Requests can carry a header from service to service:</strong> OpenTelemetry already does it; otherwise
+a custom header. No tracing backend is needed.
+<a href="https://www.signadot.com/docs/guides/set-up-context-propagation">Context propagation</a></li>
+<li><strong>No service mesh, or Istio or Linkerd.</strong>
+<a href="https://www.signadot.com/docs/guides/request-routing">Request routing</a></li>
+<li><strong>Your team waits for a shared staging environment, or finds problems late:</strong> the scenarios below
+show what changes.</li>
+</ul>
+<p class="muted">For an answer for your own stack, ask your agent for a fit check: five quick questions, then a page
+on how Signadot fits.</p>
+</section>
+-->
+<main>
+
+<section id="scenarios">
+<h2>Scenarios</h2>
+<div class="scenarios">
+<!-- FILL:scenarios  (one ROW per scenario that ran or is to go, in run order; then the MORE line) -->
+
+<!-- ROW
+<article class="row box">
+  <span class="n">1</span>
+  <div><h3><a href="isolated-change.html">Test one change in isolation</a></h3>
+  <p>A new route version ran in a sandbox; only rides with its routing key reached it. Proven in 48 s.</p></div>
+  <span class="pill passed">passed</span>
+</article>
+  Status pills: "passed", "failed" (say what was seen), or "next" with the text "to go" for a chosen scenario that
+  hasn't run yet (no link until its page exists).
+/ROW -->
+
+</div>
+<!-- MORE  (only while something is left to try; name what's left, in the menu's words)
+<p class="muted more">Not tried yet: service meshes, message queues and workflows, and automated tests. Ask your
+agent to run any of them.</p>
+/MORE -->
+</section>
+
+<!-- FILL:urls
+<section class="urls">
+<h2>Open the demo app</h2>
+<p>Open these in the browser where you're signed in to Signadot. The baseline is the normal app; each sandbox link
+adds that sandbox's routing key to every request, so you see the changed version.</p>
+<div class="url-pair">
+  <div class="url base"><h4>Baseline: the normal app</h4>
+    <p class="link"><a href="https://frontend--hotrod-baseline.preview.signadot.com">https://frontend--hotrod-baseline.preview.signadot.com</a></p>
+    <p>No sandbox is attached, so every request uses the shared, unchanged services.</p></div>
+  <div class="url sbx"><h4>Your sandboxes</h4>
+    <p class="link"><a href="https://frontend--fast-route.preview.signadot.com">https://frontend--fast-route.preview.signadot.com</a></p>
+    <p>Test one change in isolation: every ETA is 1 second.</p>
+    <p class="link"><a href="https://frontend--hotrod-plates.preview.signadot.com">https://frontend--hotrod-plates.preview.signadot.com</a></p>
+    <p>Test a change that spans two services: plates start with SD- and are highlighted.</p></div>
+</div>
+<p class="note">These are Signadot preview links: they go through Signadot's servers to the app in your cluster, and
+work for anyone signed in to your Signadot org.</p>
+</section>
+-->
+
+<section id="cluster">
+<h2>Look at the cluster yourself</h2>
+<p>The trial keeps the cluster's credentials in its own kubeconfig, inside the trial folder, so your current kube
+context is unchanged and tools like <code>kubectx</code> don't list the trial's cluster. Point a terminal at it:</p>
+<div class="cmd"><p>Use the trial's cluster in this terminal (kubectl, kubectx, k9s and Lens all follow this variable):</p>
+<pre><code>export KUBECONFIG="TRIAL_FOLDER/kubeconfig"
+kubectl config current-context</code></pre></div>
+<div class="cmd"><p>The demo app, with each sandbox's pod next to the normal ones:</p>
+<pre><code>kubectl -n hotrod get pods</code></pre></div>
+<div class="cmd"><p>Signadot's operator, which routes requests to sandboxes:</p>
+<pre><code>kubectl -n signadot get pods</code></pre></div>
+<div class="cmd"><p>The sandboxes and their links, with the trial's Signadot CLI:</p>
+<pre><code>TRIAL_FOLDER/bin/sd sandbox list</code></pre></div>
+<p class="muted">To add the cluster to your own kubeconfig instead, run <code>kind export kubeconfig --name
+signadot-trial</code>; note that it also switches your current context to <code>kind-signadot-trial</code>.
+Sandboxes, route groups and test runs are also in the Signadot dashboard:
+<a href="https://app.signadot.com">app.signadot.com</a>.</p>
+</section>
+
+<p class="muted foot-note">Everything keeps running until you ask your agent to remove it.</p>
+</main>
+</div>
+</body>
+</html>
